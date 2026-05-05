@@ -33,7 +33,7 @@ def _load_models() -> None:
     Add new model modules here as they are created, e.g.:
         from app.models import job, user, application  # noqa: F401
     """
-    return
+    import app.models
 
 
 _load_models()
