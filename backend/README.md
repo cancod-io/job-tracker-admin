@@ -30,9 +30,6 @@ alembic/                     # Migrations (env.py + versions/)
 scripts/                     # One-off CLIs
 tests/                       # pytest + pytest-asyncio
 ```
-
-See `../ARCHITECTURE.md` §3 for what each folder is for and where to add new code.
-
 ---
 
 ## Local development

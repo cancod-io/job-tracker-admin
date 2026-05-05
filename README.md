@@ -18,8 +18,6 @@ This is **not** another public job board. It exists to:
 >
 > This commit ships the **runnable skeleton only**. No business logic, no scrapers, no auth. The folder layout, configs, Docker setup, migrations, and CI are all in place so the team can start filling in features without arguing about structure.
 >
-> See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for the layout, conventions, and where new code should go.
-
 ---
 
 ## Tech stack
