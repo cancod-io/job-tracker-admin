@@ -42,12 +42,8 @@ shopify-job-tracker/
 ├── frontend/       # Next.js 15 App Router (TypeScript, Tailwind, shadcn/ui)
 ├── .github/workflows/
 ├── docker-compose.yml
-├── ARCHITECTURE.md ← read this first
 └── README.md
 ```
-
-The full directory tree, per-folder responsibilities, and conventions are in [`ARCHITECTURE.md`](./ARCHITECTURE.md).
-
 ---
 
 ## Quickstart
@@ -96,4 +92,4 @@ npm run dev
 - `alembic upgrade head` runs (no migrations yet — empty schema).
 - GitHub Actions CI runs both stacks on PR / push to `main`.
 
-Everything else is **scaffolded but empty**, ready for follow-up tickets — see the roadmap in `ARCHITECTURE.md` §8.
+Everything else is **scaffolded but empty**, ready for follow-up tickets.

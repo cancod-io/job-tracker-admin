@@ -2,7 +2,7 @@
 
 Next.js 15 (App Router) · TypeScript (strict) · Tailwind · shadcn/ui.
 
-> **Skeleton only.** The full layout and conventions live in [`../ARCHITECTURE.md`](../ARCHITECTURE.md). This README focuses on day-to-day commands.
+> **Skeleton only.**. This README focuses on day-to-day commands.
 
 ---
 
@@ -26,9 +26,6 @@ src/
 ├── hooks/                   # TODO: useJobs, useApplications, ...
 └── types/                   # TODO: TS types mirroring Pydantic schemas
 ```
-
-See `../ARCHITECTURE.md` §4 for what each folder is for and where to add new code.
-
 ---
 
 ## Local development
@@ -77,5 +74,3 @@ Components land in `src/components/ui/` and are owned by this repo (no library l
 - **Types mirror the backend.** Hand-maintained in `src/types/` from the Pydantic schemas — keep them in sync.
 - **shadcn over raw Tailwind components.**
 - **Strict TypeScript** is on (`strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`).
-
-Full version in `../ARCHITECTURE.md`.

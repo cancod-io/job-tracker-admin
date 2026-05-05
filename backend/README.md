@@ -2,7 +2,7 @@
 
 Python 3.12 · FastAPI · Pydantic v2 · SQLAlchemy 2 (async) · PostgreSQL · Alembic · APScheduler.
 
-> **Skeleton only.** The full layout and conventions live in [`../ARCHITECTURE.md`](../ARCHITECTURE.md). This README focuses on day-to-day commands.
+> **Skeleton only.**. This README focuses on day-to-day commands.
 
 ---
 
@@ -97,5 +97,3 @@ Open http://localhost:8000/docs for Swagger UI.
 - **All public functions are typed.** `mypy --strict` is enforced in CI.
 - **Async everywhere.** `httpx.AsyncClient`, async SQLAlchemy, `await`.
 - **Never log secrets.** Configure loggers to redact env-like values.
-
-Full version in `../ARCHITECTURE.md`.

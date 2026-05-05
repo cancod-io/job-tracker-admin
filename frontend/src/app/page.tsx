@@ -4,8 +4,7 @@ export default function HomePage() {
       <h1 className="text-4xl font-bold tracking-tight">Shopify Job Tracker</h1>
       <p className="max-w-prose text-muted-foreground">
         Frontend scaffold is ready. Build out routes under <code>src/app/</code> and shared
-        components under <code>src/components/</code>. See <code>ARCHITECTURE.md</code> for the
-        layout conventions.
+        components under <code>src/components/</code>.
       </p>
       <p className="text-sm text-muted-foreground">
         Backend health check:{" "}
