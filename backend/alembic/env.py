@@ -10,6 +10,7 @@ Alembic environment script.
 
 from __future__ import annotations
 
+import importlib
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
@@ -30,10 +31,9 @@ def _load_models() -> None:
     """
     Import all ORM models so they register with `Base.metadata`.
 
-    Add new model modules here as they are created, e.g.:
-        from app.models import job, user, application  # noqa: F401
+    Uses importlib so static linters do not treat the import as unused.
     """
-    return
+    importlib.import_module("app.models")
 
 
 _load_models()
