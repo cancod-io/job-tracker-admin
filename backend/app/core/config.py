@@ -69,4 +69,5 @@ def get_settings() -> Settings:
     """Return the singleton settings instance."""
     return Settings()
 
+
 settings = get_settings()
