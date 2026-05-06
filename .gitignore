@@ -67,8 +67,9 @@ coverage.xml
 *.sqlite
 *.sqlite3
 *.db
-data/
-mongo-data/
+# Local dumps/volumes at repo root only (avoid ignoring frontend/src/data)
+/data/
+/mongo-data/
 
 
 *.bak
