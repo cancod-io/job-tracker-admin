@@ -10,7 +10,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,7 +31,11 @@ class Settings(BaseSettings):
 
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+
+    cors_origins: str = Field(
+        default="http://localhost:3000",
+        description="Comma-separated browser origins allowed by CORS.",
+    )
 
     database_url: str = "postgresql+asyncpg://sjt:sjt@localhost:5432/shopify_job_tracker"
     database_url_sync: str = "postgresql+psycopg://sjt:sjt@localhost:5432/shopify_job_tracker"
@@ -51,13 +55,10 @@ class Settings(BaseSettings):
     scrape_cron_hours: int = 2
     scrape_on_startup: bool = False
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def _split_cors_origins(cls, v: str | list[str]) -> list[str]:
-        """Allow comma-separated CORS origins in the .env file."""
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Origins as a list for `CORSMiddleware` / callers."""
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
     def is_production(self) -> bool:

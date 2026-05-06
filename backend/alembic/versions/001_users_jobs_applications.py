@@ -1,6 +1,6 @@
 """create users jobs applications
 
-Revision ID: 001_create_users_jobs_applications
+Revision ID: 001_users_jobs_applications
 Revises:
 Create Date: 2026-05-05
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision = "001_create_users_jobs_applications"
+revision = "001_users_jobs_applications"
 down_revision = None
 branch_labels = None
 depends_on = None

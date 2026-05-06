@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 
 class Job(Base, TimestampMixin):
+    """Job listing — title, company, location, salary, description plus scrape metadata."""
+
     __tablename__ = "jobs"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -23,10 +25,16 @@ class Job(Base, TimestampMixin):
     source_job_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     apply_url: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
-    company_name: Mapped[str] = mapped_column(String(300), nullable=False, index=True)
+    company: Mapped[str] = mapped_column(
+        "company_name",
+        String(300),
+        nullable=False,
+        index=True,
+    )
     company_logo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    salary: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_remote: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
     job_type: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     experience_level: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
