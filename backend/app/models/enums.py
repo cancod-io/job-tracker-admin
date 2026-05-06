@@ -11,9 +11,9 @@ class UserRole(enum.StrEnum):
 
 
 class ApplicationStatus(enum.StrEnum):
-    SAVED = "saved"
+    """Stored in PostgreSQL as type `application_status`."""
+
+    NEW = "new"
     APPLIED = "applied"
-    INTERVIEW = "interview"
-    OFFER = "offer"
+    INTERVIEWING = "interviewing"
     REJECTED = "rejected"
-    WITHDRAWN = "withdrawn"

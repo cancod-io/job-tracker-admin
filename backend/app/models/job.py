@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Boolean, DateTime, Numeric, String, Text, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Numeric, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,17 +13,33 @@ from app.db.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.application import Application
+    from app.models.company import Company
 
 
 class Job(Base, TimestampMixin):
     """Job listing — title, company, location, salary, description plus scrape metadata."""
 
     __tablename__ = "jobs"
+    __table_args__ = (
+        Index(
+            "uq_jobs_source_source_job_id",
+            "source",
+            "source_job_id",
+            unique=True,
+            postgresql_where=text("source_job_id IS NOT NULL"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     source: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     source_job_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    # Canonical listing / apply URL — unique constraint `uq_jobs_source_url` in the database.
     apply_url: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    company_id: Mapped[int | None] = mapped_column(
+        ForeignKey("companies.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     company: Mapped[str] = mapped_column(
         "company_name",
@@ -55,6 +71,8 @@ class Job(Base, TimestampMixin):
     )
     scraped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    employer: Mapped[Company | None] = relationship("Company", back_populates="jobs")
 
     applications: Mapped[list[Application]] = relationship(
         "Application",
