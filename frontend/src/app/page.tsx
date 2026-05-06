@@ -1,17 +1,24 @@
+import { ApplicationsPanel } from "@/components/dashboard/applications-panel";
+import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { FilterToolbar } from "@/components/dashboard/filter-toolbar";
+import { JobsList } from "@/components/dashboard/jobs-list";
+import { TechStackPanel } from "@/components/dashboard/tech-stack-panel";
+import { AppShell } from "@/components/layout/app-shell";
+
 export default function HomePage() {
   return (
-    <main className="container flex min-h-screen flex-col items-center justify-center gap-4 py-16 text-center">
-      <h1 className="text-4xl font-bold tracking-tight">Shopify Job Tracker</h1>
-      <p className="max-w-prose text-muted-foreground">
-        Frontend scaffold is ready. Build out routes under <code>src/app/</code> and shared
-        components under <code>src/components/</code>.
-      </p>
-      <p className="text-sm text-muted-foreground">
-        Backend health check:{" "}
-        <a className="underline" href="http://localhost:8000/health" target="_blank" rel="noreferrer">
-          http://localhost:8000/health
-        </a>
-      </p>
+    <main>
+      <AppShell>
+        <DashboardHeader />
+        <FilterToolbar />
+        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+          <JobsList />
+          <div className="space-y-4">
+            <ApplicationsPanel />
+            <TechStackPanel />
+          </div>
+        </div>
+      </AppShell>
     </main>
   );
 }
