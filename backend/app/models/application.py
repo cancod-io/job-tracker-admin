@@ -5,11 +5,19 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Index, SmallInteger, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Index, SmallInteger, Text, UniqueConstraint, text
+from sqlalchemy.dialects.postgresql import ENUM as PG_ENUM
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
 from app.models.enums import ApplicationStatus
+
+_application_status_pg = PG_ENUM(
+    ApplicationStatus,
+    name="application_status",
+    create_type=False,
+    values_callable=lambda enums: [e.value for e in enums],
+)
 
 if TYPE_CHECKING:
     from app.models.job import Job
@@ -34,10 +42,11 @@ class Application(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    status: Mapped[str] = mapped_column(
-        String(32),
-        default=ApplicationStatus.SAVED.value,
+    status: Mapped[ApplicationStatus] = mapped_column(
+        _application_status_pg,
         nullable=False,
+        server_default=text("'new'::application_status"),
+        default=ApplicationStatus.NEW,
         index=True,
     )
     applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

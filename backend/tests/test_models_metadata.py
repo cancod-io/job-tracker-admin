@@ -11,5 +11,6 @@ def test_core_tables_registered() -> None:
     importlib.import_module("app.models")
     tables = Base.metadata.tables
     assert "users" in tables
+    assert "companies" in tables
     assert "jobs" in tables
     assert "applications" in tables
