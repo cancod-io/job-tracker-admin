@@ -18,9 +18,13 @@ const statusIcon = {
 
 export function ApplicationsPanel() {
   return (
-    <aside className="space-y-4">
-      <section className="rounded-2xl border bg-card p-5">
-        <h3 className="mb-1">My Applications</h3>
+    <aside
+      id="applications"
+      className="scroll-mt-24 space-y-4 md:scroll-mt-28"
+      aria-label="Applications sidebar"
+    >
+      <section className="rounded-2xl border border-border/80 bg-card p-5 shadow-sm">
+        <h3 className="mb-1">My applications</h3>
         <p className="mb-4 text-xs">
           Track progress from first apply click to interview scheduling.
         </p>
@@ -40,19 +44,19 @@ export function ApplicationsPanel() {
         </ul>
       </section>
 
-      <section className="rounded-2xl border bg-card p-5">
-        <h3 className="mb-1">MVP Feature Scope</h3>
+      <section className="rounded-2xl border border-border/80 bg-card p-5 shadow-sm">
+        <h3 className="mb-1">MVP feature scope</h3>
         <ul className="space-y-2 text-xs text-muted-foreground">
           <li className="inline-flex items-center gap-2">
-            <FileText className="size-3.5 text-primary" />
+            <FileText className="size-3.5 text-primary" aria-hidden />
             Dashboard search and smart filtering
           </li>
           <li className="inline-flex items-center gap-2">
-            <ShieldCheck className="size-3.5 text-accent" />
+            <ShieldCheck className="size-3.5 text-primary" aria-hidden />
             User profile and application tracking
           </li>
           <li className="inline-flex items-center gap-2">
-            <Clock3 className="size-3.5 text-amber-500" />
+            <Clock3 className="size-3.5 text-amber-600" aria-hidden />
             Scheduled scraping and optional alerts
           </li>
         </ul>

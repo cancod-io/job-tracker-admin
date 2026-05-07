@@ -7,7 +7,7 @@ import { AppShell } from "@/components/layout/app-shell";
 
 export default function HomePage() {
   return (
-    <main>
+    <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
       <AppShell>
         <DashboardHeader />
         <FilterToolbar />
