@@ -6,8 +6,9 @@ import enum
 
 
 class UserRole(enum.StrEnum):
-    MEMBER = "member"
     ADMIN = "admin"
+    MODERATOR = "moderator"
+    USER = "user"
 
 
 class ApplicationStatus(enum.StrEnum):

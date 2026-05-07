@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from typing import Annotated
 
 import jwt
@@ -12,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import AppError
 from app.core.security import decode_access_token
 from app.db.session import get_db
+from app.models.enums import UserRole
 from app.models.user import User
 
 
@@ -64,3 +66,19 @@ async def is_auth(
             code="UNAUTHORIZED",
         )
     return user
+
+
+def require_roles(*allowed_roles: UserRole) -> Callable[[User], Awaitable[User]]:
+    """Factory dependency to enforce role-based access controls in routes."""
+    allowed = set(allowed_roles)
+
+    async def _dependency(current_user: Annotated[User, Depends(is_auth)]) -> User:
+        if current_user.role not in allowed:
+            raise AppError(
+                "Insufficient permissions for this action",
+                status_code=status.HTTP_403_FORBIDDEN,
+                code="FORBIDDEN",
+            )
+        return current_user
+
+    return _dependency

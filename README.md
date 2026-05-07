@@ -39,6 +39,9 @@ This is **not** another public job board. It exists to:
 ```
 shopify-job-tracker/
 ├── backend/        # FastAPI + scrapers (Python 3.12, uv-managed)
+├── job-api-service/      # Job discovery / listing API (`uvicorn app.main:app`, e.g. :8010)
+├── scraping-service/     # Collectors in `app/scrapers/` (moved out of `backend/`)
+├── user-api-service/     # Auth/users API target (`uvicorn`, e.g. :8011); routes still in backend for now
 ├── frontend-user/  # Next.js 15 user app (TypeScript, Tailwind, shadcn/ui)
 ├── frontend-admin/ # Next.js 15 admin app (TypeScript, Tailwind, shadcn/ui)
 ├── .github/workflows/
@@ -69,7 +72,7 @@ docker compose up --build
 ### Without Docker
 
 ```bash
-# Backend
+# Backend (DB + monolith API)
 cd backend
 uv sync
 cp .env.example .env

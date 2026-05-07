@@ -14,3 +14,5 @@ def test_core_tables_registered() -> None:
     assert "companies" in tables
     assert "jobs" in tables
     assert "applications" in tables
+    assert "scraper_logs" in tables
+    assert "audit_logs" in tables

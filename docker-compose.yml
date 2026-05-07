@@ -31,7 +31,7 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql+asyncpg://sjt:sjt@postgres:5432/shopify_job_tracker
       DATABASE_URL_SYNC: postgresql+psycopg://sjt:sjt@postgres:5432/shopify_job_tracker
-      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+      CORS_ORIGINS: "*"
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       LOG_LEVEL: INFO
     ports:

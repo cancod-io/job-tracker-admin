@@ -15,12 +15,9 @@ WORKDIR /app
 
 # System deps:
 #   build-essential / libpq-dev → asyncpg + bcrypt wheels fallback
-#   libxml2-dev / libxslt1-dev  → lxml (used by scrapers later)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
-    libxml2-dev \
-    libxslt1-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
