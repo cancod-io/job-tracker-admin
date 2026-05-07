@@ -15,6 +15,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-sans)", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        body: ["var(--font-body)", "Open Sans", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -56,7 +57,10 @@ const config: Config = {
         18: "4.5rem",
       },
       boxShadow: {
-        soft: "0 10px 30px -14px hsl(var(--foreground) / 0.28)",
+        soft: "0 10px 30px -14px hsl(var(--foreground) / 0.12)",
+      },
+      transitionDuration: {
+        DEFAULT: "200ms",
       },
     },
   },

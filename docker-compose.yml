@@ -31,7 +31,7 @@ services:
       APP_ENV: development
       DATABASE_URL: postgresql+asyncpg://sjt:sjt@postgres:5432/shopify_job_tracker
       DATABASE_URL_SYNC: postgresql+psycopg://sjt:sjt@postgres:5432/shopify_job_tracker
-      CORS_ORIGINS: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       LOG_LEVEL: INFO
     ports:
@@ -61,8 +61,30 @@ services:
       - frontend-node-modules:/app/node_modules
       - frontend-next:/app/.next
 
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      target: dev
+    container_name: sjt-admin
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      API_INTERNAL_URL: http://backend:8000
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./admin:/app
+      - admin-node-modules:/app/node_modules
+      - admin-next:/app/.next
+
 volumes:
   postgres-data:
   backend-venv:
   frontend-node-modules:
   frontend-next:
+  admin-node-modules:
+  admin-next:

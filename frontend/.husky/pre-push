@@ -1,2 +1,4 @@
 #!/usr/bin/env sh
-cd frontend && npm run check
+set -e
+(cd frontend && npm run check)
+(cd admin && npm run check)
