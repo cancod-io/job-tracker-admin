@@ -38,11 +38,12 @@ This is **not** another public job board. It exists to:
 
 ```
 shopify-job-tracker/
-├── backend/              # Platform API: DB, migrations, auth (today), shared domain
+├── backend/        # FastAPI + scrapers (Python 3.12, uv-managed)
 ├── job-api-service/      # Job discovery / listing API (`uvicorn app.main:app`, e.g. :8010)
 ├── scraping-service/     # Collectors in `app/scrapers/` (moved out of `backend/`)
 ├── user-api-service/     # Auth/users API target (`uvicorn`, e.g. :8011); routes still in backend for now
-├── frontend/             # Next.js 15 App Router (TypeScript, Tailwind, shadcn/ui)
+├── frontend-user/  # Next.js 15 user app (TypeScript, Tailwind, shadcn/ui)
+├── frontend-admin/ # Next.js 15 admin app (TypeScript, Tailwind, shadcn/ui)
 ├── .github/workflows/
 ├── docker-compose.yml
 └── README.md
@@ -57,7 +58,8 @@ shopify-job-tracker/
 git clone <repo-url> shopify-job-tracker
 cd shopify-job-tracker
 cp backend/.env.example backend/.env
-cp frontend/.env.local.example frontend/.env.local
+cp frontend-user/.env.local.example frontend-user/.env.local
+cp frontend-admin/.env.local.example frontend-admin/.env.local
 docker compose up --build
 ```
 
@@ -77,8 +79,14 @@ cp .env.example .env
 uv run alembic upgrade head
 uv run uvicorn app.main:app --reload --port 8000
 
-# Frontend (in another terminal)
-cd frontend
+# User Frontend (in a second terminal)
+cd frontend-user
+npm install
+cp .env.local.example .env.local
+npm run dev
+
+# Admin Frontend (in a third terminal)
+cd ../frontend-admin
 npm install
 cp .env.local.example .env.local
 npm run dev
@@ -91,7 +99,7 @@ npm run dev
 - `GET /health` — backend liveness probe.
 - Frontend landing page that links to the backend health check.
 - `pytest`, `ruff`, `mypy` all clean on `backend/`.
-- `npm run lint`, `tsc --noEmit`, and `next build` all clean on `frontend/`.
+- `npm run lint`, `tsc --noEmit`, and `next build` all clean on `frontend-user/` and `frontend-admin/`.
 - `alembic upgrade head` runs (no migrations yet — empty schema).
 - GitHub Actions CI runs both stacks on PR / push to `main`.
 

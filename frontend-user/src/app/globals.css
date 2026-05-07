@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Design system (light): minimal palette aligned to professional UI patterns.
+ * Primary ≈ #007BFF · Background ≈ #F8F9FA · Text ≈ #212529 · Accent highlights ≈ #FFC107
+ */
+@layer base {
+  :root {
+    --background: 210 17% 98%;
+    --foreground: 210 11% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 11% 15%;
+
+    --primary: 211 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 14% 93%;
+    --secondary-foreground: 210 9% 31%;
+
+    --muted: 210 14% 96%;
+    --muted-foreground: 208 7% 46%;
+
+    --accent: 45 100% 51%;
+    --accent-foreground: 210 11% 15%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 14% 83%;
+    --input: 214 14% 83%;
+    --ring: 211 100% 50%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 24% 8%;
+    --foreground: 210 20% 96%;
+
+    --card: 222 20% 12%;
+    --card-foreground: 210 20% 96%;
+
+    --primary: 211 96% 62%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 19% 20%;
+    --secondary-foreground: 210 20% 92%;
+
+    --muted: 217 19% 18%;
+    --muted-foreground: 215 14% 68%;
+
+    --accent: 45 96% 55%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 16% 22%;
+    --input: 217 16% 22%;
+    --ring: 211 96% 62%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-background font-body text-base font-normal leading-relaxed text-foreground antialiased;
+  }
+
+  h1 {
+    @apply font-sans text-2xl font-semibold tracking-tight text-foreground md:text-3xl;
+  }
+
+  h2 {
+    @apply font-sans text-xl font-semibold tracking-tight text-foreground md:text-2xl;
+  }
+
+  h3 {
+    @apply font-sans text-base font-semibold tracking-tight text-foreground md:text-lg;
+  }
+
+  p {
+    @apply text-sm leading-relaxed text-muted-foreground md:text-[0.9375rem];
+  }
+
+  a:not([class]) {
+    @apply text-primary underline-offset-4 transition-colors hover:text-primary/90 hover:underline;
+  }
+
+  :where(button, [role="button"], a, input, select, textarea):focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+@layer components {
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground focus:shadow-lg motion-reduce:focus:transition-none;
+  }
+
+  .form-control {
+    @apply min-h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition-[color,box-shadow,border-color] duration-200 placeholder:text-muted-foreground hover:border-muted-foreground/30 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none md:w-auto;
+  }
+}
