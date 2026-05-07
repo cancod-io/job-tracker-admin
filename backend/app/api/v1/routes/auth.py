@@ -39,7 +39,7 @@ async def register(
     )
     db.add(user)
     await db.flush()
-    return AuthUserResponse(id=user.id, email=user.email, full_name=user.full_name)
+    return AuthUserResponse(id=user.id, email=user.email, full_name=user.full_name, role=user.role)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -69,4 +69,5 @@ async def me(current_user: Annotated[User, Depends(is_auth)]) -> AuthUserRespons
         id=current_user.id,
         email=current_user.email,
         full_name=current_user.full_name,
+        role=current_user.role,
     )

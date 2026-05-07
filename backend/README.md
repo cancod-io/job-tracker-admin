@@ -11,10 +11,11 @@ Python 3.12 · FastAPI · Pydantic v2 · SQLAlchemy 2 (async) · PostgreSQL · A
 ```
 app/
 ├── main.py                  # FastAPI factory + lifespan + /health
+├── bootstrap.py             # Shared middleware + DB lifespan helpers
 ├── api/                     # HTTP layer (thin)
 │   └── v1/
-│       ├── router.py        # TODO: aggregates v1 routers
-│       └── routes/          # TODO: one module per resource
+│       ├── router.py        # Aggregates v1 routers
+│       └── routes/          # One module per resource
 ├── core/                    # Cross-cutting: config, logging, security, exceptions
 │   └── config.py            # pydantic-settings — reads .env
 ├── db/                      # Database plumbing
@@ -23,8 +24,7 @@ app/
 ├── models/                  # ORM models (DB shape) — TODO
 ├── schemas/                 # Pydantic DTOs (API shape) — TODO
 ├── services/                # Business logic — TODO
-├── scrapers/                # One module per source — TODO
-├── workers/                 # APScheduler glue — TODO
+├── workers/                 # APScheduler glue — TODO (calls out to scraping-service)
 └── utils/                   # Stateless helpers
 alembic/                     # Migrations (env.py + versions/)
 scripts/                     # One-off CLIs
@@ -61,7 +61,7 @@ cp .env.example .env
 
 Either `docker compose up postgres` from the repo root, or point `DATABASE_URL` at your own instance / a hosted Postgres.
 
-### 5. Run migrations + start the server
+### 5. Run migrations + start the API
 
 ```bash
 uv run alembic upgrade head
@@ -69,6 +69,10 @@ uv run uvicorn app.main:app --reload --port 8000
 ```
 
 Open http://localhost:8000/docs for Swagger UI.
+
+Sibling deployables at the repo root: `job-api-service/`, `scraping-service/`, and
+`user-api-service/` (see each folder’s README). Docker Compose runs this monolith
+on port **8000** with the frontend pointed at it.
 
 ---
 
