@@ -43,7 +43,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./frontend-user
       dockerfile: Dockerfile
       target: dev
     container_name: sjt-frontend
@@ -57,13 +57,13 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app
+      - ./frontend-user:/app
       - frontend-node-modules:/app/node_modules
       - frontend-next:/app/.next
 
   admin:
     build:
-      context: ./admin
+      context: ./frontend-admin
       dockerfile: Dockerfile
       target: dev
     container_name: sjt-admin
@@ -77,7 +77,7 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./admin:/app
+      - ./frontend-admin:/app
       - admin-node-modules:/app/node_modules
       - admin-next:/app/.next
 

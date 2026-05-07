@@ -4,16 +4,16 @@ on:
   push:
     branches: [main]
     paths:
-      - "admin/**"
+      - "frontend-admin/**"
       - ".github/workflows/admin.yml"
   pull_request:
     paths:
-      - "admin/**"
+      - "frontend-admin/**"
       - ".github/workflows/admin.yml"
 
 defaults:
   run:
-    working-directory: admin
+    working-directory: frontend-admin
 
 jobs:
   lint-and-build:
@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: admin/package-lock.json
+          cache-dependency-path: frontend-admin/package-lock.json
 
       - name: Install dependencies
         run: npm ci || npm install
