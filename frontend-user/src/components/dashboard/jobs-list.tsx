@@ -4,20 +4,12 @@ import { useState } from "react";
 import Image from "next/image";
 import { Bookmark, CalendarClock, ExternalLink, LayoutGrid, List, MapPin, Zap } from "lucide-react";
 import { mockJobs } from "@/data/mock-jobs";
+import { applicationStatusBadgeClass } from "@/lib/application-status-badge";
 import { cn } from "@/lib/utils";
 import { useJobFiltersStore } from "@/store/job-filters";
-import type { ApplicationStatus, Job } from "@/types/job";
+import type { Job } from "@/types/job";
 
 type ViewMode = "list" | "card";
-
-function statusClass(status: ApplicationStatus): string {
-  if (status === "Interview Scheduled") {
-    return "bg-accent/20 text-accent-foreground ring-1 ring-accent/35";
-  }
-  if (status === "Applied") return "bg-primary/12 text-primary ring-1 ring-primary/20";
-  if (status === "Pending") return "bg-amber-100 text-amber-900 ring-1 ring-amber-200/80";
-  return "bg-muted text-muted-foreground ring-1 ring-border";
-}
 
 function matchesFilters(job: Job, query: string, experience: string, jobType: string): boolean {
   const normalizedQuery = query.toLowerCase();
@@ -33,8 +25,9 @@ function matchesFilters(job: Job, query: string, experience: string, jobType: st
 
 export function JobsList() {
   const { query, experience, jobType } = useJobFiltersStore();
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [viewMode, setViewMode] = useState<ViewMode>("card");
   const filteredJobs = mockJobs.filter((job) => matchesFilters(job, query, experience, jobType));
+  const companyCount = new Set(filteredJobs.map((j) => j.company)).size;
 
   return (
     <section
@@ -42,52 +35,63 @@ export function JobsList() {
       className="scroll-mt-24 space-y-5 md:scroll-mt-28"
       aria-labelledby="jobs-heading"
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 id="jobs-heading">Latest opportunities</h2>
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs tabular-nums text-muted-foreground" aria-live="polite">
-            {filteredJobs.length} {filteredJobs.length === 1 ? "job" : "jobs"} shown
-          </span>
-          <div
-            className="inline-flex rounded-lg border border-input bg-muted/40 p-1 shadow-sm"
-            role="group"
-            aria-label="Job list layout"
+      <div className="flex flex-col gap-4 border-b border-border/60 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 space-y-1">
+          <h2
+            id="jobs-heading"
+            className="text-lg font-semibold tracking-tight text-foreground md:text-xl"
           >
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              aria-pressed={viewMode === "list"}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition-colors duration-200 motion-reduce:transition-none",
-                viewMode === "list"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-background hover:text-foreground",
-              )}
-            >
-              <List className="size-3.5 shrink-0" aria-hidden />
-              List
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("card")}
-              aria-pressed={viewMode === "card"}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition-colors duration-200 motion-reduce:transition-none",
-                viewMode === "card"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-background hover:text-foreground",
-              )}
-            >
-              <LayoutGrid className="size-3.5 shrink-0" aria-hidden />
-              Cards
-            </button>
-          </div>
+            Job listings
+          </h2>
+          <p className="text-xs tabular-nums text-muted-foreground md:text-sm" aria-live="polite">
+            {filteredJobs.length} {filteredJobs.length === 1 ? "job" : "jobs"}
+            <span className="mx-1 text-muted-foreground/50" aria-hidden>
+              ·
+            </span>
+            {companyCount} {companyCount === 1 ? "company" : "companies"}
+          </p>
+        </div>
+        <div
+          className="inline-flex shrink-0 rounded-full border border-input bg-muted/50 p-1 shadow-sm"
+          role="group"
+          aria-label="Job list layout"
+        >
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            aria-pressed={viewMode === "list"}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors duration-200 motion-reduce:transition-none",
+              viewMode === "list"
+                ? "bg-background text-foreground shadow-sm ring-1 ring-border/80"
+                : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+            )}
+          >
+            <List className="size-3.5 shrink-0" aria-hidden />
+            List
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("card")}
+            aria-pressed={viewMode === "card"}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors duration-200 motion-reduce:transition-none",
+              viewMode === "card"
+                ? "bg-background text-foreground shadow-sm ring-1 ring-border/80"
+                : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+            )}
+          >
+            <LayoutGrid className="size-3.5 shrink-0" aria-hidden />
+            Cards
+          </button>
         </div>
       </div>
 
       <div
         className={cn(
-          viewMode === "list" ? "space-y-3" : "grid gap-4 sm:grid-cols-3 xl:grid-cols-4",
+          viewMode === "list"
+            ? "space-y-3"
+            : "grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,18.5rem),1fr))]",
         )}
       >
         {filteredJobs.map((job) => (
@@ -131,7 +135,7 @@ export function JobsList() {
                   <span
                     className={cn(
                       "inline-flex items-center rounded-full px-2.5 py-1 font-medium",
-                      statusClass(job.status),
+                      applicationStatusBadgeClass(job.status),
                     )}
                   >
                     {job.status}
