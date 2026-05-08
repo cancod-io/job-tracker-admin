@@ -15,7 +15,9 @@ def test_describe() -> None:
 
 
 def _token(role: str) -> str:
-    return jwt.encode({"sub": "1", "role": role}, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+    return jwt.encode(
+        {"sub": "1", "role": role}, settings.jwt_secret, algorithm=settings.jwt_algorithm
+    )
 
 
 def test_moderator_can_run_scraper_but_not_edit_config() -> None:

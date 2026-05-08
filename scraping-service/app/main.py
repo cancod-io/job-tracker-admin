@@ -73,7 +73,9 @@ def _get_current_claims(authorization: Annotated[str | None, Header()] = None) -
 def require_roles(*allowed: Role) -> Callable[[dict[str, Any]], dict[str, Any]]:
     allowed_set = set(allowed)
 
-    def _dependency(claims: Annotated[dict[str, Any], Depends(_get_current_claims)]) -> dict[str, Any]:
+    def _dependency(
+        claims: Annotated[dict[str, Any], Depends(_get_current_claims)],
+    ) -> dict[str, Any]:
         role = claims["role"]
         if role not in allowed_set:
             raise HTTPException(
