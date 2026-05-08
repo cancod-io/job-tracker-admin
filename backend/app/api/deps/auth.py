@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import AppError
 from app.core.security import decode_access_token
 from app.db.session import get_db
-from app.models.enums import UserRole
+from app.models.enums import UserApprovalStatus, UserRole
 from app.models.user import User
 
 
@@ -64,6 +64,18 @@ async def is_auth(
             "User not found or inactive",
             status_code=status.HTTP_401_UNAUTHORIZED,
             code="UNAUTHORIZED",
+        )
+    if user.approval_status == UserApprovalStatus.PENDING:
+        raise AppError(
+            "Your account is waiting for administrator approval before you can use the API.",
+            status_code=status.HTTP_403_FORBIDDEN,
+            code="PENDING_APPROVAL",
+        )
+    if user.approval_status == UserApprovalStatus.REJECTED:
+        raise AppError(
+            "Your registration was not approved.",
+            status_code=status.HTTP_403_FORBIDDEN,
+            code="ACCOUNT_REJECTED",
         )
     return user
 

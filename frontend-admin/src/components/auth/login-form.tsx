@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
+import { cn } from "@/lib/utils";
 
 function LoginFormInner() {
   const { status, login } = useAuth();
@@ -15,6 +16,7 @@ function LoginFormInner() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -26,11 +28,15 @@ function LoginFormInner() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setErrorCode(null);
     setSubmitting(true);
     try {
       await login(email, password);
       router.replace(nextPath.startsWith("/") ? nextPath : `/${nextPath}`);
     } catch (err) {
+      const code =
+        err instanceof Error ? (err as Error & { code?: string }).code ?? null : null;
+      setErrorCode(code);
       setError(err instanceof Error ? err.message : "Sign-in failed");
     } finally {
       setSubmitting(false);
@@ -107,7 +113,12 @@ function LoginFormInner() {
 
         {error ? (
           <p
-            className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            className={cn(
+              "rounded-lg border px-3 py-2 text-sm",
+              errorCode === "PENDING_APPROVAL" || errorCode === "ACCOUNT_REJECTED"
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100"
+                : "border-destructive/30 bg-destructive/10 text-destructive",
+            )}
             role="alert"
           >
             {error}

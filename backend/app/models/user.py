@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
-from app.models.enums import UserRole
+from app.models.enums import UserApprovalStatus, UserRole
 
 if TYPE_CHECKING:
     from app.models.application import Application
@@ -19,6 +19,13 @@ if TYPE_CHECKING:
 _user_role_pg = PG_ENUM(
     UserRole,
     name="user_role",
+    create_type=False,
+    values_callable=lambda enums: [e.value for e in enums],
+)
+
+_user_approval_pg = PG_ENUM(
+    UserApprovalStatus,
+    name="user_approval_status",
     create_type=False,
     values_callable=lambda enums: [e.value for e in enums],
 )
@@ -35,6 +42,12 @@ class User(Base, TimestampMixin):
         _user_role_pg,
         default=UserRole.USER,
         server_default=text("'user'::user_role"),
+        nullable=False,
+    )
+    approval_status: Mapped[UserApprovalStatus] = mapped_column(
+        _user_approval_pg,
+        default=UserApprovalStatus.PENDING,
+        server_default=text("'approved'::user_approval_status"),
         nullable=False,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

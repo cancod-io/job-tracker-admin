@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, EmailStr, Field
 
-from app.models.enums import UserRole
+from app.models.enums import UserApprovalStatus, UserRole
 
 
 class RegisterRequest(BaseModel):
@@ -29,3 +29,4 @@ class AuthUserResponse(BaseModel):
     email: EmailStr
     full_name: str
     role: UserRole
+    approval_status: UserApprovalStatus

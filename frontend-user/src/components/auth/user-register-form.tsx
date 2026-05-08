@@ -18,6 +18,7 @@ function UserRegisterFormInner() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -34,13 +35,49 @@ function UserRegisterFormInner() {
     }
     setSubmitting(true);
     try {
-      await register({ email, full_name: fullName.trim(), password });
+      const result = await register({ email, full_name: fullName.trim(), password });
+      if (result.status === "pending") {
+        setPendingEmail(result.email);
+        return;
+      }
       router.replace(nextPath.startsWith("/") ? nextPath : `/${nextPath}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (pendingEmail) {
+    return (
+      <div className="mx-auto w-full max-w-md space-y-8 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Almost there</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your account ({pendingEmail}) is waiting for administrator approval. You will be able to
+            sign in after an admin approves your registration.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-amber-500/35 bg-amber-500/10 p-6 text-sm text-amber-950 dark:text-amber-100 md:p-8">
+          <p className="font-medium text-foreground">What happens next</p>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-muted-foreground">
+            <li>An administrator will review your registration.</li>
+            <li>
+              Try signing in again once you receive confirmation—or check back later if your org
+              approves silently.
+            </li>
+          </ul>
+        </div>
+        <p className="text-center text-sm text-muted-foreground">
+          <Link
+            href="/login"
+            className="font-semibold text-primary underline-offset-4 hover:underline"
+          >
+            Back to sign in
+          </Link>
+        </p>
+      </div>
+    );
   }
 
   if (status === "loading" || status === "authenticated") {

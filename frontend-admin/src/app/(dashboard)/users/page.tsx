@@ -1,4 +1,5 @@
 import { Users } from "lucide-react";
+import { AdminUserApprovalQueue } from "@/components/admin/admin-user-approval-queue";
 
 export default function AdminUsersPage() {
   return (
@@ -6,12 +7,16 @@ export default function AdminUsersPage() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">Users</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          View accounts, application activity, and support escalations across the platform.
+          Review new registrations and set approval status. Only approved users can sign in and use
+          the API.
         </p>
       </header>
-      <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 p-10 text-center text-sm text-muted-foreground">
-        <Users className="mx-auto mb-3 size-10 text-primary/60" aria-hidden />
-        User directory and detail drawers will be implemented here.
+      <div className="rounded-2xl border border-border/80 bg-card/50 p-4 shadow-sm md:p-6">
+        <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <Users className="size-4 shrink-0 text-primary" aria-hidden />
+          <span>Approval queue and user directory</span>
+        </div>
+        <AdminUserApprovalQueue />
       </div>
     </div>
   );

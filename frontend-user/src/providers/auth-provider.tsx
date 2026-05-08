@@ -9,9 +9,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { apiErrorCode, apiErrorMessage } from "@/lib/auth-errors";
 import { apiUrl } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/http";
-import type { AuthUser, TokenResponse } from "@/types/auth";
+import type { AuthUser, RegisterResult, TokenResponse } from "@/types/auth";
 
 const TOKEN_STORAGE_KEY = "sjt_user_access_token";
 
@@ -27,7 +28,7 @@ type AuthContextValue = {
   status: AuthStatus;
   user: AuthUser | null;
   accessToken: string | null;
-  register: (payload: RegisterPayload) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<RegisterResult>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   refreshSession: () => Promise<void>;
@@ -104,14 +105,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (!res.ok) {
       const err = (await res.json().catch(() => ({}))) as {
-        error?: { message?: string };
+        error?: { message?: string; code?: string };
         detail?: unknown;
       };
       const message =
-        err.error?.message ??
+        apiErrorMessage(err) ??
         (typeof err.detail === "string" ? err.detail : null) ??
         "Sign-in failed";
-      throw new Error(message);
+      const e = new Error(message) as Error & { code?: string };
+      const code = apiErrorCode(err);
+      if (code) e.code = code;
+      throw e;
     }
     const data = (await res.json()) as TokenResponse;
     if (typeof window !== "undefined") {
@@ -124,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (payload: RegisterPayload) => {
+    async (payload: RegisterPayload): Promise<RegisterResult> => {
       let res: Response;
       try {
         res = await fetchWithTimeout(apiUrl("/api/v1/auth/register"), {
@@ -150,12 +154,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           detail?: unknown;
         };
         const message =
-          err.error?.message ??
+          apiErrorMessage(err) ??
           (typeof err.detail === "string" ? err.detail : null) ??
           "Registration failed";
         throw new Error(message);
       }
+      const created = (await res.json()) as AuthUser;
+      if (created.approval_status === "pending") {
+        return { status: "pending", email: payload.email };
+      }
       await login(payload.email, payload.password);
+      return { status: "authenticated" };
     },
     [login],
   );
