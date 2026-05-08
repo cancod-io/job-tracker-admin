@@ -39,9 +39,7 @@ async def list_users(
     total = int(total_result.scalar_one())
 
     list_stmt = (
-        list_base.order_by(User.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
+        list_base.order_by(User.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
     )
     result = await db.execute(list_stmt)
     rows = result.scalars().unique().all()
