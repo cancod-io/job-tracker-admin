@@ -8,10 +8,8 @@ export const metadata: Metadata = {
 
 export default function UserLoginPage() {
   return (
-    <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
-      <div className="container py-6 md:py-10">
-        <UserLoginForm />
-      </div>
+    <main id="main-content" tabIndex={-1} className="w-full max-w-lg outline-none">
+      <UserLoginForm />
     </main>
   );
 }

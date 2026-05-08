@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Inter, Open_Sans } from "next/font/google";
-import { SiteHeader } from "@/components/layout/site-header";
+import { themeInlineScript } from "@/lib/theme";
 import { AuthProvider } from "@/providers/auth-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -25,24 +26,26 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInlineScript() }} />
+      </head>
       <body
         className={`${inter.variable} ${openSans.variable} min-h-screen bg-background antialiased`}
       >
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        <div className="relative min-h-screen">
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-primary/[0.07] to-transparent md:h-64"
-            aria-hidden
-          />
-          <div className="relative flex min-h-screen flex-col">
-            <AuthProvider>
-              <SiteHeader />
-              {children}
-            </AuthProvider>
+        <ThemeProvider>
+          <div className="relative min-h-screen">
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-primary/[0.07] to-transparent md:h-64"
+              aria-hidden
+            />
+            <div className="relative flex min-h-screen flex-col">
+              <AuthProvider>{children}</AuthProvider>
+            </div>
           </div>
-        </div>
+        </ThemeProvider>
       </body>
     </html>
   );
