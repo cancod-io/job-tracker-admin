@@ -64,6 +64,12 @@ class Job(Base, TimestampMixin):
     normalized_title: Mapped[str | None] = mapped_column(String(512), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
     raw_payload: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    discovered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+        index=True,
+    )
     is_duplicate: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
     original_job_id: Mapped[int | None] = mapped_column(
         ForeignKey("jobs.id", ondelete="SET NULL"),
