@@ -15,7 +15,7 @@ type AdminRouteProps = {
  * Wrap segment layouts or pages that require an admin session.
  */
 export function AdminRoute({ children }: AdminRouteProps) {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -52,6 +52,24 @@ export function AdminRoute({ children }: AdminRouteProps) {
           className="hover:bg-primary/92 inline-flex h-10 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors"
         >
           Go to sign in
+        </Link>
+      </div>
+    );
+  }
+
+  if (user && user.role !== "admin") {
+    return (
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 p-8 text-center">
+        <p className="max-w-md text-sm text-muted-foreground">
+          This console is restricted to administrator accounts. You are signed in as{" "}
+          <span className="font-medium text-foreground">{user.email}</span> with role{" "}
+          <span className="font-medium text-foreground">{user.role}</span>.
+        </p>
+        <Link
+          href={process.env.NEXT_PUBLIC_USER_APP_URL ?? "http://localhost:3000"}
+          className="hover:bg-primary/92 inline-flex h-10 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors"
+        >
+          Open main app
         </Link>
       </div>
     );

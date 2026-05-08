@@ -11,6 +11,14 @@ class UserRole(enum.StrEnum):
     USER = "user"
 
 
+class UserApprovalStatus(enum.StrEnum):
+    """Stored in PostgreSQL as type `user_approval_status`."""
+
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
 class ApplicationStatus(enum.StrEnum):
     """Stored in PostgreSQL as type `application_status`."""
 

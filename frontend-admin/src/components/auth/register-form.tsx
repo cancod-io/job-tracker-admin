@@ -18,6 +18,7 @@ function RegisterFormInner() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -34,13 +35,46 @@ function RegisterFormInner() {
     }
     setSubmitting(true);
     try {
-      await register({ email, full_name: fullName.trim(), password });
+      const result = await register({ email, full_name: fullName.trim(), password });
+      if (result.status === "pending") {
+        setPendingEmail(result.email);
+        return;
+      }
       router.replace(nextPath.startsWith("/") ? nextPath : `/${nextPath}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (pendingEmail) {
+    return (
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Pending approval</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">{pendingEmail}</span> is queued for admin
+            review. Another administrator must approve this account before you can open the console.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-amber-500/35 bg-amber-500/10 p-6 text-sm text-amber-950 dark:text-amber-100 md:p-8">
+          <p className="font-medium text-foreground">Need access right away?</p>
+          <p className="mt-2 text-muted-foreground">
+            Ask an existing admin to open <strong>Users</strong> and approve your account. You will
+            not receive an API session until then.
+          </p>
+        </div>
+        <p className="text-center text-sm text-muted-foreground">
+          <Link
+            href="/login"
+            className="font-semibold text-primary underline-offset-4 hover:underline"
+          >
+            Back to sign in
+          </Link>
+        </p>
+      </div>
+    );
   }
 
   if (status === "loading") {
@@ -70,7 +104,7 @@ function RegisterFormInner() {
         <p className="mt-2 text-sm text-muted-foreground">
           Uses the same API as sign-in (
           <code className="rounded bg-muted px-1 py-0.5 text-xs">POST /api/v1/auth/register</code>
-          ). You will be signed in after registration.
+          ). New accounts are held for admin approval before you can sign in.
         </p>
       </div>
 
