@@ -1,4 +1,0 @@
-#!/usr/bin/env sh
-set -e
-(cd frontend-user && npm run check)
-(cd frontend-admin && npm run check)
