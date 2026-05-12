@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
+import { ADMIN_PENDING_APPROVAL_CHANGED_EVENT } from "@/lib/admin-sync-events";
 import { apiUrl } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/http";
 import { useAuth } from "@/providers/auth-provider";
@@ -38,6 +39,15 @@ function approvalLabel(status: UserApprovalStatus): string {
   }
 }
 
+function formatCreatedAt(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(d);
+}
+
 function badgeClass(status: UserApprovalStatus): string {
   switch (status) {
     case "pending":
@@ -54,7 +64,7 @@ function badgeClass(status: UserApprovalStatus): string {
 type FilterValue = "all" | UserApprovalStatus;
 
 export function AdminUserApprovalQueue() {
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const [filter, setFilter] = useState<FilterValue>("all");
   const [data, setData] = useState<ListResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,6 +87,9 @@ export function AdminUserApprovalQueue() {
         throw new Error(body.error?.message ?? `Request failed (${res.status})`);
       }
       setData((await res.json()) as ListResponse);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(ADMIN_PENDING_APPROVAL_CHANGED_EVENT));
+      }
     } catch (e) {
       setData(null);
       setError(e instanceof Error ? e.message : "Failed to load users");
@@ -91,6 +104,10 @@ export function AdminUserApprovalQueue() {
 
   const patchApproval = async (userId: number, approval_status: Exclude<UserApprovalStatus, "pending">) => {
     if (!accessToken) return;
+    if (approval_status === "rejected" && user != null && userId === user.id) {
+      setError("You cannot reject your own account.");
+      return;
+    }
     setActionUserId(userId);
     setError(null);
     try {
@@ -103,6 +120,7 @@ export function AdminUserApprovalQueue() {
         body: JSON.stringify({ approval_status }),
         credentials: "omit",
       });
+
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
         throw new Error(body.error?.message ?? `Update failed (${res.status})`);
@@ -175,10 +193,11 @@ export function AdminUserApprovalQueue() {
             Loading users…
           </div>
         ) : (
-          <table className="w-full min-w-[640px] text-left text-sm">
+          <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="border-b border-border/80 bg-muted/40 text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-medium">User</th>
+                <th className="px-4 py-3 font-medium">Created</th>
                 <th className="px-4 py-3 font-medium">Role</th>
                 <th className="px-4 py-3 font-medium">Approval</th>
                 <th className="px-4 py-3 font-medium">Active</th>
@@ -188,16 +207,34 @@ export function AdminUserApprovalQueue() {
             <tbody>
               {data?.items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
                     No users match this filter.
                   </td>
                 </tr>
               ) : (
-                data?.items.map((u) => (
-                  <tr key={u.id} className="border-b border-border/60 last:border-0">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-foreground">{u.full_name}</div>
+                data?.items.map((u) => {
+                  const isSelf = user != null && u.id === user.id;
+                  return (
+                  <tr
+                    key={u.id}
+                    className={cn(
+                      "border-b border-border/60 last:border-0",
+                      isSelf && "bg-primary/[0.07] dark:bg-primary/15",
+                    )}
+                  >
+                    <td className="px-4 py-3 align-middle">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium text-foreground">{u.full_name}</span>
+                        {isSelf ? (
+                          <span className="inline-flex rounded-full border border-primary/35 bg-primary/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                            Your account
+                          </span>
+                        ) : null}
+                      </div>
                       <div className="text-xs text-muted-foreground">{u.email}</div>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground tabular-nums">
+                      {formatCreatedAt(u.created_at)}
                     </td>
                     <td className="px-4 py-3 capitalize text-muted-foreground">{u.role}</td>
                     <td className="px-4 py-3">
@@ -227,7 +264,13 @@ export function AdminUserApprovalQueue() {
                           <button
                             type="button"
                             className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-50"
-                            disabled={actionUserId === u.id}
+                            disabled={actionUserId === u.id || isSelf}
+                            title={
+                              isSelf ? "You cannot reject your own account" : undefined
+                            }
+                            aria-label={
+                              isSelf ? "Reject unavailable for your own account" : "Reject"
+                            }
                             onClick={() => void patchApproval(u.id, "rejected")}
                           >
                             Reject
@@ -236,7 +279,8 @@ export function AdminUserApprovalQueue() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

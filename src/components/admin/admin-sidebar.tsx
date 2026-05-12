@@ -1,9 +1,14 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeftClose, X } from "lucide-react";
+import { ADMIN_PENDING_APPROVAL_CHANGED_EVENT } from "@/lib/admin-sync-events";
+import { apiUrl } from "@/lib/api";
+import { fetchWithTimeout } from "@/lib/http";
 import { adminNavItems } from "@/config/admin-nav";
+import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
 
 type AdminSidebarProps = {
@@ -11,8 +16,43 @@ type AdminSidebarProps = {
   onMobileClose: () => void;
 };
 
+type PendingUsersCountResponse = {
+  total: number;
+};
+
 export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
   const pathname = usePathname() ?? "/";
+  const { accessToken } = useAuth();
+  const [pendingApprovalCount, setPendingApprovalCount] = useState<number | null>(null);
+
+  const refreshPendingApprovalCount = useCallback(async () => {
+    if (!accessToken) return;
+    try {
+      const q = new URLSearchParams({
+        approval_status: "pending",
+        page_size: "1",
+      });
+      const res = await fetchWithTimeout(apiUrl(`/api/v1/admin/users?${q}`), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        credentials: "omit",
+      });
+      if (!res.ok) return;
+      const body = (await res.json()) as PendingUsersCountResponse;
+      if (typeof body.total === "number") setPendingApprovalCount(body.total);
+    } catch {
+      /* leave prior count */
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    void refreshPendingApprovalCount();
+  }, [refreshPendingApprovalCount, pathname]);
+
+  useEffect(() => {
+    const onPendingChanged = () => void refreshPendingApprovalCount();
+    window.addEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onPendingChanged);
+    return () => window.removeEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onPendingChanged);
+  }, [refreshPendingApprovalCount]);
 
   const linkClass = (active: boolean) =>
     cn(
@@ -42,6 +82,11 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
               ? pathname === "/" || pathname === ""
               : pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
+          const showPendingBadge =
+            item.href === "/users" && pendingApprovalCount != null && pendingApprovalCount > 0;
+          const badgeText =
+            pendingApprovalCount != null && pendingApprovalCount > 99 ? "99+" : pendingApprovalCount;
+
           return (
             <li key={item.href}>
               <Link
@@ -50,8 +95,23 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
                 onClick={onMobileClose}
                 aria-current={active ? "page" : undefined}
               >
-                <Icon className="size-4 shrink-0 opacity-90" aria-hidden />
-                {item.label}
+                <span className="flex min-w-0 flex-1 items-center gap-3">
+                  <Icon className="size-4 shrink-0 opacity-90" aria-hidden />
+                  <span className="truncate">{item.label}</span>
+                </span>
+                {showPendingBadge ? (
+                  <span
+                    className={cn(
+                      "flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-[11px] font-semibold tabular-nums",
+                      active
+                        ? "bg-primary-foreground/25 text-primary-foreground"
+                        : "bg-amber-600 text-white shadow-sm dark:bg-amber-500 dark:text-amber-950",
+                    )}
+                    aria-label={`${pendingApprovalCount} waiting for approval`}
+                  >
+                    {badgeText}
+                  </span>
+                ) : null}
               </Link>
             </li>
           );
