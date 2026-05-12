@@ -1,4 +1,4 @@
-import { Briefcase } from "lucide-react";
+import { AdminJobsList } from "@/components/admin/admin-jobs-list";
 
 export default function AdminJobsPage() {
   return (
@@ -6,13 +6,11 @@ export default function AdminJobsPage() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">Jobs</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
-          Moderate scraped listings: edit fields, flag duplicates, and remove stale posts.
+          Browse scraped listings from <code className="text-xs">GET /api/v1/jobs</code>: search, sort, paginate, and
+          open apply links. Uses the dashboard <code className="text-xs">X-API-Key</code> header.
         </p>
       </header>
-      <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 p-10 text-center text-sm text-muted-foreground">
-        <Briefcase className="mx-auto mb-3 size-10 text-primary/60" aria-hidden />
-        Job management table and actions will connect to the API here.
-      </div>
+      <AdminJobsList />
     </div>
   );
 }
