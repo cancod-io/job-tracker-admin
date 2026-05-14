@@ -64,7 +64,7 @@ function LoginFormInner() {
   return (
     <div className="w-full max-w-md space-y-8">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Admin sign in</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Admin sign in v1 - 0.1</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Use the same account as the API (
           <code className="rounded bg-muted px-1 py-0.5 text-xs">/api/v1/auth</code>
