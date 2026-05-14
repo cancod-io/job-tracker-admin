@@ -1,0 +1,14 @@
+name: Notify VPS Deployment
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  notify-vps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send webhook to VPS
+        run: |
+          curl -X POST https://webhook.site/cbeb2d77-b739-4d4b-ae87-f363e9c1148d -H "Content-Type: application/json" -d '{}'
+          curl -X POST http://147.93.180.179:8081/deploy -H "Content-Type: application/json" -d '{}'
