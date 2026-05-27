@@ -1,61 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Archive,
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  Loader2,
-  RefreshCw,
-  RotateCcw,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/http";
 import { cn } from "@/lib/utils";
 import type { JobAtsStatus, JobListItem, JobListResponse, JobListSort } from "@/types/job-api";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
-const TRACKING_STORAGE_KEY = "shopify-job-tracker:application-progress:v1";
-const PIPELINE_STATUSES: Exclude<JobAtsStatus, "rejected" | "archived">[] = [
-  "new",
-  "shortlisted",
-  "applied",
-  "interviewing",
-  "offer",
-];
-const TRACKABLE_STATUSES: Exclude<JobAtsStatus, "archived">[] = [
-  "new",
-  "shortlisted",
-  "applied",
-  "interviewing",
-  "offer",
-  "rejected",
-];
-const VIEW_OPTIONS = [
-  { value: "all", label: "All jobs" },
-  { value: "my", label: "My Applications" },
-  { value: "archived", label: "Archived" },
-] as const;
-
-type ApplicationView = (typeof VIEW_OPTIONS)[number]["value"];
-
-type JobTrackingRecord = {
-  status?: JobAtsStatus;
-  notes?: string;
-  archivedAt?: string;
-  updatedAt?: string;
-};
-
-type JobTrackingState = Record<string, JobTrackingRecord>;
-
-type TrackedJob = {
-  job: JobListItem;
-  status: JobAtsStatus;
-  notes: string;
-  archivedAt?: string;
-  updatedAt?: string;
-};
 
 function dashboardApiKey(): string | null {
   const k = process.env.NEXT_PUBLIC_DASHBOARD_API_KEY?.trim();
@@ -101,101 +53,6 @@ function formatAtsStatus(status: JobAtsStatus): string {
   return status.replace(/_/g, " ");
 }
 
-function isJobAtsStatus(value: unknown): value is JobAtsStatus {
-  return (
-    value === "new" ||
-    value === "shortlisted" ||
-    value === "applied" ||
-    value === "interviewing" ||
-    value === "offer" ||
-    value === "rejected" ||
-    value === "archived"
-  );
-}
-
-function readTrackingState(): JobTrackingState {
-  if (typeof window === "undefined") return {};
-
-  try {
-    const raw = window.localStorage.getItem(TRACKING_STORAGE_KEY);
-    if (!raw) return {};
-
-    const parsed = JSON.parse(raw) as Record<string, Partial<JobTrackingRecord>>;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
-
-    return Object.fromEntries(
-      Object.entries(parsed)
-        .filter(([, record]) => record && typeof record === "object")
-        .map(([jobId, record]) => [
-          jobId,
-          {
-            status: isJobAtsStatus(record.status) ? record.status : undefined,
-            notes: typeof record.notes === "string" ? record.notes : undefined,
-            archivedAt: typeof record.archivedAt === "string" ? record.archivedAt : undefined,
-            updatedAt: typeof record.updatedAt === "string" ? record.updatedAt : undefined,
-          },
-        ]),
-    );
-  } catch {
-    return {};
-  }
-}
-
-function statusProgress(status: JobAtsStatus): number {
-  if (status === "rejected" || status === "archived") return 100;
-
-  const index = PIPELINE_STATUSES.indexOf(status);
-  if (index <= 0) return 8;
-
-  return Math.round((index / (PIPELINE_STATUSES.length - 1)) * 100);
-}
-
-function hasApplicationActivity(job: TrackedJob): boolean {
-  return job.status !== "new" || job.notes.trim().length > 0;
-}
-
-function PipelineProgress({ status }: { status: JobAtsStatus }) {
-  const progress = statusProgress(status);
-  const activeIndex = PIPELINE_STATUSES.indexOf(status as (typeof PIPELINE_STATUSES)[number]);
-  const terminalClass =
-    status === "rejected"
-      ? "bg-destructive"
-      : status === "archived"
-        ? "bg-muted-foreground"
-        : "bg-primary";
-
-  return (
-    <div
-      className="space-y-2"
-      aria-label={`Application pipeline progress: ${formatAtsStatus(status)}`}
-    >
-      <div className="h-2.5 overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn("h-full rounded-full transition-all", terminalClass)}
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-      <div className="grid grid-cols-5 gap-1 text-[0.68rem] font-semibold uppercase tracking-wide text-muted-foreground">
-        {PIPELINE_STATUSES.map((step, index) => {
-          const isComplete = status === "rejected" || status === "archived" || index <= activeIndex;
-          return (
-            <span
-              key={step}
-              className={cn(
-                "truncate",
-                isComplete && "text-foreground",
-                step === status && status !== "new" && "text-primary",
-              )}
-            >
-              {formatAtsStatus(step)}
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 export function AdminJobsList() {
   const apiKey = useMemo(() => dashboardApiKey(), []);
   const [page, setPage] = useState(1);
@@ -205,22 +62,9 @@ export function AdminJobsList() {
   const [queryDraft, setQueryDraft] = useState("");
   const [includeInactive, setIncludeInactive] = useState(false);
   const [includeDuplicates, setIncludeDuplicates] = useState(false);
-  const [view, setView] = useState<ApplicationView>("all");
-  const [tracking, setTracking] = useState<JobTrackingState>({});
-  const [trackingHydrated, setTrackingHydrated] = useState(false);
   const [data, setData] = useState<JobListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setTracking(readTrackingState());
-    setTrackingHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!trackingHydrated || typeof window === "undefined") return;
-    window.localStorage.setItem(TRACKING_STORAGE_KEY, JSON.stringify(tracking));
-  }, [tracking, trackingHydrated]);
 
   const load = useCallback(async () => {
     if (!apiKey) {
@@ -241,6 +85,7 @@ export function AdminJobsList() {
       });
       const q = query.trim();
       if (q) params.set("q", q);
+      console.log(apiUrl(`/api/v1/jobs?${params}`), apiKey);
       const res = await fetchWithTimeout(apiUrl(`/api/v1/jobs?${params}`), {
         headers: { "X-API-Key": apiKey },
         credentials: "omit",
@@ -277,102 +122,9 @@ export function AdminJobsList() {
     }
   }, [data, page, totalPages]);
 
-  const trackedJobs = useMemo<TrackedJob[]>(() => {
-    return (data?.items ?? []).map((job) => {
-      const record = tracking[String(job.id)] ?? {};
-      return {
-        job,
-        status: record.status ?? job.ats_status,
-        notes: record.notes ?? "",
-        archivedAt: record.archivedAt,
-        updatedAt: record.updatedAt,
-      };
-    });
-  }, [data?.items, tracking]);
-
-  const visibleJobs = useMemo(() => {
-    return trackedJobs.filter((job) => {
-      if (view === "archived") return job.status === "archived";
-      if (job.status === "archived") return false;
-      if (view === "my") return hasApplicationActivity(job);
-      return true;
-    });
-  }, [trackedJobs, view]);
-
-  const viewCounts = useMemo(() => {
-    return trackedJobs.reduce(
-      (counts, job) => {
-        if (job.status === "archived") {
-          counts.archived += 1;
-          return counts;
-        }
-        counts.all += 1;
-        if (hasApplicationActivity(job)) counts.my += 1;
-        return counts;
-      },
-      { all: 0, my: 0, archived: 0 },
-    );
-  }, [trackedJobs]);
-
-  const pipelineCounts = useMemo(() => {
-    return trackedJobs.reduce(
-      (counts, job) => {
-        counts[job.status] += 1;
-        return counts;
-      },
-      {
-        new: 0,
-        shortlisted: 0,
-        applied: 0,
-        interviewing: 0,
-        offer: 0,
-        rejected: 0,
-        archived: 0,
-      } satisfies Record<JobAtsStatus, number>,
-    );
-  }, [trackedJobs]);
-
-  const upsertTracking = useCallback((job: JobListItem, updates: JobTrackingRecord) => {
-    setTracking((current) => {
-      const key = String(job.id);
-      const nextRecord: JobTrackingRecord = {
-        ...current[key],
-        ...updates,
-        updatedAt: new Date().toISOString(),
-      };
-
-      if (nextRecord.status !== "archived") {
-        delete nextRecord.archivedAt;
-      }
-
-      return {
-        ...current,
-        [key]: nextRecord,
-      };
-    });
-  }, []);
-
-  const updateStatus = useCallback(
-    (job: JobListItem, status: JobAtsStatus) => {
-      upsertTracking(job, {
-        status,
-        archivedAt: status === "archived" ? new Date().toISOString() : undefined,
-      });
-    },
-    [upsertTracking],
-  );
-
-  const updateNotes = useCallback(
-    (job: JobListItem, notes: string) => {
-      upsertTracking(job, { notes });
-    },
-    [upsertTracking],
-  );
-
   const applySearch = () => {
     setQuery(queryDraft.trim());
     setPage(1);
-    setView("all");
   };
 
   if (!apiKey) {
@@ -385,60 +137,16 @@ export function AdminJobsList() {
         <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
           NEXT_PUBLIC_DASHBOARD_API_KEY
         </code>{" "}
-        in <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">.env.local</code>{" "}
-        to match the dashboard API key configured on the server. The jobs endpoint uses the{" "}
-        <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">X-API-Key</code>{" "}
-        header (see{" "}
-        <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
-          GET /api/v1/jobs
-        </code>{" "}
-        in OpenAPI).
+        in <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">.env.local</code> to match the
+        dashboard API key configured on the server. The jobs endpoint uses the{" "}
+        <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">X-API-Key</code> header (see{" "}
+        <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">GET /api/v1/jobs</code> in OpenAPI).
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-border/80 bg-card p-4 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-foreground md:text-lg">
-              Application pipeline
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Track each role from discovery through offer, including notes and locally saved status
-              updates.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:min-w-[26rem]">
-            {(["applied", "interviewing", "offer", "rejected"] as const).map((status) => (
-              <div
-                key={status}
-                className="rounded-xl border border-border/70 bg-muted/40 px-3 py-2"
-              >
-                <div className="text-lg font-semibold tabular-nums text-foreground">
-                  {pipelineCounts[status]}
-                </div>
-                <div className="text-xs font-medium capitalize text-muted-foreground">
-                  {formatAtsStatus(status)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mt-4 grid grid-cols-5 overflow-hidden rounded-full border border-border/70 bg-muted text-[0.68rem] font-semibold uppercase tracking-wide text-muted-foreground">
-          {PIPELINE_STATUSES.map((status) => (
-            <div
-              key={status}
-              className="border-r border-border/70 px-2 py-1.5 text-center last:border-r-0"
-            >
-              <span className="tabular-nums text-foreground">{pipelineCounts[status]}</span>{" "}
-              {formatAtsStatus(status)}
-            </div>
-          ))}
-        </div>
-      </section>
-
       <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between">
         <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
           <div className="flex min-w-0 flex-1 gap-2">
@@ -461,7 +169,7 @@ export function AdminJobsList() {
               Search
             </button>
           </div>
-          <label className="flex items-center gap-2 whitespace-nowrap text-sm text-muted-foreground">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground whitespace-nowrap">
             <span>Sort</span>
             <select
               value={sort}
@@ -477,30 +185,6 @@ export function AdminJobsList() {
           </label>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex rounded-xl border border-border/80 bg-card p-1">
-            {VIEW_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={cn(
-                  "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
-                  view === option.value
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-                onClick={() => setView(option.value)}
-              >
-                {option.label}
-                <span className="ml-1 tabular-nums">
-                  {option.value === "all"
-                    ? viewCounts.all
-                    : option.value === "my"
-                      ? viewCounts.my
-                      : viewCounts.archived}
-                </span>
-              </button>
-            ))}
-          </div>
           <label className="inline-flex cursor-pointer items-center gap-2">
             <input
               type="checkbox"
@@ -546,145 +230,86 @@ export function AdminJobsList() {
         </p>
       ) : null}
 
-      <div className="rounded-2xl border border-border/80 bg-card p-3 shadow-sm md:p-4">
+      <div className="overflow-x-auto rounded-2xl border border-border/80 bg-card shadow-sm">
         {loading && !data ? (
           <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
             <Loader2 className="size-6 animate-spin motion-reduce:animate-none" aria-hidden />
             Loading jobs…
           </div>
         ) : (
-          <div className="grid gap-4 xl:grid-cols-2">
-            {visibleJobs.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border px-4 py-12 text-center text-sm text-muted-foreground xl:col-span-2">
-                {data?.items.length === 0
-                  ? "No jobs match the current filters."
-                  : view === "my"
-                    ? "No applications have been started on this page yet. Update a status or add notes to begin tracking."
-                    : view === "archived"
-                      ? "No archived applications on this page."
-                      : "No jobs match the selected view."}
-              </div>
-            ) : (
-              visibleJobs.map(({ job, status, notes, archivedAt, updatedAt }) => {
-                const notesId = `job-${job.id}-notes`;
-                return (
-                  <article
-                    key={job.id}
-                    className={cn(
-                      "flex flex-col gap-4 rounded-xl border border-border/70 bg-background p-4 shadow-sm",
-                      status === "archived" && "bg-muted/30 opacity-85",
-                    )}
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-semibold text-foreground">{job.title}</h3>
-                          <span
-                            className={cn(
-                              "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize",
-                              atsBadgeClass(status),
-                            )}
-                          >
-                            {formatAtsStatus(status)}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm font-medium text-muted-foreground">
-                          {job.company}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                          <span>{job.location ?? "Location TBD"}</span>
-                          {job.is_remote ? <span className="text-primary">Remote</span> : null}
-                          <span>{job.job_type ?? "Type TBD"}</span>
-                          {job.experience_level ? <span>{job.experience_level}</span> : null}
-                          {job.salary ? <span>{job.salary}</span> : null}
-                        </div>
-                      </div>
+          <table className="w-full min-w-[960px] text-left text-sm">
+            <thead className="border-b border-border/80 bg-muted/40 text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 font-medium">Job</th>
+                <th className="px-4 py-3 font-medium">Location</th>
+                <th className="px-4 py-3 font-medium">Type / level</th>
+                <th className="px-4 py-3 font-medium">Relevance</th>
+                <th className="px-4 py-3 font-medium">ATS</th>
+                <th className="px-4 py-3 font-medium">Active</th>
+                <th className="px-4 py-3 font-medium">Discovered</th>
+                <th className="px-4 py-3 font-medium text-right">Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.items.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
+                    No jobs match the current filters.
+                  </td>
+                </tr>
+              ) : (
+                data?.items.map((job: JobListItem) => (
+                  <tr key={job.id} className="border-b border-border/60 last:border-0">
+                    <td className="px-4 py-3 align-middle">
+                      <div className="font-medium text-foreground">{job.title}</div>
+                      <div className="text-xs text-muted-foreground">{job.company}</div>
+                      {job.salary ? (
+                        <div className="mt-0.5 text-xs text-muted-foreground">{job.salary}</div>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      <div>{job.location ?? "—"}</div>
+                      {job.is_remote ? (
+                        <span className="mt-1 inline-block text-xs text-primary">Remote</span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      <div>{job.job_type ?? "—"}</div>
+                      <div className="text-xs">{job.experience_level ?? ""}</div>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 tabular-nums text-muted-foreground">
+                      {relevanceLabel(job.shopify_relevance_score)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={cn(
+                          "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize",
+                          atsBadgeClass(job.ats_status),
+                        )}
+                      >
+                        {formatAtsStatus(job.ats_status)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{job.is_active ? "Yes" : "No"}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground tabular-nums">
+                      {formatDateTime(job.discovered_at)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
                       <a
                         href={job.apply_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex shrink-0 items-center justify-center gap-1 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+                        className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted"
                       >
                         Apply
                         <ExternalLink className="size-3.5 opacity-70" aria-hidden />
                       </a>
-                    </div>
-
-                    <PipelineProgress status={status} />
-
-                    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                      <label className="space-y-1 text-sm font-medium text-foreground">
-                        Status update
-                        <select
-                          value={status}
-                          onChange={(e) => updateStatus(job, e.target.value as JobAtsStatus)}
-                          className="min-h-10 w-full rounded-lg border border-border/80 bg-card px-3 py-2 text-sm text-foreground"
-                        >
-                          {status === "archived" ? (
-                            <option value="archived">Archived</option>
-                          ) : null}
-                          {TRACKABLE_STATUSES.map((option) => (
-                            <option key={option} value={option}>
-                              {formatAtsStatus(option)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {status === "rejected" ? (
-                          <button
-                            type="button"
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-destructive/35 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/15"
-                            onClick={() => updateStatus(job, "archived")}
-                          >
-                            <Archive className="size-3.5" aria-hidden />
-                            Archive rejected role
-                          </button>
-                        ) : null}
-                        {status === "archived" ? (
-                          <button
-                            type="button"
-                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted"
-                            onClick={() => updateStatus(job, "rejected")}
-                          >
-                            <RotateCcw className="size-3.5" aria-hidden />
-                            Restore to rejected
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <label
-                      htmlFor={notesId}
-                      className="space-y-1 text-sm font-medium text-foreground"
-                    >
-                      Notes
-                      <textarea
-                        id={notesId}
-                        value={notes}
-                        onChange={(e) => updateNotes(job, e.target.value)}
-                        placeholder="Add follow-ups, referral context, recruiter names, or next steps…"
-                        className="min-h-24 w-full resize-y rounded-lg border border-border/80 bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
-                      />
-                    </label>
-
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3 text-xs text-muted-foreground">
-                      <span>
-                        Relevance{" "}
-                        <span className="font-semibold tabular-nums text-foreground">
-                          {relevanceLabel(job.shopify_relevance_score)}
-                        </span>
-                      </span>
-                      <span>Discovered {formatDateTime(job.discovered_at)}</span>
-                      {updatedAt ? <span>Updated {formatDateTime(updatedAt)}</span> : null}
-                      {archivedAt ? <span>Archived {formatDateTime(archivedAt)}</span> : null}
-                      <span>{job.is_active ? "Active" : "Inactive"}</span>
-                    </div>
-                  </article>
-                );
-              })
-            )}
-          </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         )}
       </div>
 
@@ -696,9 +321,6 @@ export function AdminJobsList() {
             <span className="mx-1 text-muted-foreground/50">·</span>
             <span className="tabular-nums">{data.items.length}</span> on this page,{" "}
             <span className="tabular-nums">{data.total}</span> total
-            <span className="mx-1 text-muted-foreground/50">·</span>
-            <span className="tabular-nums">{visibleJobs.length}</span> shown in{" "}
-            {VIEW_OPTIONS.find((v) => v.value === view)?.label}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
