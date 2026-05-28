@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import {
   Activity,
   AlertCircle,
@@ -10,47 +9,15 @@ import {
   RefreshCw,
   XCircle,
 } from "lucide-react";
-import { getMonitorStatus } from "@/lib/scraper-api";
+import { formatShortTime, formatUptime } from "@/lib/format-date";
 import { cn } from "@/lib/utils";
-import type { MonitorStatus } from "@/types/scraper-api";
-
-function formatUptime(s: number): string {
-  if (s < 60) return `${Math.round(s)}s`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
-  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
-}
-
-function fmtTime(d: Date) {
-  return new Intl.DateTimeFormat(undefined, { timeStyle: "short" }).format(d);
-}
+import { useMonitorStatus } from "@/hooks/use-monitor-status";
 
 export function ScraperMonitorCard() {
-  const [status, setStatus] = useState<MonitorStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastFetched, setLastFetched] = useState<Date | null>(null);
-
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Local only — no external calls from the compact card
-      const data = await getMonitorStatus({ live: false });
-      setStatus(data);
-      setLastFetched(new Date());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to reach scraper service");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetch();
-    const id = setInterval(() => void fetch(), 30_000);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { status, loading, error, lastFetched, refetch } = useMonitorStatus({
+    live: false,
+    intervalMs: 30_000,
+  });
 
   const online = !error && status !== null;
   const busy = status?.busy === true;
@@ -68,14 +35,14 @@ export function ScraperMonitorCard() {
           <div>
             <h2 className="text-sm font-semibold text-foreground">System Monitor</h2>
             <p className="text-xs text-muted-foreground">
-              {lastFetched ? `Updated ${fmtTime(lastFetched)}` : "Loading…"}
+              {lastFetched ? `Updated ${formatShortTime(lastFetched)}` : "Loading…"}
               {" · "}auto‑refresh 30s
             </p>
           </div>
         </div>
         <button
           type="button"
-          onClick={() => void fetch()}
+          onClick={() => void refetch()}
           disabled={loading}
           className="inline-flex items-center gap-1.5 rounded-lg border border-border/80 bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
         >

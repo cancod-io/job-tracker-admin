@@ -10,29 +10,23 @@ import {
   RefreshCw,
   RotateCcw,
 } from "lucide-react";
-import { apiUrl } from "@/lib/api";
-import { fetchWithTimeout } from "@/lib/http";
+import { formatDateTime } from "@/lib/format-date";
+import { listJobs } from "@/lib/jobs-api";
+import {
+  PIPELINE_STATUSES,
+  TRACKABLE_STATUSES,
+  atsBadgeClass,
+  formatAtsStatus,
+  isJobAtsStatus,
+  normalizeAtsStatus,
+  statusProgress,
+} from "@/lib/job-ats";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 import type { JobAtsStatus, JobListItem, JobListResponse, JobListSort } from "@/types/job-api";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 const TRACKING_STORAGE_KEY = "shopify-job-tracker:application-progress:v1";
-const PIPELINE_STATUSES: Exclude<JobAtsStatus, "rejected" | "archived">[] = [
-  "new",
-  "shortlisted",
-  "applied",
-  "interviewing",
-  "offer",
-];
-const TRACKABLE_STATUSES: Exclude<JobAtsStatus, "archived">[] = [
-  "new",
-  "shortlisted",
-  "applied",
-  "interviewing",
-  "offer",
-  "rejected",
-];
 const VIEW_OPTIONS = [
   { value: "all", label: "All jobs" },
   { value: "my", label: "My Applications" },
@@ -58,59 +52,9 @@ type TrackedJob = {
   updatedAt?: string;
 };
 
-function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(d);
-}
-
 function relevanceLabel(score: number | null): string {
   if (score == null) return "—";
   return `${Math.round(score * 1000) / 10}%`;
-}
-
-function atsBadgeClass(status: JobAtsStatus): string {
-  switch (status) {
-    case "new":
-      return "bg-sky-500/15 text-sky-900 dark:text-sky-100 border-sky-500/30";
-    case "shortlisted":
-      return "bg-violet-500/15 text-violet-900 dark:text-violet-100 border-violet-500/30";
-    case "applied":
-      return "bg-blue-500/15 text-blue-900 dark:text-blue-100 border-blue-500/30";
-    case "interviewing":
-      return "bg-amber-500/15 text-amber-900 dark:text-amber-100 border-amber-500/30";
-    case "offer":
-      return "bg-emerald-500/15 text-emerald-900 dark:text-emerald-100 border-emerald-500/30";
-    case "rejected":
-      return "bg-destructive/10 text-destructive border-destructive/25";
-    case "archived":
-      return "bg-muted text-muted-foreground border-border";
-    default:
-      return "bg-muted text-muted-foreground border-border";
-  }
-}
-
-function formatAtsStatus(status: JobAtsStatus): string {
-  return status.replace(/_/g, " ");
-}
-
-function isJobAtsStatus(value: unknown): value is JobAtsStatus {
-  return (
-    value === "new" ||
-    value === "shortlisted" ||
-    value === "applied" ||
-    value === "interviewing" ||
-    value === "offer" ||
-    value === "rejected" ||
-    value === "archived"
-  );
-}
-
-function normalizeAtsStatus(value: unknown): JobAtsStatus {
-  return isJobAtsStatus(value) ? value : "new";
 }
 
 function readTrackingState(): JobTrackingState {
@@ -139,15 +83,6 @@ function readTrackingState(): JobTrackingState {
   } catch {
     return {};
   }
-}
-
-function statusProgress(status: JobAtsStatus): number {
-  if (status === "rejected" || status === "archived") return 100;
-
-  const index = PIPELINE_STATUSES.indexOf(status);
-  if (index <= 0) return 8;
-
-  return Math.round((index / (PIPELINE_STATUSES.length - 1)) * 100);
 }
 
 function hasApplicationActivity(job: TrackedJob): boolean {
@@ -232,31 +167,15 @@ export function AdminJobsList() {
     setError(null);
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(page),
-        page_size: String(pageSize),
+      const body = await listJobs(accessToken, {
+        page,
+        page_size: pageSize,
         sort,
-        include_inactive: String(includeInactive),
-        include_duplicates: String(includeDuplicates),
+        include_inactive: includeInactive,
+        include_duplicates: includeDuplicates,
+        q: query.trim() || undefined,
       });
-      const q = query.trim();
-      if (q) params.set("q", q);
-      const res = await fetchWithTimeout(apiUrl(`/api/v1/jobs?${params}`), {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        credentials: "omit",
-      });
-      const body = (await res.json().catch(() => ({}))) as
-        | JobListResponse
-        | { error?: { code?: string; message?: string } };
-
-      if (!res.ok) {
-        const msg =
-          "error" in body && body.error?.message
-            ? body.error.message
-            : `Request failed (${res.status})`;
-        throw new Error(msg);
-      }
-      setData(body as JobListResponse);
+      setData(body);
     } catch (e) {
       setData(null);
       setError(e instanceof Error ? e.message : "Failed to load jobs");
@@ -269,7 +188,10 @@ export function AdminJobsList() {
     void load();
   }, [load]);
 
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
+  const paginationPageSize = Math.max(1, data?.page_size ?? pageSize);
+  const paginationTotal = Math.max(0, data?.total ?? 0);
+  const currentPage = Math.max(1, data?.page ?? page);
+  const totalPages = data ? Math.max(1, Math.ceil(paginationTotal / paginationPageSize)) : 1;
 
   useEffect(() => {
     if (data && page > totalPages) {
@@ -689,11 +611,11 @@ export function AdminJobsList() {
       {data ? (
         <div className="flex flex-col gap-3 border-t border-border/60 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
-            Page <span className="tabular-nums">{data.page}</span> of{" "}
+            Page <span className="tabular-nums">{currentPage}</span> of{" "}
             <span className="tabular-nums">{totalPages}</span>
             <span className="mx-1 text-muted-foreground/50">·</span>
             <span className="tabular-nums">{data.items.length}</span> on this page,{" "}
-            <span className="tabular-nums">{data.total}</span> total
+            <span className="tabular-nums">{paginationTotal}</span> total
             <span className="mx-1 text-muted-foreground/50">·</span>
             <span className="tabular-nums">{visibleJobs.length}</span> shown in{" "}
             {VIEW_OPTIONS.find((v) => v.value === view)?.label}

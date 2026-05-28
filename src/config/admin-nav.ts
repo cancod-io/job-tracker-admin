@@ -1,5 +1,6 @@
 import {
   Briefcase,
+  Building2,
   FileText,
   LayoutDashboard,
   Terminal,
@@ -18,6 +19,7 @@ export const adminNavItems: AdminNavItem[] = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/users", label: "Users", icon: Users },
+  { href: "/companies", label: "Companies", icon: Building2 },
   { href: "/scrapers", label: "Scrapers", icon: Terminal },
   { href: "/logs", label: "Logs", icon: FileText },
 ];

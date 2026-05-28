@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /**
- * Design system (shared with public app): minimal palette, strong contrast, Inter + Open Sans.
+ * Design system (shared with public app): minimal palette, strong contrast, Inter.
  */
 @layer base {
   :root {
@@ -73,7 +73,7 @@
   }
 
   body {
-    @apply bg-background font-body text-base font-normal leading-relaxed text-foreground antialiased;
+    @apply bg-background font-sans text-base font-normal leading-relaxed text-foreground antialiased;
   }
 
   h1 {

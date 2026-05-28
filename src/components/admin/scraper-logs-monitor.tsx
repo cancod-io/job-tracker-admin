@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Activity,
   AlertCircle,
@@ -14,40 +14,30 @@ import {
   WifiOff,
   Zap,
 } from "lucide-react";
-import { getMonitorStatus } from "@/lib/scraper-api";
+import { formatShortDateTime, formatTime, formatUptime } from "@/lib/format-date";
 import { cn } from "@/lib/utils";
+import {
+  useMonitorStatus,
+  type MonitorFetchTrigger,
+} from "@/hooks/use-monitor-status";
 import type { MonitorStatus } from "@/types/scraper-api";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
+type LogTrigger = Exclude<MonitorFetchTrigger, "initial">;
+
 type LogEntry = {
   id: string;
   ts: Date;
   status: MonitorStatus;
-  trigger: "auto" | "manual" | "probe";
+  trigger: LogTrigger;
 };
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function formatUptime(s: number): string {
-  if (s < 60) return `${Math.round(s)}s`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  return `${h}h ${m}m`;
-}
-
-function fmtTime(d: Date): string {
-  return new Intl.DateTimeFormat(undefined, { timeStyle: "medium" }).format(d);
-}
-
-function fmtDateTime(d: Date): string {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "short", timeStyle: "medium" }).format(d);
-}
 
 function usagePct(used: number, total: number) {
   return total > 0 ? Math.min(100, (used / total) * 100) : 0;
@@ -89,84 +79,56 @@ function UsageBar({ used, total, color = "bg-primary" }: { used: number; total: 
 // Main component
 // ---------------------------------------------------------------------------
 
+const MAX_LOG_ENTRIES = 50;
+
 export function ScraperLogsMonitor() {
-  const [current, setCurrent]       = useState<MonitorStatus | null>(null);
-  const [log, setLog]               = useState<LogEntry[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [log, setLog] = useState<LogEntry[]>([]);
+  const [polling, setPolling] = useState(true);
   const [probeLoading, setProbeLoading] = useState(false);
-  const [error, setError]           = useState<string | null>(null);
-  const [lastFetched, setLastFetched] = useState<Date | null>(null);
-  const [polling, setPolling]       = useState(true);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const pushLog = (status: MonitorStatus, trigger: LogEntry["trigger"]) => {
-    const entry: LogEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      ts: new Date(),
-      status,
-      trigger,
-    };
-    setLog(prev => [entry, ...prev].slice(0, 50)); // keep last 50
-  };
+  const handleSuccess = useCallback(
+    (status: MonitorStatus, trigger: MonitorFetchTrigger) => {
+      const logTrigger: LogTrigger =
+        trigger === "initial" ? "manual" : (trigger as LogTrigger);
+      const entry: LogEntry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        ts: new Date(),
+        status,
+        trigger: logTrigger,
+      };
+      setLog((prev) => [entry, ...prev].slice(0, MAX_LOG_ENTRIES));
+    },
+    [],
+  );
 
-  // ── Fetch local status (no external calls) ──
-  const fetchLocal = useCallback(async (trigger: LogEntry["trigger"] = "auto") => {
-    if (trigger === "manual") setLoading(true);
-    setError(null);
-    try {
-      const data = await getMonitorStatus({ live: true }); // live SerpAPI data, no RapidAPI probe
-      setCurrent(data);
-      setLastFetched(new Date());
-      pushLog(data, trigger);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Cannot reach scraper service");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const {
+    status: current,
+    loading,
+    error,
+    lastFetched,
+    refetch,
+  } = useMonitorStatus({
+    live: true,
+    intervalMs: 30_000,
+    pollingEnabled: polling,
+    onSuccess: handleSuccess,
+  });
 
-  // ── Probe RapidAPI (costs 1 credit) ──
   const probeRapidApi = async () => {
     setProbeLoading(true);
     try {
-      const data = await getMonitorStatus({ live: true, rapidapi_probe: true });
-      setCurrent(data);
-      setLastFetched(new Date());
-      pushLog(data, "probe");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Probe failed");
+      await refetch({ rapidapiProbe: true });
     } finally {
       setProbeLoading(false);
     }
   };
 
-  // ── Polling ──
-  const startPolling = useCallback(() => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(() => void fetchLocal("auto"), 30_000);
-  }, [fetchLocal]);
-
-  useEffect(() => {
-    void fetchLocal("manual");
-    startPolling();
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!polling) {
-      if (pollRef.current) clearInterval(pollRef.current);
-    } else {
-      startPolling();
-    }
-  }, [polling, startPolling]);
-
-  const online  = !error && current !== null;
-  const busy    = current?.busy === true;
+  const busy = current?.busy === true;
+  const online = !error && current !== null;
   const serpapi = current?.serpapi;
   const rapidapi = current?.rapidapi;
   const serpAccount = serpapi?.account;
-  const rapidQuota  = rapidapi?.quota?.plan;
+  const rapidQuota = rapidapi?.quota?.plan;
 
   return (
     <div className="space-y-6">
@@ -186,7 +148,7 @@ export function ScraperLogsMonitor() {
           </span>
           {lastFetched && (
             <span className="text-xs text-muted-foreground">
-              · last checked {fmtTime(lastFetched)}
+              · last checked {formatTime(lastFetched)}
             </span>
           )}
         </div>
@@ -195,7 +157,7 @@ export function ScraperLogsMonitor() {
           {/* Polling toggle */}
           <button
             type="button"
-            onClick={() => setPolling(p => !p)}
+            onClick={() => setPolling((p) => !p)}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
               polling
@@ -210,7 +172,7 @@ export function ScraperLogsMonitor() {
           {/* Manual refresh */}
           <button
             type="button"
-            onClick={() => void fetchLocal("manual")}
+            onClick={() => void refetch()}
             disabled={loading || probeLoading}
             className="inline-flex items-center gap-1.5 rounded-lg border border-border/80 bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
           >
@@ -492,7 +454,7 @@ export function ScraperLogsMonitor() {
                   <p className="text-xs text-muted-foreground">
                     Last {log.length} check{log.length !== 1 ? "s" : ""}
                     {" · "}auto-polls every 30s
-                    {" · "}max 50 entries
+                    {" · "}max {MAX_LOG_ENTRIES} entries
                   </p>
                 </div>
               </div>
@@ -543,7 +505,7 @@ export function ScraperLogsMonitor() {
                           )}
                         >
                           <td className="whitespace-nowrap px-4 py-2.5 tabular-nums text-muted-foreground">
-                            {fmtDateTime(entry.ts)}
+                            {formatShortDateTime(entry.ts)}
                           </td>
                           <td className="px-4 py-2.5">
                             <TriggerBadge trigger={entry.trigger} />
@@ -621,8 +583,8 @@ function StatBox({ label, indicator, children }: {
   );
 }
 
-function TriggerBadge({ trigger }: { trigger: LogEntry["trigger"] }) {
-  const map: Record<LogEntry["trigger"], { label: string; cls: string }> = {
+function TriggerBadge({ trigger }: { trigger: LogTrigger }) {
+  const map: Record<LogTrigger, { label: string; cls: string }> = {
     auto:   { label: "Auto",   cls: "border-border/60 bg-muted/40 text-muted-foreground" },
     manual: { label: "Manual", cls: "border-primary/30 bg-primary/10 text-primary" },
     probe:  { label: "Probe",  cls: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300" },

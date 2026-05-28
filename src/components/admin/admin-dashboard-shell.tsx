@@ -14,14 +14,14 @@ export function AdminDashboardShell({ children }: { children: ReactNode }) {
         aria-hidden
       />
       <AdminSidebar mobileOpen={mobileNavOpen} onMobileClose={() => setMobileNavOpen(false)} />
-      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col md:ml-64">
         <AdminTopBar onMenuClick={() => setMobileNavOpen(true)} />
         <main
           id="main-content"
           tabIndex={-1}
-          className="flex-1 scroll-mt-0 outline-none focus:outline-none md:px-6 md:pb-8 md:pt-3"
+          className="flex-1 scroll-mt-0 outline-none focus:outline-none"
         >
-          <div className="mx-auto max-w-[1200px] px-3 py-4 sm:px-0 sm:py-6">{children}</div>
+          <div className="w-full px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:px-10">{children}</div>
         </main>
       </div>
     </div>
