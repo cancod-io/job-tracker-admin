@@ -5,8 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShieldCheck, X } from "lucide-react";
 import { ADMIN_PENDING_APPROVAL_CHANGED_EVENT } from "@/lib/admin-sync-events";
-import { apiUrl } from "@/lib/api";
-import { fetchWithTimeout } from "@/lib/http";
+import { fetchAuthedJson } from "@/lib/fetch-authed";
 import { adminNavItems } from "@/config/admin-nav";
 import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
@@ -32,12 +31,10 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
         approval_status: "pending",
         page_size: "1",
       });
-      const res = await fetchWithTimeout(apiUrl(`/api/v1/admin/users?${q}`), {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        credentials: "omit",
-      });
-      if (!res.ok) return;
-      const body = (await res.json()) as PendingUsersCountResponse;
+      const body = await fetchAuthedJson<PendingUsersCountResponse>(
+        accessToken,
+        `/api/v1/admin/users?${q}`,
+      );
       if (typeof body.total === "number") setPendingApprovalCount(body.total);
     } catch {
       /* leave prior count */
@@ -63,7 +60,7 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
     );
 
   const nav = (
-    <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Admin">
+    <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3" aria-label="Admin">
       <div className="mb-2 flex items-center justify-between px-1 md:block">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Menu</p>
         <button
@@ -138,7 +135,7 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
       />
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[min(17.5rem,88vw)] flex-col border-r border-border/80 bg-card/95 shadow-2xl backdrop-blur-xl transition-transform duration-200 ease-out motion-reduce:transition-none md:static md:z-0 md:w-64 md:translate-x-0 md:shadow-none",
+          "fixed inset-y-0 left-0 z-50 flex h-screen w-[min(17.5rem,88vw)] flex-col overflow-hidden border-r border-border/80 bg-card/95 shadow-2xl backdrop-blur-xl transition-transform duration-200 ease-out motion-reduce:transition-none md:w-64 md:shadow-none",
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         )}
         aria-label="Admin sidebar"

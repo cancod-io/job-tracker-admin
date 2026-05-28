@@ -29,6 +29,7 @@ export type JobListItem = {
   created_at: string;
 };
 
+/** Normalized list payload for admin UI (derived from API `limit` / `offset`). */
 export type JobListResponse = {
   items: JobListItem[];
   total: number;

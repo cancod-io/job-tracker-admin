@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Inter, Open_Sans } from "next/font/google";
+import { Inter } from "next/font/google";
 import { themeInlineScript } from "@/lib/theme";
 import { AuthProvider } from "@/providers/auth-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
@@ -9,13 +9,7 @@ import "./globals.css";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
-  weight: ["500", "600", "700"],
-});
-
-const openSans = Open_Sans({
-  subsets: ["latin"],
-  variable: "--font-body",
-  weight: ["400", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -36,7 +30,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeInlineScript() }} />
       </head>
       <body
-        className={`${inter.variable} ${openSans.variable} min-h-screen bg-background antialiased`}
+        className={`${inter.variable} min-h-screen bg-background font-sans antialiased`}
       >
         <a href="#main-content" className="skip-link">
           Skip to main content

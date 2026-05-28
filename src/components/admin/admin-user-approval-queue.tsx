@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import { ADMIN_PENDING_APPROVAL_CHANGED_EVENT } from "@/lib/admin-sync-events";
-import { apiUrl } from "@/lib/api";
-import { fetchWithTimeout } from "@/lib/http";
+import { fetchAuthedJson } from "@/lib/fetch-authed";
+import { formatDateTime } from "@/lib/format-date";
 import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
 import type { UserApprovalStatus } from "@/types/auth";
@@ -39,15 +39,6 @@ function approvalLabel(status: UserApprovalStatus): string {
   }
 }
 
-function formatCreatedAt(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(d);
-}
-
 function badgeClass(status: UserApprovalStatus): string {
   switch (status) {
     case "pending":
@@ -80,15 +71,8 @@ export function AdminUserApprovalQueue() {
     try {
       const q =
         filter === "all" ? "" : `?approval_status=${encodeURIComponent(filter)}`;
-      const res = await fetchWithTimeout(apiUrl(`/api/v1/admin/users${q}`), {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        credentials: "omit",
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
-        throw new Error(body.error?.message ?? `Request failed (${res.status})`);
-      }
-      setData((await res.json()) as ListResponse);
+      const body = await fetchAuthedJson<ListResponse>(accessToken, `/api/v1/admin/users${q}`);
+      setData(body);
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent(ADMIN_PENDING_APPROVAL_CHANGED_EVENT));
       }
@@ -114,20 +98,10 @@ export function AdminUserApprovalQueue() {
     setError(null);
     setSuccess(null);
     try {
-      const res = await fetchWithTimeout(apiUrl(`/api/v1/admin/users/${userId}/approval`), {
+      await fetchAuthedJson<unknown>(accessToken, `/api/v1/admin/users/${userId}/approval`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ approval_status }),
-        credentials: "omit",
+        body: { approval_status },
       });
-
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
-        throw new Error(body.error?.message ?? `Update failed (${res.status})`);
-      }
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Update failed");
@@ -149,15 +123,9 @@ export function AdminUserApprovalQueue() {
     setError(null);
     setSuccess(null);
     try {
-      const res = await fetchWithTimeout(apiUrl(`/api/v1/admin/users/${userId}/reset-password`), {
+      await fetchAuthedJson<unknown>(accessToken, `/api/v1/admin/users/${userId}/reset-password`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}` },
-        credentials: "omit",
       });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
-        throw new Error(body.error?.message ?? `Password reset failed (${res.status})`);
-      }
       setSuccess(`Password reset for ${email}.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Password reset failed");
@@ -276,7 +244,7 @@ export function AdminUserApprovalQueue() {
                       <div className="text-xs text-muted-foreground">{u.email}</div>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-muted-foreground tabular-nums">
-                      {formatCreatedAt(u.created_at)}
+                      {formatDateTime(u.created_at)}
                     </td>
                     <td className="px-4 py-3 capitalize text-muted-foreground">{u.role}</td>
                     <td className="px-4 py-3">

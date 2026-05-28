@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 const SEGMENT_LABELS: Record<string, string> = {
   jobs: "Jobs",
   users: "Users",
+  companies: "Companies",
   scrapers: "Scrapers",
   logs: "Logs",
   login: "Sign in",
