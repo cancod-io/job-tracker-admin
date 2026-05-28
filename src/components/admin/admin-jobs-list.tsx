@@ -13,6 +13,7 @@ import {
 import { apiUrl } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/http";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/providers/auth-provider";
 import type { JobAtsStatus, JobListItem, JobListResponse, JobListSort } from "@/types/job-api";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
@@ -56,11 +57,6 @@ type TrackedJob = {
   archivedAt?: string;
   updatedAt?: string;
 };
-
-function dashboardApiKey(): string | null {
-  const k = process.env.NEXT_PUBLIC_DASHBOARD_API_KEY?.trim();
-  return k ? k : null;
-}
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
@@ -111,6 +107,10 @@ function isJobAtsStatus(value: unknown): value is JobAtsStatus {
     value === "rejected" ||
     value === "archived"
   );
+}
+
+function normalizeAtsStatus(value: unknown): JobAtsStatus {
+  return isJobAtsStatus(value) ? value : "new";
 }
 
 function readTrackingState(): JobTrackingState {
@@ -197,7 +197,7 @@ function PipelineProgress({ status }: { status: JobAtsStatus }) {
 }
 
 export function AdminJobsList() {
-  const apiKey = useMemo(() => dashboardApiKey(), []);
+  const { accessToken } = useAuth();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(20);
   const [sort, setSort] = useState<JobListSort>("relevance");
@@ -223,7 +223,7 @@ export function AdminJobsList() {
   }, [tracking, trackingHydrated]);
 
   const load = useCallback(async () => {
-    if (!apiKey) {
+    if (!accessToken) {
       setData(null);
       setError(null);
       setLoading(false);
@@ -242,7 +242,7 @@ export function AdminJobsList() {
       const q = query.trim();
       if (q) params.set("q", q);
       const res = await fetchWithTimeout(apiUrl(`/api/v1/jobs?${params}`), {
-        headers: { "X-API-Key": apiKey },
+        headers: { Authorization: `Bearer ${accessToken}` },
         credentials: "omit",
       });
       const body = (await res.json().catch(() => ({}))) as
@@ -263,7 +263,7 @@ export function AdminJobsList() {
     } finally {
       setLoading(false);
     }
-  }, [apiKey, page, pageSize, sort, query, includeInactive, includeDuplicates]);
+  }, [accessToken, page, pageSize, sort, query, includeInactive, includeDuplicates]);
 
   useEffect(() => {
     void load();
@@ -280,9 +280,10 @@ export function AdminJobsList() {
   const trackedJobs = useMemo<TrackedJob[]>(() => {
     return (data?.items ?? []).map((job) => {
       const record = tracking[String(job.id)] ?? {};
+      const sourceStatus = normalizeAtsStatus(job.ats_status);
       return {
         job,
-        status: record.status ?? job.ats_status,
+        status: record.status ?? sourceStatus,
         notes: record.notes ?? "",
         archivedAt: record.archivedAt,
         updatedAt: record.updatedAt,
@@ -375,19 +376,16 @@ export function AdminJobsList() {
     setView("all");
   };
 
-  if (!apiKey) {
+  if (!accessToken) {
     return (
       <div
         className="rounded-2xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100"
         role="status"
       >
-        To load jobs, set{" "}
+        Sign in to load jobs. The jobs endpoint uses the{" "}
         <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
-          NEXT_PUBLIC_DASHBOARD_API_KEY
+          Authorization: Bearer &lt;token&gt;
         </code>{" "}
-        in <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">.env.local</code>{" "}
-        to match the dashboard API key configured on the server. The jobs endpoint uses the{" "}
-        <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">X-API-Key</code>{" "}
         header (see{" "}
         <code className="rounded bg-muted px-1 py-0.5 text-xs text-foreground">
           GET /api/v1/jobs
