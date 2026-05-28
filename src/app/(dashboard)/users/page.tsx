@@ -4,7 +4,7 @@ import { AdminUserApprovalQueue } from "@/components/admin/admin-user-approval-q
 export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
-      <header>
+      <header className="rounded-2xl border border-border/80 bg-card/80 p-5 shadow-sm backdrop-blur-sm md:p-6">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">Users</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
           Review new registrations and set approval status. Only approved users can sign in and use

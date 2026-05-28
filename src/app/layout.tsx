@@ -20,10 +20,13 @@ const openSans = Open_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Admin · Shopify Job Tracker",
+    default: "Admin · TrackCod",
     template: "%s · Admin",
   },
   description: "Manage scraped jobs, users, and application data.",
+  icons: {
+    icon: "/icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -42,7 +45,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <AuthProvider>
             <div className="relative min-h-screen">
               <div
-                className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-primary/[0.06] to-transparent md:h-56"
+                className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-primary/[0.07] to-transparent md:h-64"
                 aria-hidden
               />
               <div className="relative">{children}</div>

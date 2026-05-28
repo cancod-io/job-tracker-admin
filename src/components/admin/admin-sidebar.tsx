@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PanelLeftClose, X } from "lucide-react";
+import { ShieldCheck, X } from "lucide-react";
 import { ADMIN_PENDING_APPROVAL_CHANGED_EVENT } from "@/lib/admin-sync-events";
 import { apiUrl } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/http";
@@ -56,10 +56,10 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
 
   const linkClass = (active: boolean) =>
     cn(
-      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200 motion-reduce:transition-none",
+      "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 motion-reduce:transition-none",
       active
-        ? "bg-primary text-primary-foreground shadow-sm"
-        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+        : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
     );
 
   const nav = (
@@ -75,7 +75,7 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
           <X className="size-5" />
         </button>
       </div>
-      <ul className="space-y-0.5">
+      <ul className="space-y-1">
         {adminNavItems.map((item) => {
           const active =
             item.href === "/"
@@ -96,7 +96,13 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
                 aria-current={active ? "page" : undefined}
               >
                 <span className="flex min-w-0 flex-1 items-center gap-3">
-                  <Icon className="size-4 shrink-0 opacity-90" aria-hidden />
+                  <Icon
+                    className={cn(
+                      "size-4 shrink-0 opacity-90 transition-transform duration-200",
+                      !active && "group-hover:scale-105",
+                    )}
+                    aria-hidden
+                  />
                   <span className="truncate">{item.label}</span>
                 </span>
                 {showPendingBadge ? (
@@ -132,19 +138,34 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
       />
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[min(17rem,88vw)] flex-col border-r border-border/80 bg-card shadow-lg transition-transform duration-200 ease-out motion-reduce:transition-none md:static md:z-0 md:w-56 md:translate-x-0 md:shadow-none",
+          "fixed inset-y-0 left-0 z-50 flex w-[min(17.5rem,88vw)] flex-col border-r border-border/80 bg-card/95 shadow-2xl backdrop-blur-xl transition-transform duration-200 ease-out motion-reduce:transition-none md:static md:z-0 md:w-64 md:translate-x-0 md:shadow-none",
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         )}
         aria-label="Admin sidebar"
       >
-        <div className="flex h-14 shrink-0 items-center gap-2 border-b border-border/80 px-4 md:h-16">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <PanelLeftClose className="size-5" aria-hidden />
+        <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/80 px-4">
+          <Link href="/" className="group flex min-w-0 items-center gap-2.5" onClick={onMobileClose}>
+            <span className="relative flex min-w-0 items-center">
+              <img
+                src="/light-logo.png"
+                alt="TrackCod"
+                width={220}
+                height={56}
+                className="w-auto object-contain object-left dark:hidden"
+              />
+              <img
+                src="/dark-logo.png"
+                alt="TrackCod"
+                width={220}
+                height={56}
+                className="hidden w-auto object-contain object-left dark:block"
+              />
+            </span>
+          </Link>
+          <span className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
+            <ShieldCheck className="size-3.5" aria-hidden />
+            Admin
           </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-foreground">Job Tracker</p>
-            <p className="truncate text-xs text-muted-foreground">Admin</p>
-          </div>
         </div>
         {nav}
       </aside>

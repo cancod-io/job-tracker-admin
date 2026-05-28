@@ -29,13 +29,13 @@ export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
 
   return (
     <header
-      className="sticky top-0 z-30 shrink-0 border-b border-border/80 bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/80"
+      className="sticky top-0 z-30 shrink-0 border-b border-border/80 bg-background/75 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70"
       role="banner"
     >
       <div className="flex h-14 items-center gap-3 px-3 md:h-16 md:px-5">
         <button
           type="button"
-          className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground shadow-sm transition-colors hover:bg-muted md:hidden"
+          className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card/90 text-foreground shadow-sm transition-colors hover:bg-muted md:hidden"
           onClick={onMenuClick}
           aria-label="Open navigation menu"
         >
@@ -53,7 +53,7 @@ export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
           <button
             type="button"
             className={cn(
-              "inline-flex max-w-[12rem] items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-2 text-left text-sm shadow-sm transition-colors hover:bg-muted md:max-w-xs",
+              "inline-flex max-w-[12rem] items-center gap-2 rounded-xl border border-border bg-card/90 px-2.5 py-2 text-left text-sm shadow-sm transition-colors hover:bg-muted md:max-w-xs",
               menuOpen && "bg-muted",
             )}
             onClick={() => setMenuOpen((o) => !o)}
@@ -74,7 +74,7 @@ export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
 
           {menuOpen ? (
             <div
-              className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border border-border bg-card py-1 shadow-lg"
+              className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-border bg-card py-1 shadow-xl"
               role="menu"
               aria-orientation="vertical"
             >

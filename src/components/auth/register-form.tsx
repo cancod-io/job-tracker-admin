@@ -4,6 +4,10 @@ import { Suspense, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import {
+  MIN_PASSWORD_LENGTH,
+  PasswordFieldsGroup,
+} from "@/components/auth/password-fields-group";
 import { useAuth } from "@/providers/auth-provider";
 
 function RegisterFormInner() {
@@ -16,6 +20,7 @@ function RegisterFormInner() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPasswordErrors, setShowPasswordErrors] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
@@ -29,8 +34,8 @@ function RegisterFormInner() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (password !== confirm) {
-      setError("Passwords do not match.");
+    setShowPasswordErrors(true);
+    if (password.length < MIN_PASSWORD_LENGTH || password !== confirm) {
       return;
     }
     setSubmitting(true);
@@ -142,42 +147,14 @@ function RegisterFormInner() {
             disabled={submitting}
           />
         </div>
-        <div className="space-y-2">
-          <label htmlFor="admin-reg-password" className="text-sm font-medium text-foreground">
-            Password
-          </label>
-          <input
-            id="admin-reg-password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={8}
-            maxLength={128}
-            value={password}
-            onChange={(ev) => setPassword(ev.target.value)}
-            className="form-control w-full"
-            disabled={submitting}
-          />
-          <p className="text-xs text-muted-foreground">At least 8 characters.</p>
-        </div>
-        <div className="space-y-2">
-          <label htmlFor="admin-reg-confirm" className="text-sm font-medium text-foreground">
-            Confirm password
-          </label>
-          <input
-            id="admin-reg-confirm"
-            name="confirm_password"
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={8}
-            value={confirm}
-            onChange={(ev) => setConfirm(ev.target.value)}
-            className="form-control w-full"
-            disabled={submitting}
-          />
-        </div>
+        <PasswordFieldsGroup
+          password={password}
+          confirm={confirm}
+          onPasswordChange={setPassword}
+          onConfirmChange={setConfirm}
+          disabled={submitting}
+          showAllErrors={showPasswordErrors}
+        />
 
         {error ? (
           <p

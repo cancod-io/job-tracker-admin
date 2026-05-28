@@ -7,19 +7,19 @@
  */
 @layer base {
   :root {
-    --background: 210 17% 98%;
+    --background: 0 0% 99.22%;
     --foreground: 210 11% 15%;
 
-    --card: 0 0% 100%;
+    --card: 0 0% 99.22%;
     --card-foreground: 210 11% 15%;
 
     --primary: 211 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 14% 93%;
+    --secondary: 0 0% 99.22%;
     --secondary-foreground: 210 9% 31%;
 
-    --muted: 210 14% 96%;
+    --muted: 0 0% 99.22%;
     --muted-foreground: 208 7% 46%;
 
     --accent: 45 100% 51%;
@@ -29,26 +29,26 @@
     --destructive-foreground: 0 0% 100%;
 
     --border: 214 14% 83%;
-    --input: 214 14% 83%;
+    --input: 210 20% 98%;
     --ring: 211 100% 50%;
 
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222 24% 8%;
+    --background: 220 90% 3.9%;
     --foreground: 210 20% 96%;
 
-    --card: 222 20% 12%;
+    --card: 220 90% 3.9%;
     --card-foreground: 210 20% 96%;
 
     --primary: 211 96% 62%;
     --primary-foreground: 222 47% 11%;
 
-    --secondary: 217 19% 20%;
+    --secondary: 220 90% 3.9%;
     --secondary-foreground: 210 20% 92%;
 
-    --muted: 217 19% 18%;
+    --muted: 220 90% 3.9%;
     --muted-foreground: 215 14% 68%;
 
     --accent: 45 96% 55%;
@@ -57,8 +57,8 @@
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 217 16% 22%;
-    --input: 217 16% 22%;
+    --border: 217 16% 28%;
+    --input: 217 28% 12%;
     --ring: 211 96% 62%;
   }
 }
@@ -113,6 +113,6 @@
   }
 
   .form-control {
-    @apply min-h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition-[color,box-shadow,border-color] duration-200 placeholder:text-muted-foreground hover:border-muted-foreground/30 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none md:w-auto;
+    @apply min-h-11 w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground shadow-sm transition-[color,box-shadow,border-color] duration-200 placeholder:text-muted-foreground/80 hover:border-muted-foreground/45 focus-visible:border-ring focus-visible:shadow-[0_0_0_3px_hsl(var(--ring)/0.18)] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none md:w-auto;
   }
 }

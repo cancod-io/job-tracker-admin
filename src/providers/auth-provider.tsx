@@ -9,12 +9,21 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { apiErrorCode, apiErrorMessage } from "@/lib/auth-errors";
+import { assertUserApproved } from "@/lib/auth-approval";
+import {
+  apiErrorMessage,
+  createLoginAuthError,
+  resolveLoginError,
+} from "@/lib/auth-errors";
+import {
+  clearStoredTokens,
+  SESSION_EXPIRED_EVENT,
+  setStoredTokens,
+  TOKEN_STORAGE_KEY,
+} from "@/lib/auth-token";
 import { apiUrl } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/http";
 import type { AuthUser, RegisterResult, TokenResponse } from "@/types/auth";
-
-const TOKEN_STORAGE_KEY = "sjt_admin_access_token";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -53,9 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   const logout = useCallback(() => {
-    if (typeof window !== "undefined") {
-      window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
-    }
+    clearStoredTokens();
     setAccessToken(null);
     setUser(null);
     setStatus("unauthenticated");
@@ -72,11 +79,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     try {
       const me = await fetchMe(token);
+      assertUserApproved(me);
       setAccessToken(token);
       setUser(me);
       setStatus("authenticated");
     } catch {
-      window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+      clearStoredTokens();
       setAccessToken(null);
       setUser(null);
       setStatus("unauthenticated");
@@ -86,6 +94,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refreshSession();
   }, [refreshSession]);
+
+  useEffect(() => {
+    const onSessionExpired = () => logout();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
+  }, [logout]);
 
   const login = useCallback(async (email: string, password: string) => {
     let res: Response;
@@ -104,24 +118,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw e;
     }
     if (!res.ok) {
-      const err = (await res.json().catch(() => ({}))) as {
-        error?: { message?: string; code?: string };
-        detail?: unknown;
-      };
-      const message =
-        apiErrorMessage(err) ??
-        (typeof err.detail === "string" ? err.detail : null) ??
-        "Sign-in failed";
-      const e = new Error(message) as Error & { code?: string };
-      const code = apiErrorCode(err);
-      if (code) e.code = code;
-      throw e;
+      const err = (await res.json().catch(() => ({}))) as Parameters<typeof resolveLoginError>[0];
+      throw createLoginAuthError(resolveLoginError(err));
     }
     const data = (await res.json()) as TokenResponse;
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(TOKEN_STORAGE_KEY, data.access_token);
-    }
     const me = await fetchMe(data.access_token);
+    try {
+      assertUserApproved(me);
+    } catch (e) {
+      clearStoredTokens();
+      throw e;
+    }
+    setStoredTokens(data.access_token, data.refresh_token);
     setAccessToken(data.access_token);
     setUser(me);
     setStatus("authenticated");

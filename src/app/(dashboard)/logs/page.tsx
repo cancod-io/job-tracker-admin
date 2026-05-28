@@ -5,7 +5,7 @@ export default function AdminLogsPage() {
   return (
     <div className="space-y-6">
       {/* ── Page header ── */}
-      <header>
+      <header className="rounded-2xl border border-border/80 bg-card/80 p-5 shadow-sm backdrop-blur-sm md:p-6">
         <div className="flex items-center gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <FileText className="size-5" aria-hidden />

@@ -4,8 +4,19 @@ import { Suspense, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import {
+  isLoginAuthError,
+  LOGIN_ERROR_CODES,
+  type LoginField,
+} from "@/lib/auth-errors";
 import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
+
+type InvalidFields = Partial<Record<LoginField, true>>;
+
+function emptyInvalidFields(): InvalidFields {
+  return {};
+}
 
 function LoginFormInner() {
   const { status, login } = useAuth();
@@ -17,6 +28,7 @@ function LoginFormInner() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [invalidFields, setInvalidFields] = useState<InvalidFields>(emptyInvalidFields);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -29,15 +41,32 @@ function LoginFormInner() {
     e.preventDefault();
     setError(null);
     setErrorCode(null);
+    setInvalidFields(emptyInvalidFields());
+    if (!email.trim() || !password) {
+      setError("Email or password is missing");
+      setErrorCode(LOGIN_ERROR_CODES.LOGIN_FIELDS_MISSING);
+      setInvalidFields({ email: true, password: true });
+      return;
+    }
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       router.replace(nextPath.startsWith("/") ? nextPath : `/${nextPath}`);
     } catch (err) {
-      const code =
-        err instanceof Error ? (err as Error & { code?: string }).code ?? null : null;
-      setErrorCode(code);
-      setError(err instanceof Error ? err.message : "Sign-in failed");
+      if (isLoginAuthError(err)) {
+        const code = err.code ?? null;
+        setErrorCode(code);
+        setError(err.message);
+        const fields = err.fields ?? [];
+        if (fields.length > 0) {
+          const next: InvalidFields = {};
+          for (const field of fields) next[field] = true;
+          setInvalidFields(next);
+        }
+      } else {
+        setErrorCode(null);
+        setError(err instanceof Error ? err.message : "Sign-in failed");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -84,9 +113,19 @@ function LoginFormInner() {
             autoComplete="email"
             required
             value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
+            onChange={(ev) => {
+              setEmail(ev.target.value);
+              if (invalidFields.email) {
+                setInvalidFields((prev) => {
+                  const next = { ...prev };
+                  delete next.email;
+                  return next;
+                });
+              }
+            }}
             className="form-control w-full"
             disabled={submitting}
+            aria-invalid={invalidFields.email ? true : undefined}
           />
         </div>
         <div className="space-y-2">
@@ -101,9 +140,19 @@ function LoginFormInner() {
             required
             minLength={8}
             value={password}
-            onChange={(ev) => setPassword(ev.target.value)}
+            onChange={(ev) => {
+              setPassword(ev.target.value);
+              if (invalidFields.password) {
+                setInvalidFields((prev) => {
+                  const next = { ...prev };
+                  delete next.password;
+                  return next;
+                });
+              }
+            }}
             className="form-control w-full"
             disabled={submitting}
+            aria-invalid={invalidFields.password ? true : undefined}
           />
         </div>
 

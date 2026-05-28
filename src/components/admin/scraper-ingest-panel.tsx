@@ -197,7 +197,7 @@ export function ScraperIngestPanel() {
         setIngestState({ phase: "checking", provider });
         try {
           // Give the service a moment to update its busy flag
-          await new Promise(r => setTimeout(r, 1_500));
+          // await new Promise(r => setTimeout(r, 1_500));
           const mon = await getMonitorStatus({ live: false });
           if (mon.busy) {
             // Ingest IS running in the background
