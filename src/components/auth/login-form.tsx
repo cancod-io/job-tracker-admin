@@ -64,12 +64,8 @@ function LoginFormInner() {
   return (
     <div className="w-full max-w-md space-y-8">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Admin sign in v1 - 0.1</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Use the same account as the API (
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">/api/v1/auth</code>
-          ).
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Admin sign in</h1>
+
       </div>
 
       <form
@@ -152,16 +148,6 @@ function LoginFormInner() {
         >
           Register
         </Link>
-      </p>
-
-      <p className="text-center text-xs text-muted-foreground">
-        Public job board:{" "}
-        <a
-          href={process.env.NEXT_PUBLIC_USER_APP_URL ?? "http://localhost:3000"}
-          className="font-medium text-primary underline-offset-4 hover:underline"
-        >
-          Open main app
-        </a>
       </p>
     </div>
   );

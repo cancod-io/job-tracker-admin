@@ -2,7 +2,7 @@ import {
   Briefcase,
   FileText,
   LayoutDashboard,
-  RefreshCw,
+  Terminal,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -18,6 +18,6 @@ export const adminNavItems: AdminNavItem[] = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/users", label: "Users", icon: Users },
-  { href: "/scrapers", label: "Scrapers", icon: RefreshCw },
+  { href: "/scrapers", label: "Scrapers", icon: Terminal },
   { href: "/logs", label: "Logs", icon: FileText },
 ];

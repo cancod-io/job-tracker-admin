@@ -70,10 +70,12 @@ export function AdminUserApprovalQueue() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionUserId, setActionUserId] = useState<number | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!accessToken) return;
     setError(null);
+    setSuccess(null);
     setLoading(true);
     try {
       const q =
@@ -110,6 +112,7 @@ export function AdminUserApprovalQueue() {
     }
     setActionUserId(userId);
     setError(null);
+    setSuccess(null);
     try {
       const res = await fetchWithTimeout(apiUrl(`/api/v1/admin/users/${userId}/approval`), {
         method: "PATCH",
@@ -128,6 +131,36 @@ export function AdminUserApprovalQueue() {
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Update failed");
+    } finally {
+      setActionUserId(null);
+    }
+  };
+
+  const resetPassword = async (userId: number, email: string) => {
+    if (!accessToken) return;
+    if (
+      !window.confirm(
+        `Reset the login password for ${email} to the configured default? The user will need to sign in with that password.`,
+      )
+    ) {
+      return;
+    }
+    setActionUserId(userId);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetchWithTimeout(apiUrl(`/api/v1/admin/users/${userId}/reset-password`), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        credentials: "omit",
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
+        throw new Error(body.error?.message ?? `Password reset failed (${res.status})`);
+      }
+      setSuccess(`Password reset for ${email}.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Password reset failed");
     } finally {
       setActionUserId(null);
     }
@@ -183,6 +216,15 @@ export function AdminUserApprovalQueue() {
           role="alert"
         >
           {error}
+        </p>
+      ) : null}
+
+      {success ? (
+        <p
+          className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200"
+          role="status"
+        >
+          {success}
         </p>
       ) : null}
 
@@ -276,6 +318,14 @@ export function AdminUserApprovalQueue() {
                             Reject
                           </button>
                         ) : null}
+                        <button
+                          type="button"
+                          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-500/20 disabled:opacity-50 dark:text-amber-100"
+                          disabled={actionUserId === u.id}
+                          onClick={() => void resetPassword(u.id, u.email)}
+                        >
+                          Reset password
+                        </button>
                       </div>
                     </td>
                   </tr>
