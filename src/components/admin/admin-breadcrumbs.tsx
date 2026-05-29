@@ -9,6 +9,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   jobs: "Jobs",
   users: "Users",
   companies: "Companies",
+  "career-urls": "Career URLs",
   scrapers: "Scrapers",
   logs: "Logs",
   login: "Sign in",

@@ -60,8 +60,23 @@ function normalizeCompany(raw: Partial<Company> & { id: number }): Company {
   };
 }
 
+type RawCompanyListResponse = {
+  items?: unknown;
+  total?: unknown;
+  page?: unknown;
+  page_size?: unknown;
+};
+
+function isRawCompany(value: unknown): value is Partial<Company> & { id: number } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { id?: unknown }).id === "number"
+  );
+}
+
 function normalizeCompanyListResponse(
-  raw: Partial<CompanyListResponse>,
+  raw: RawCompanyListResponse,
   requestedPage: number,
   requestedPageSize: number,
 ): CompanyListResponse {
@@ -69,9 +84,7 @@ function normalizeCompanyListResponse(
   const page = positiveInt(raw.page, requestedPage);
   const total = nonNegativeInt(raw.total, 0);
   const items = Array.isArray(raw.items)
-    ? raw.items
-        .filter((item): item is Partial<Company> & { id: number } => typeof item?.id === "number")
-        .map(normalizeCompany)
+    ? (raw.items as unknown[]).filter(isRawCompany).map(normalizeCompany)
     : [];
 
   return { items, total, page, page_size: pageSize };
@@ -90,7 +103,7 @@ export async function listCompanies(
   if (params.status && params.status !== "all") {
     q.set("is_active", params.status === "active" ? "true" : "false");
   }
-  const raw = await fetchAuthedJson<Partial<CompanyListResponse>>(token, `${BASE}?${q}`);
+  const raw = await fetchAuthedJson<RawCompanyListResponse>(token, `${BASE}?${q}`);
   return normalizeCompanyListResponse(raw, params.page, params.page_size);
 }
 
