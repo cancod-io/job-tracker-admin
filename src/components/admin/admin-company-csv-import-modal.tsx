@@ -76,7 +76,7 @@ export function AdminCompanyCsvImportModal({
     <Modal
       aria-label="Import companies from CSV"
       title="Import companies from CSV"
-      description="Upload a .csv file to add or update companies in bulk."
+      description="Upload a UTF-8 CSV. Required column: name. Optional: website_url, career_page_url, scraping_method, api_endpoint, is_active."
       onClose={onClose}
       maxWidth="max-w-lg"
     >
@@ -172,70 +172,63 @@ function ImportSummaryView({
   summary: CompanyImportSummary;
   onClose: () => void;
 }) {
-  const hadErrors = summary.errors > 0;
+  const hadFailures = summary.failed > 0;
 
   return (
     <div className="space-y-4">
       <div
         className={cn(
           "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm",
-          hadErrors
+          hadFailures
             ? "border-amber-500/35 bg-amber-500/10 text-amber-900 dark:text-amber-100"
             : "border-emerald-500/35 bg-emerald-500/10 text-emerald-900 dark:text-emerald-100",
         )}
       >
-        {hadErrors ? (
+        {hadFailures ? (
           <AlertCircle className="size-4 shrink-0" aria-hidden />
         ) : (
           <CheckCircle2 className="size-4 shrink-0" aria-hidden />
         )}
-        {hadErrors
-          ? "Import finished with some rows skipped or rejected."
+        {hadFailures
+          ? "Import finished with some rows rejected."
           : "Import finished successfully."}
       </div>
 
-      <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+      <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         <SummaryCell label="Total rows" value={summary.total_rows} />
-        <SummaryCell label="Imported" value={summary.imported} tone="positive" />
+        <SummaryCell label="Created" value={summary.created} tone="positive" />
         <SummaryCell label="Updated" value={summary.updated} tone="info" />
         <SummaryCell
-          label="Skipped (duplicate)"
-          value={summary.skipped_duplicates}
-          tone={summary.skipped_duplicates > 0 ? "warn" : undefined}
-        />
-        <SummaryCell
-          label="Errors"
-          value={summary.errors}
-          tone={summary.errors > 0 ? "negative" : undefined}
+          label="Failed"
+          value={summary.failed}
+          tone={summary.failed > 0 ? "negative" : undefined}
         />
       </dl>
 
-      {summary.error_messages && summary.error_messages.length > 0 ? (
-        <details className="rounded-lg border border-border/80 bg-muted/30 p-3 text-sm">
+      {summary.errors.length > 0 ? (
+        <details className="rounded-lg border border-border/80 bg-muted/30 p-3 text-sm" open>
           <summary className="cursor-pointer font-medium text-foreground">
-            Show {summary.error_messages.length} error{summary.error_messages.length === 1 ? "" : "s"}
+            Show {summary.errors.length} failed row{summary.errors.length === 1 ? "" : "s"}
           </summary>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-muted-foreground">
-            {summary.error_messages.slice(0, 25).map((msg, i) => (
-              <li key={i}>{msg}</li>
+          <ul className="mt-2 space-y-2 text-xs text-muted-foreground">
+            {summary.errors.slice(0, 25).map((entry) => (
+              <li key={entry.row} className="rounded-md border border-border/60 bg-card px-2 py-1.5">
+                <span className="font-medium text-foreground">Row {entry.row}</span>
+                <ul className="mt-1 list-disc pl-4">
+                  {entry.errors.map((msg, i) => (
+                    <li key={i}>{msg}</li>
+                  ))}
+                </ul>
+              </li>
             ))}
-            {summary.error_messages.length > 25 ? (
-              <li>… and {summary.error_messages.length - 25} more</li>
+            {summary.errors.length > 25 ? (
+              <li>… and {summary.errors.length - 25} more</li>
             ) : null}
           </ul>
         </details>
       ) : null}
 
       <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
-        {summary.error_report_url ? (
-          <a
-            href={summary.error_report_url}
-            download
-            className="rounded-lg border border-border/80 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-          >
-            Download error report
-          </a>
-        ) : null}
         <button
           type="button"
           onClick={onClose}

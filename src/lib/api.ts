@@ -1,5 +1,5 @@
 /**
- * Browser: same-origin `/upstream-api/...` is rewritten by Next.js to the real API (see `next.config.ts`),
+ * Browser: same-origin proxy paths are rewritten by Next.js to the real API (see `next.config.ts`),
  * avoiding cross-origin CORS preflight (`OPTIONS`) failures when the admin UI and API are on different hosts.
  *
  * Server (SSR/RSC): uses `NEXT_PUBLIC_API_URL` (or default) directly — no CORS on the server.
@@ -10,7 +10,7 @@ export function getPublicApiUrl(): string {
 }
 
 /**
- * @param path API path including `/api/v1/...` and optional `?query`
+ * @param path API path including `/api/v1/...`, `/api/admin/...`, and optional `?query`
  */
 export function apiUrl(path: string): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
@@ -22,13 +22,21 @@ export function apiUrl(path: string): string {
     return `${getPublicApiUrl()}${normalized}`;
   }
 
-  if (!pathOnly.startsWith("/api/v1/")) {
-    return `${getPublicApiUrl()}${normalized}`;
+  if (pathOnly.startsWith("/api/v1/")) {
+    const afterV1 = pathOnly.slice("/api/v1/".length);
+    if (afterV1.length === 0) {
+      return `/upstream-api${search}`;
+    }
+    return `/upstream-api/${afterV1}${search}`;
   }
 
-  const afterV1 = pathOnly.slice("/api/v1/".length);
-  if (afterV1.length === 0) {
-    return `/upstream-api${search}`;
+  if (pathOnly.startsWith("/api/admin/")) {
+    const afterAdmin = pathOnly.slice("/api/admin/".length);
+    if (afterAdmin.length === 0) {
+      return `/upstream-admin-api${search}`;
+    }
+    return `/upstream-admin-api/${afterAdmin}${search}`;
   }
-  return `/upstream-api/${afterV1}${search}`;
+
+  return `${getPublicApiUrl()}${normalized}`;
 }

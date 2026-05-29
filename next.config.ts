@@ -28,12 +28,20 @@ const nextConfig: NextConfig = {
     const scraperBase = upstreamScraperOrigin();
     return [
       /**
-       * Main FastAPI backend:
+       * Main FastAPI backend (versioned routes):
        * /upstream-api/<path> → <base>/api/v1/<path>
        */
       {
         source: "/upstream-api/:path*",
         destination: `${base}/api/v1/:path*`,
+      },
+      /**
+       * Main FastAPI backend (unversioned admin routes, e.g. companies):
+       * /upstream-admin-api/<path> → <base>/api/admin/<path>
+       */
+      {
+        source: "/upstream-admin-api/:path*",
+        destination: `${base}/api/admin/:path*`,
       },
       /**
        * Scraper service:
