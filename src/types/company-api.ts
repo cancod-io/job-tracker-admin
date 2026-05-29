@@ -1,19 +1,16 @@
 /**
- * Mirrors the `Company` resource served by the backend at
- * `/api/v1/admin/companies` (CRUD + CSV import/export).
- *
- * The backend developer follows the same Companies Management diagram, so the
- * shape here intentionally matches the fields in that diagram.
+ * Mirrors OpenAPI schemas for `/api/admin/companies`.
  */
 
-export type CompanyScrapingMethod = "static" | "api";
-
+/** Detailed company response with resolved FK names/URLs. */
 export type Company = {
   id: number;
   name: string;
-  website_url: string;
-  career_page_url: string;
-  scraping_method: CompanyScrapingMethod;
+  website_url: string | null;
+  career_page_url_id: number | null;
+  career_page_url: string | null;
+  scraping_method_id: number | null;
+  scraping_method: string | null;
   api_endpoint: string | null;
   is_active: boolean;
   last_scraped_at: string | null;
@@ -28,25 +25,41 @@ export type CompanyListResponse = {
   page_size: number;
 };
 
-export type CompanyWritePayload = {
+/** Payload for `POST /api/admin/companies`. */
+export type CompanyCreateRequest = {
   name: string;
-  website_url: string;
-  career_page_url: string;
-  scraping_method: CompanyScrapingMethod;
-  api_endpoint: string | null;
+  website_url?: string | null;
+  career_page_url_id?: number | null;
+  scraping_method_id?: number | null;
+  api_endpoint?: string | null;
   is_active: boolean;
+};
+
+/** Payload for `PATCH /api/admin/companies/{company_id}`. */
+export type CompanyUpdatePatch = {
+  name?: string | null;
+  website_url?: string | null;
+  career_page_url_id?: number | null;
+  scraping_method_id?: number | null;
+  api_endpoint?: string | null;
+  is_active?: boolean | null;
+  last_scraped_at?: string | null;
 };
 
 /** Filter the list view by active/inactive. `all` means no filter. */
 export type CompanyStatusFilter = "all" | "active" | "inactive";
 
-/** Result returned by `POST /api/v1/admin/companies/import`. */
+/** Single CSV row that failed validation or FK lookup. */
+export type CompanyImportRowError = {
+  row: number;
+  errors: string[];
+};
+
+/** Outcome of `POST /api/admin/companies/import`. */
 export type CompanyImportSummary = {
   total_rows: number;
-  imported: number;
+  created: number;
   updated: number;
-  skipped_duplicates: number;
-  errors: number;
-  error_report_url?: string | null;
-  error_messages?: string[];
+  failed: number;
+  errors: CompanyImportRowError[];
 };

@@ -11,7 +11,7 @@ export default function AdminCompaniesPage() {
         <p className="mt-2 max-w-2xl text-muted-foreground">
           Manage the job companies the scraper polls. Create, edit, or delete entries, search by
           name or website, and bulk import / export via CSV. Connects to{" "}
-          <code className="text-xs">/api/v1/admin/companies</code> with the dashboard{" "}
+          <code className="text-xs">/api/admin/companies</code> with an{" "}
           <code className="text-xs">Authorization</code> bearer token.
         </p>
       </header>

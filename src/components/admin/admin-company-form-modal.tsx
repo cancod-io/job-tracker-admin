@@ -6,8 +6,8 @@ import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
 import type {
   Company,
-  CompanyScrapingMethod,
-  CompanyWritePayload,
+  CompanyCreateRequest,
+  CompanyUpdatePatch,
 } from "@/types/company-api";
 
 type Mode = "create" | "edit";
@@ -16,10 +16,19 @@ type AdminCompanyFormModalProps = {
   mode: Mode;
   initial?: Company | null;
   onClose: () => void;
-  onSubmit: (payload: CompanyWritePayload) => Promise<void>;
+  onSubmit: (payload: CompanyCreateRequest | CompanyUpdatePatch) => Promise<void>;
 };
 
-type FieldErrors = Partial<Record<keyof CompanyWritePayload, string>>;
+type FormValues = {
+  name: string;
+  website_url: string;
+  career_page_url_id: string;
+  scraping_method_id: string;
+  api_endpoint: string;
+  is_active: boolean;
+};
+
+type FieldErrors = Partial<Record<keyof FormValues, string>>;
 
 function isHttpUrl(value: string): boolean {
   try {
@@ -30,28 +39,79 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
-function validate(payload: CompanyWritePayload): FieldErrors {
+function parseOptionalId(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  if (!Number.isInteger(n) || n <= 0) return null;
+  return n;
+}
+
+function toFormValues(initial?: Company | null): FormValues {
+  return {
+    name: initial?.name ?? "",
+    website_url: initial?.website_url ?? "",
+    career_page_url_id:
+      initial?.career_page_url_id != null ? String(initial.career_page_url_id) : "",
+    scraping_method_id:
+      initial?.scraping_method_id != null ? String(initial.scraping_method_id) : "",
+    api_endpoint: initial?.api_endpoint ?? "",
+    is_active: initial?.is_active ?? true,
+  };
+}
+
+function validate(values: FormValues): FieldErrors {
   const errors: FieldErrors = {};
-  if (!payload.name.trim()) errors.name = "Name is required.";
-  if (!payload.website_url.trim()) {
-    errors.website_url = "Website URL is required.";
-  } else if (!isHttpUrl(payload.website_url.trim())) {
-    errors.website_url = "Enter a valid http(s) URL.";
+  const name = values.name.trim();
+  if (!name) {
+    errors.name = "Name is required.";
+  } else if (name.length > 300) {
+    errors.name = "Name must be 300 characters or fewer.";
   }
-  if (!payload.career_page_url.trim()) {
-    errors.career_page_url = "Career page URL is required.";
-  } else if (!isHttpUrl(payload.career_page_url.trim())) {
-    errors.career_page_url = "Enter a valid http(s) URL.";
+
+  const website = values.website_url.trim();
+  if (website && !isHttpUrl(website)) {
+    errors.website_url = "Enter a valid http(s) URL or leave blank.";
   }
-  if (payload.scraping_method === "api") {
-    const ep = (payload.api_endpoint ?? "").trim();
-    if (!ep) {
-      errors.api_endpoint = "API endpoint is required when method is API.";
-    } else if (!isHttpUrl(ep)) {
-      errors.api_endpoint = "Enter a valid http(s) URL.";
-    }
+
+  const careerId = values.career_page_url_id.trim();
+  if (careerId && parseOptionalId(careerId) == null) {
+    errors.career_page_url_id = "Enter a positive integer ID or leave blank.";
   }
+
+  const methodId = values.scraping_method_id.trim();
+  if (methodId && parseOptionalId(methodId) == null) {
+    errors.scraping_method_id = "Enter a positive integer ID or leave blank.";
+  }
+
+  const endpoint = values.api_endpoint.trim();
+  if (endpoint && !isHttpUrl(endpoint)) {
+    errors.api_endpoint = "Enter a valid http(s) URL or leave blank.";
+  }
+
   return errors;
+}
+
+function toCreatePayload(values: FormValues): CompanyCreateRequest {
+  return {
+    name: values.name.trim(),
+    website_url: values.website_url.trim() || null,
+    career_page_url_id: parseOptionalId(values.career_page_url_id),
+    scraping_method_id: parseOptionalId(values.scraping_method_id),
+    api_endpoint: values.api_endpoint.trim() || null,
+    is_active: values.is_active,
+  };
+}
+
+function toUpdatePayload(values: FormValues): CompanyUpdatePatch {
+  return {
+    name: values.name.trim() || null,
+    website_url: values.website_url.trim() || null,
+    career_page_url_id: parseOptionalId(values.career_page_url_id),
+    scraping_method_id: parseOptionalId(values.scraping_method_id),
+    api_endpoint: values.api_endpoint.trim() || null,
+    is_active: values.is_active,
+  };
 }
 
 export function AdminCompanyFormModal({
@@ -60,38 +120,21 @@ export function AdminCompanyFormModal({
   onClose,
   onSubmit,
 }: AdminCompanyFormModalProps) {
-  const [name, setName] = useState(initial?.name ?? "");
-  const [websiteUrl, setWebsiteUrl] = useState(initial?.website_url ?? "");
-  const [careerPageUrl, setCareerPageUrl] = useState(initial?.career_page_url ?? "");
-  const [scrapingMethod, setScrapingMethod] = useState<CompanyScrapingMethod>(
-    initial?.scraping_method ?? "static",
-  );
-  const [apiEndpoint, setApiEndpoint] = useState(initial?.api_endpoint ?? "");
-  const [isActive, setIsActive] = useState(initial?.is_active ?? true);
-
+  const [values, setValues] = useState<FormValues>(() => toFormValues(initial));
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const payload = useMemo<CompanyWritePayload>(
-    () => ({
-      name: name.trim(),
-      website_url: websiteUrl.trim(),
-      career_page_url: careerPageUrl.trim(),
-      scraping_method: scrapingMethod,
-      api_endpoint: scrapingMethod === "api" ? apiEndpoint.trim() || null : null,
-      is_active: isActive,
-    }),
-    [name, websiteUrl, careerPageUrl, scrapingMethod, apiEndpoint, isActive],
-  );
+  useEffect(() => {
+    setValues(toFormValues(initial));
+  }, [initial]);
 
-  const errors = useMemo(() => validate(payload), [payload]);
+  const errors = useMemo(() => validate(values), [values]);
   const hasErrors = Object.keys(errors).length > 0;
 
-  // Clear stale API-endpoint error when switching back to Static.
-  useEffect(() => {
-    if (scrapingMethod === "static") setSubmitError(null);
-  }, [scrapingMethod]);
+  function setField<K extends keyof FormValues>(key: K, value: FormValues[K]) {
+    setValues((current) => ({ ...current, [key]: value }));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -101,6 +144,7 @@ export function AdminCompanyFormModal({
 
     setSubmitting(true);
     try {
+      const payload = mode === "create" ? toCreatePayload(values) : toUpdatePayload(values);
       await onSubmit(payload);
       onClose();
     } catch (err) {
@@ -110,10 +154,10 @@ export function AdminCompanyFormModal({
     }
   }
 
-  const showFieldError = (key: keyof CompanyWritePayload): string | undefined =>
+  const showFieldError = (key: keyof FormValues): string | undefined =>
     submitted ? errors[key] : undefined;
 
-  const inputClass = (key: keyof CompanyWritePayload) =>
+  const inputClass = (key: keyof FormValues) =>
     cn(
       "w-full rounded-lg border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
       showFieldError(key) ? "border-destructive/60" : "border-border/80",
@@ -138,9 +182,10 @@ export function AdminCompanyFormModal({
           </label>
           <input
             id="company-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={values.name}
+            onChange={(e) => setField("name", e.target.value)}
             autoFocus
+            maxLength={300}
             className={inputClass("name")}
             placeholder="Acme Corp"
           />
@@ -151,12 +196,12 @@ export function AdminCompanyFormModal({
 
         <div className="space-y-1">
           <label htmlFor="company-website" className="text-sm font-medium text-foreground">
-            Website URL <span className="text-destructive">*</span>
+            Website URL
           </label>
           <input
             id="company-website"
-            value={websiteUrl}
-            onChange={(e) => setWebsiteUrl(e.target.value)}
+            value={values.website_url}
+            onChange={(e) => setField("website_url", e.target.value)}
             className={inputClass("website_url")}
             placeholder="https://acme.com"
             inputMode="url"
@@ -167,55 +212,66 @@ export function AdminCompanyFormModal({
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="company-careers" className="text-sm font-medium text-foreground">
-            Career Page URL <span className="text-destructive">*</span>
+          <label htmlFor="company-career-id" className="text-sm font-medium text-foreground">
+            Career page URL ID
           </label>
           <input
-            id="company-careers"
-            value={careerPageUrl}
-            onChange={(e) => setCareerPageUrl(e.target.value)}
-            className={inputClass("career_page_url")}
-            placeholder="https://careers.acme.com"
-            inputMode="url"
+            id="company-career-id"
+            value={values.career_page_url_id}
+            onChange={(e) => setField("career_page_url_id", e.target.value)}
+            className={inputClass("career_page_url_id")}
+            placeholder="1"
+            inputMode="numeric"
           />
-          {showFieldError("career_page_url") ? (
-            <p className="text-xs text-destructive">{showFieldError("career_page_url")}</p>
+          {initial?.career_page_url ? (
+            <p className="text-xs text-muted-foreground">
+              Resolved URL: {initial.career_page_url}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              FK to the career page URL lookup table. Leave blank if unknown.
+            </p>
+          )}
+          {showFieldError("career_page_url_id") ? (
+            <p className="text-xs text-destructive">{showFieldError("career_page_url_id")}</p>
           ) : null}
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
-            <label htmlFor="company-method" className="text-sm font-medium text-foreground">
-              Scraping Method <span className="text-destructive">*</span>
+            <label htmlFor="company-method-id" className="text-sm font-medium text-foreground">
+              Scraping method ID
             </label>
-            <select
-              id="company-method"
-              value={scrapingMethod}
-              onChange={(e) => setScrapingMethod(e.target.value as CompanyScrapingMethod)}
-              className="w-full rounded-lg border border-border/80 bg-card px-3 py-2 text-sm text-foreground"
-            >
-              <option value="static">Static</option>
-              <option value="api">API</option>
-            </select>
+            <input
+              id="company-method-id"
+              value={values.scraping_method_id}
+              onChange={(e) => setField("scraping_method_id", e.target.value)}
+              className={inputClass("scraping_method_id")}
+              placeholder="1"
+              inputMode="numeric"
+            />
+            {initial?.scraping_method ? (
+              <p className="text-xs text-muted-foreground">
+                Resolved method: {initial.scraping_method}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                FK to the scraping method lookup table.
+              </p>
+            )}
+            {showFieldError("scraping_method_id") ? (
+              <p className="text-xs text-destructive">{showFieldError("scraping_method_id")}</p>
+            ) : null}
           </div>
           <div className="space-y-1">
             <label htmlFor="company-endpoint" className="text-sm font-medium text-foreground">
-              API Endpoint
-              {scrapingMethod === "api" ? (
-                <span className="text-destructive"> *</span>
-              ) : (
-                <span className="ml-1 text-xs font-normal text-muted-foreground">(API only)</span>
-              )}
+              API endpoint
             </label>
             <input
               id="company-endpoint"
-              value={apiEndpoint ?? ""}
-              onChange={(e) => setApiEndpoint(e.target.value)}
-              className={cn(
-                inputClass("api_endpoint"),
-                scrapingMethod === "static" && "bg-muted text-muted-foreground",
-              )}
-              disabled={scrapingMethod === "static"}
+              value={values.api_endpoint}
+              onChange={(e) => setField("api_endpoint", e.target.value)}
+              className={inputClass("api_endpoint")}
               placeholder="https://api.example.com/jobs"
               inputMode="url"
             />
@@ -228,8 +284,8 @@ export function AdminCompanyFormModal({
         <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
           <input
             type="checkbox"
-            checked={isActive}
-            onChange={(e) => setIsActive(e.target.checked)}
+            checked={values.is_active}
+            onChange={(e) => setField("is_active", e.target.checked)}
             className="rounded border-border"
           />
           Active

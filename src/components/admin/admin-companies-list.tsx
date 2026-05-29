@@ -28,9 +28,10 @@ import { AdminCompanyDeleteConfirm } from "@/components/admin/admin-company-dele
 import { AdminCompanyCsvImportModal } from "@/components/admin/admin-company-csv-import-modal";
 import type {
   Company,
+  CompanyCreateRequest,
   CompanyListResponse,
   CompanyStatusFilter,
-  CompanyWritePayload,
+  CompanyUpdatePatch,
 } from "@/types/company-api";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
@@ -93,7 +94,10 @@ export function AdminCompaniesList() {
     void load();
   }, [load]);
 
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
+  const paginationPageSize = Math.max(1, data?.page_size ?? pageSize);
+  const paginationTotal = Math.max(0, data?.total ?? 0);
+  const currentPage = Math.max(1, data?.page ?? page);
+  const totalPages = data ? Math.max(1, Math.ceil(paginationTotal / paginationPageSize)) : 1;
 
   useEffect(() => {
     if (data && page > totalPages) setPage(totalPages);
@@ -111,18 +115,20 @@ export function AdminCompaniesList() {
     setPage(1);
   };
 
-  const handleCreate = async (payload: CompanyWritePayload) => {
+  const handleCreate = async (payload: CompanyCreateRequest | CompanyUpdatePatch) => {
     if (!accessToken) throw new Error("Not signed in.");
-    await createCompany(accessToken, payload);
-    setToast({ kind: "success", message: `Created “${payload.name}”.` });
+    await createCompany(accessToken, payload as CompanyCreateRequest);
+    const name = typeof payload.name === "string" ? payload.name : "Company";
+    setToast({ kind: "success", message: `Created “${name}”.` });
     setPage(1);
     await load();
   };
 
-  const handleUpdate = async (id: number, payload: CompanyWritePayload) => {
+  const handleUpdate = async (id: number, payload: CompanyCreateRequest | CompanyUpdatePatch) => {
     if (!accessToken) throw new Error("Not signed in.");
-    await updateCompany(accessToken, id, payload);
-    setToast({ kind: "success", message: `Updated “${payload.name}”.` });
+    await updateCompany(accessToken, id, payload as CompanyUpdatePatch);
+    const name = typeof payload.name === "string" ? payload.name : "Company";
+    setToast({ kind: "success", message: `Updated “${name}”.` });
     await load();
   };
 
@@ -163,11 +169,11 @@ export function AdminCompaniesList() {
       const summary = await importCompaniesCsv(accessToken, file);
       // Toast is informational here — the modal already shows the detailed summary.
       setToast({
-        kind: summary.errors > 0 ? "error" : "success",
+        kind: summary.failed > 0 ? "error" : "success",
         message:
-          summary.errors > 0
-            ? `Imported ${summary.imported}, updated ${summary.updated}, ${summary.errors} error${summary.errors === 1 ? "" : "s"}.`
-            : `Imported ${summary.imported}, updated ${summary.updated}.`,
+          summary.failed > 0
+            ? `Created ${summary.created}, updated ${summary.updated}, ${summary.failed} failed.`
+            : `Created ${summary.created}, updated ${summary.updated}.`,
       });
       return summary;
     },
@@ -354,8 +360,8 @@ export function AdminCompaniesList() {
                     <td className="px-4 py-3 align-middle">
                       <ExternalLinkCell url={c.career_page_url} />
                     </td>
-                    <td className="px-4 py-3 align-middle capitalize text-muted-foreground">
-                      {c.scraping_method}
+                    <td className="px-4 py-3 align-middle text-muted-foreground">
+                      {c.scraping_method ?? "—"}
                     </td>
                     <td className="px-4 py-3 align-middle text-muted-foreground">
                       {c.api_endpoint ? <ExternalLinkCell url={c.api_endpoint} /> : "—"}
@@ -373,7 +379,7 @@ export function AdminCompaniesList() {
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 align-middle text-muted-foreground tabular-nums">
-                      {formatDateTime(c.last_scraped_at)}
+                      {c.last_scraped_at ? formatDateTime(c.last_scraped_at) : "—"}
                     </td>
                     <td className="px-4 py-3 align-middle text-right">
                       <div className="flex justify-end gap-1">
@@ -411,13 +417,13 @@ export function AdminCompaniesList() {
           <p className="text-xs text-muted-foreground">
             Showing{" "}
             <span className="tabular-nums">
-              {data.total === 0 ? 0 : (data.page - 1) * data.page_size + 1}
+              {paginationTotal === 0 ? 0 : (currentPage - 1) * paginationPageSize + 1}
             </span>{" "}
             to{" "}
             <span className="tabular-nums">
-              {Math.min(data.total, (data.page - 1) * data.page_size + data.items.length)}
+              {Math.min(paginationTotal, (currentPage - 1) * paginationPageSize + data.items.length)}
             </span>{" "}
-            of <span className="tabular-nums">{data.total}</span> results
+            of <span className="tabular-nums">{paginationTotal}</span> results
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -448,7 +454,7 @@ export function AdminCompaniesList() {
                 <ChevronLeft className="size-4" aria-hidden />
               </button>
               <span className="px-2 text-xs tabular-nums text-muted-foreground">
-                Page {data.page} of {totalPages}
+                Page {currentPage} of {totalPages}
               </span>
               <button
                 type="button"
@@ -501,7 +507,8 @@ export function AdminCompaniesList() {
   );
 }
 
-function ExternalLinkCell({ url }: { url: string }) {
+function ExternalLinkCell({ url }: { url: string | null }) {
+  if (!url) return <span className="text-muted-foreground">—</span>;
   return (
     <a
       href={url}
