@@ -1,0 +1,22 @@
+services:
+  admin:
+    build:
+      context: .
+      target: runner
+      args:
+        # Baked into the browser bundle at build time.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://147.93.180.179:8000}
+        NEXT_PUBLIC_SCRAPER_API_URL: ${NEXT_PUBLIC_SCRAPER_API_URL:-http://147.93.180.179:3002}
+        NEXT_PUBLIC_USER_APP_URL: ${NEXT_PUBLIC_USER_APP_URL:-http://147.93.180.179:3000}
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://147.93.180.179:8000}
+      # Server-side bases used by Next.js rewrites / SSR.
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://147.93.180.179:8000}
+      NEXT_PUBLIC_SCRAPER_API_URL: ${NEXT_PUBLIC_SCRAPER_API_URL:-http://147.93.180.179:3002}
+      SCRAPER_INTERNAL_URL: ${SCRAPER_INTERNAL_URL:-http://147.93.180.179:3002}
+      NEXT_PUBLIC_USER_APP_URL: ${NEXT_PUBLIC_USER_APP_URL:-http://147.93.180.179:3000}
