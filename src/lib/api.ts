@@ -9,6 +9,13 @@ export function getPublicApiUrl(): string {
   return raw.replace(/\/$/, "");
 }
 
+/** Backend base for server-side Route Handlers (Docker-friendly via API_INTERNAL_URL). */
+export function getInternalApiBase(): string {
+  const raw =
+    process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  return raw.replace(/\/$/, "");
+}
+
 /**
  * @param path API path including `/api/v1/...`, `/api/admin/...`, and optional `?query`
  */
@@ -20,6 +27,11 @@ export function apiUrl(path: string): string {
 
   if (typeof window === "undefined") {
     return `${getPublicApiUrl()}${normalized}`;
+  }
+
+  // Proxied by Next.js Route Handlers under src/app/api/admin/applications/.
+  if (pathOnly.startsWith("/api/admin/applications/")) {
+    return normalized;
   }
 
   if (pathOnly.startsWith("/api/v1/")) {
