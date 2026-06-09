@@ -46,3 +46,23 @@ export function applicationFilePreviewKind(file: AdminApplicationFile): Applicat
 export function canPreviewApplicationFile(file: AdminApplicationFile): boolean {
   return applicationFilePreviewKind(file) !== "none";
 }
+
+/** Preview kind inferred from filename (and optional MIME type). */
+export function filenameFilePreviewKind(
+  filename: string,
+  contentType?: string | null,
+): ApplicationFilePreviewKind {
+  const type = contentType?.toLowerCase() ?? "";
+  const name = filename.toLowerCase();
+  if (type.startsWith("image/") || /\.(png|jpe?g|gif|webp|svg|bmp)$/.test(name)) {
+    return "image";
+  }
+  if (type.includes("pdf") || name.endsWith(".pdf")) {
+    return "pdf";
+  }
+  return "none";
+}
+
+export function canPreviewFilename(filename: string, contentType?: string | null): boolean {
+  return filenameFilePreviewKind(filename, contentType) !== "none";
+}

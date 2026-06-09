@@ -284,18 +284,26 @@ export async function deleteAdminUser(token: string, userId: number): Promise<vo
   });
 }
 
+export async function fetchUserCvBlob(
+  token: string,
+  userId: number,
+  cvId: number,
+): Promise<Blob> {
+  const res = await fetchAuthedResponse(
+    token,
+    `${BASE}/${userId}/cvs/${cvId}/download`,
+    { timeoutMs: 60_000 },
+  );
+  return res.blob();
+}
+
 export async function downloadUserCv(
   token: string,
   userId: number,
   cvId: number,
   filename: string,
 ): Promise<void> {
-  const res = await fetchAuthedResponse(
-    token,
-    `${BASE}/${userId}/cvs/${cvId}/download`,
-    { timeoutMs: 60_000 },
-  );
-  const blob = await res.blob();
+  const blob = await fetchUserCvBlob(token, userId, cvId);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
