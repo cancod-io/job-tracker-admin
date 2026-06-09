@@ -19,7 +19,8 @@ export const metadata: Metadata = {
   },
   description: "Manage scraped jobs, users, and application data.",
   icons: {
-    icon: "/icon.png",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
   },
 };
 

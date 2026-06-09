@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShieldCheck, X } from "lucide-react";
 import { ADMIN_PENDING_APPROVAL_CHANGED_EVENT } from "@/lib/admin-sync-events";
-import { fetchAuthedJson } from "@/lib/fetch-authed";
+import { listAdminUsers } from "@/lib/admin-user-api";
 import { adminNavItems } from "@/config/admin-nav";
 import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
@@ -13,10 +13,6 @@ import { cn } from "@/lib/utils";
 type AdminSidebarProps = {
   mobileOpen: boolean;
   onMobileClose: () => void;
-};
-
-type PendingUsersCountResponse = {
-  total: number;
 };
 
 export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
@@ -27,15 +23,12 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
   const refreshPendingApprovalCount = useCallback(async () => {
     if (!accessToken) return;
     try {
-      const q = new URLSearchParams({
+      const body = await listAdminUsers(accessToken, {
         approval_status: "pending",
-        page_size: "1",
+        page: 1,
+        page_size: 1,
       });
-      const body = await fetchAuthedJson<PendingUsersCountResponse>(
-        accessToken,
-        `/api/v1/admin/users?${q}`,
-      );
-      if (typeof body.total === "number") setPendingApprovalCount(body.total);
+      setPendingApprovalCount(body.total);
     } catch {
       /* leave prior count */
     }

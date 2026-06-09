@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchApplicantAvatarBlob, hasApplicantAvatar } from "@/lib/admin-avatar-api";
+import {
+  fetchApplicantAvatarBlob,
+  shouldFetchUserAvatar,
+  type AvatarFetchOptions,
+} from "@/lib/admin-avatar-api";
 import { useAuth } from "@/providers/auth-provider";
 
 /**
@@ -25,6 +29,14 @@ function getAvatarBlob(token: string, userId: number): Promise<Blob> {
   return promise;
 }
 
+export function clearAvatarBlobCache(userId?: number): void {
+  if (userId == null) {
+    avatarBlobCache.clear();
+    return;
+  }
+  avatarBlobCache.delete(userId);
+}
+
 /**
  * Resolves an applicant's avatar to a displayable object URL, or `null` when the
  * applicant has no avatar / it can't be loaded (caller falls back to initials).
@@ -32,9 +44,13 @@ function getAvatarBlob(token: string, userId: number): Promise<Blob> {
 export function useApplicantAvatar(
   userId: number,
   profilePictureUrl: string | null,
+  options?: AvatarFetchOptions,
 ): { displayUrl: string | null; loading: boolean } {
   const { accessToken } = useAuth();
-  const enabled = Boolean(accessToken) && hasApplicantAvatar(profilePictureUrl) && userId > 0;
+  const enabled =
+    Boolean(accessToken) &&
+    userId > 0 &&
+    shouldFetchUserAvatar(profilePictureUrl, options);
 
   const [displayUrl, setDisplayUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(enabled);
@@ -67,7 +83,14 @@ export function useApplicantAvatar(
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [enabled, accessToken, userId, profilePictureUrl]);
+  }, [
+    enabled,
+    accessToken,
+    userId,
+    profilePictureUrl,
+    options?.attemptFetch,
+    options?.hasAvatar,
+  ]);
 
   return { displayUrl, loading };
 }

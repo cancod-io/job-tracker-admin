@@ -64,7 +64,9 @@ function normalizeApplicant(raw: Partial<AdminJobApplicant>): AdminJobApplicant 
     applied_at: typeof raw.applied_at === "string" ? raw.applied_at : null,
     notes: str(raw.notes),
     created_at: str(raw.created_at, new Date(0).toISOString()),
-    profile_picture_url: strOrNull(raw.profile_picture_url),
+    profile_picture_url: strOrNull(
+      raw.profile_picture_url ?? (raw as { avatar_url?: unknown }).avatar_url,
+    ),
   };
 }
 
