@@ -5,6 +5,7 @@ import {
   Briefcase,
   Copy,
   Download,
+  Eye,
   ExternalLink,
   KeyRound,
   Loader2,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { SidePanel } from "@/components/ui/side-panel";
 import { ApplicantAvatar } from "@/components/admin/applicant-avatar";
+import { AdminUserCvPreviewModal } from "@/components/admin/admin-user-cv-preview-modal";
 import {
   deleteAdminUser,
   downloadUserCv,
@@ -22,7 +24,7 @@ import {
   patchUserApproval,
   resetUserPassword,
 } from "@/lib/admin-user-api";
-import { formatFileSize } from "@/lib/admin-file-utils";
+import { canPreviewFilename, formatFileSize } from "@/lib/admin-file-utils";
 import { formatDateTime } from "@/lib/format-date";
 import { applicantBadgeClass, formatApplicantStatus } from "@/lib/applicant-status";
 import {
@@ -34,7 +36,7 @@ import {
 } from "@/lib/user-approval";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
-import type { AdminUserDetail } from "@/types/admin-user-api";
+import type { AdminUserCv, AdminUserDetail } from "@/types/admin-user-api";
 import type { UserApprovalStatus } from "@/types/auth";
 
 type AdminUserDetailPanelProps = {
@@ -84,6 +86,7 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [downloadingCvId, setDownloadingCvId] = useState<number | null>(null);
+  const [previewCv, setPreviewCv] = useState<AdminUserCv | null>(null);
   const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
@@ -426,26 +429,49 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                     key={cv.id}
                     className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/70 bg-muted/20 px-3 py-2.5"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">{cv.filename}</p>
+                    <div className="min-w-0 flex-1">
+                      {canPreviewFilename(cv.filename) ? (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewCv(cv)}
+                          className="block max-w-full truncate text-left text-sm font-medium text-foreground underline-offset-2 hover:text-primary hover:underline"
+                          title={`Preview ${cv.filename}`}
+                        >
+                          {cv.filename}
+                        </button>
+                      ) : (
+                        <p className="truncate text-sm font-medium text-foreground">{cv.filename}</p>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         {cv.file_size != null ? formatFileSize(cv.file_size) : "—"}
                         {cv.uploaded_at ? ` · ${formatDateTime(cv.uploaded_at)}` : ""}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      disabled={downloadingCvId === cv.id}
-                      onClick={() => void handleDownloadCv(cv.id, cv.filename)}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border/80 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50"
-                    >
-                      {downloadingCvId === cv.id ? (
-                        <Loader2 className="size-3.5 animate-spin" aria-hidden />
-                      ) : (
-                        <Download className="size-3.5" aria-hidden />
-                      )}
-                      Download
-                    </button>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {canPreviewFilename(cv.filename) ? (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewCv(cv)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-border/80 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                        >
+                          <Eye className="size-3.5" aria-hidden />
+                          Preview
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={downloadingCvId === cv.id}
+                        onClick={() => void handleDownloadCv(cv.id, cv.filename)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border/80 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50"
+                      >
+                        {downloadingCvId === cv.id ? (
+                          <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                        ) : (
+                          <Download className="size-3.5" aria-hidden />
+                        )}
+                        Download
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -529,6 +555,16 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
           </section>
         </>
       ) : null}
+      <AdminUserCvPreviewModal
+        userId={userId}
+        cv={previewCv}
+        onClose={() => setPreviewCv(null)}
+        onDownload={
+          previewCv && userId != null
+            ? () => void handleDownloadCv(previewCv.id, previewCv.filename)
+            : undefined
+        }
+      />
     </SidePanel>
   );
 }
