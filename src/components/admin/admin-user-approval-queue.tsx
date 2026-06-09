@@ -1,137 +1,102 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Loader2, RefreshCw, Search } from "lucide-react";
+import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
+import { ApplicantAvatar } from "@/components/admin/applicant-avatar";
+import { listAdminUsers } from "@/lib/admin-user-api";
 import { ADMIN_PENDING_APPROVAL_CHANGED_EVENT } from "@/lib/admin-sync-events";
-import { fetchAuthedJson } from "@/lib/fetch-authed";
 import { formatDateTime } from "@/lib/format-date";
+import { approvalBadgeClass, approvalLabel } from "@/lib/user-approval";
 import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
+import type { AdminUserRow } from "@/types/admin-user-api";
 import type { UserApprovalStatus } from "@/types/auth";
 
-type AdminUserRow = {
-  id: number;
-  email: string;
-  full_name: string;
-  role: string;
-  approval_status: UserApprovalStatus;
-  is_active: boolean;
-  created_at: string;
-};
-
-type ListResponse = {
-  items: AdminUserRow[];
-  total: number;
-  page: number;
-  page_size: number;
-};
-
-function approvalLabel(status: UserApprovalStatus): string {
-  switch (status) {
-    case "pending":
-      return "Waiting for approval";
-    case "approved":
-      return "Approved";
-    case "rejected":
-      return "Rejected";
-    default:
-      return status;
-  }
-}
-
-function badgeClass(status: UserApprovalStatus): string {
-  switch (status) {
-    case "pending":
-      return "bg-amber-500/15 text-amber-800 dark:text-amber-200 border-amber-500/30";
-    case "approved":
-      return "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border-emerald-500/30";
-    case "rejected":
-      return "bg-destructive/10 text-destructive border-destructive/25";
-    default:
-      return "bg-muted text-muted-foreground border-border";
-  }
-}
-
 type FilterValue = "all" | UserApprovalStatus;
+
+type TabCounts = {
+  all: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+};
 
 export function AdminUserApprovalQueue() {
   const { accessToken, user } = useAuth();
   const [filter, setFilter] = useState<FilterValue>("all");
-  const [data, setData] = useState<ListResponse | null>(null);
+  const [searchDraft, setSearchDraft] = useState("");
+  const [items, setItems] = useState<AdminUserRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [tabCounts, setTabCounts] = useState<TabCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionUserId, setActionUserId] = useState<number | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+
+  const loadCounts = useCallback(async () => {
+    if (!accessToken) return;
+    try {
+      const [all, pending, approved, rejected] = await Promise.all([
+        listAdminUsers(accessToken, { page: 1, page_size: 1 }),
+        listAdminUsers(accessToken, { page: 1, page_size: 1, approval_status: "pending" }),
+        listAdminUsers(accessToken, { page: 1, page_size: 1, approval_status: "approved" }),
+        listAdminUsers(accessToken, { page: 1, page_size: 1, approval_status: "rejected" }),
+      ]);
+      setTabCounts({
+        all: all.total,
+        pending: pending.total,
+        approved: approved.total,
+        rejected: rejected.total,
+      });
+    } catch {
+      /* counts are optional */
+    }
+  }, [accessToken]);
 
   const load = useCallback(async () => {
     if (!accessToken) return;
     setError(null);
-    setSuccess(null);
     setLoading(true);
     try {
-      const q =
-        filter === "all" ? "" : `?approval_status=${encodeURIComponent(filter)}`;
-      const body = await fetchAuthedJson<ListResponse>(accessToken, `/api/v1/admin/users${q}`);
-      setData(body);
+      const body = await listAdminUsers(accessToken, {
+        page,
+        page_size: 50,
+        approval_status: filter === "all" ? null : filter,
+      });
+      setItems(body.items);
+      setTotal(body.total);
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent(ADMIN_PENDING_APPROVAL_CHANGED_EVENT));
       }
+      void loadCounts();
     } catch (e) {
-      setData(null);
+      setItems([]);
+      setTotal(0);
       setError(e instanceof Error ? e.message : "Failed to load users");
     } finally {
       setLoading(false);
     }
-  }, [accessToken, filter]);
+  }, [accessToken, filter, page, loadCounts]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const patchApproval = async (userId: number, approval_status: Exclude<UserApprovalStatus, "pending">) => {
-    if (!accessToken) return;
-    if (approval_status === "rejected" && user != null && userId === user.id) {
-      setError("You cannot reject your own account.");
-      return;
-    }
-    setActionUserId(userId);
-    setError(null);
-    setSuccess(null);
-    try {
-      await fetchAuthedJson<unknown>(accessToken, `/api/v1/admin/users/${userId}/approval`, {
-        method: "PATCH",
-        body: { approval_status },
-      });
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Update failed");
-    } finally {
-      setActionUserId(null);
-    }
-  };
+  const filteredItems = useMemo(() => {
+    const q = searchDraft.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter(
+      (u) =>
+        u.full_name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        String(u.id).includes(q),
+    );
+  }, [items, searchDraft]);
 
-  const resetPassword = async (userId: number, email: string) => {
-    if (!accessToken) return;
-    if (
-      !window.confirm(
-        `Reset the login password for ${email} to the configured default? The user will need to sign in with that password.`,
-      )
-    ) {
-      return;
-    }
-    setActionUserId(userId);
-    setError(null);
-    setSuccess(null);
-    try {
-      await fetchAuthedJson<unknown>(accessToken, `/api/v1/admin/users/${userId}/reset-password`, {
-        method: "POST",
-      });
-      setSuccess(`Password reset for ${email}.`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Password reset failed");
-    } finally {
-      setActionUserId(null);
-    }
+  const tabLabel = (value: FilterValue, label: string) => {
+    const count = tabCounts?.[value];
+    return count != null ? `${label} (${count})` : label;
   };
 
   if (!accessToken) {
@@ -139,177 +104,185 @@ export function AdminUserApprovalQueue() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filter by approval">
-          {(
-            [
-              ["all", "All users"],
-              ["pending", "Waiting for approval"],
-              ["approved", "Approved"],
-              ["rejected", "Rejected"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="tab"
-              aria-selected={filter === value}
-              className={cn(
-                "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
-                filter === value
-                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                  : "border-border/80 bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-              onClick={() => setFilter(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-lg border border-border/80 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-          onClick={() => void load()}
-          disabled={loading}
-        >
-          <RefreshCw className={cn("size-4", loading && "animate-spin")} aria-hidden />
-          Refresh
-        </button>
-      </div>
-
-      {error ? (
-        <p
-          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
-
-      {success ? (
-        <p
-          className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-800 dark:text-emerald-200"
-          role="status"
-        >
-          {success}
-        </p>
-      ) : null}
-
-      <div className="overflow-x-auto rounded-2xl border border-border/80 bg-card shadow-sm">
-        {loading && !data ? (
-          <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
-            <Loader2 className="size-6 animate-spin motion-reduce:animate-none" aria-hidden />
-            Loading users…
+    <>
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filter by approval">
+            {(
+              [
+                ["all", "All users"],
+                ["pending", "Waiting for approval"],
+                ["approved", "Approved"],
+                ["rejected", "Rejected"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={filter === value}
+                className={cn(
+                  "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
+                  filter === value
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                    : "border-border/80 bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+                onClick={() => {
+                  setFilter(value);
+                  setPage(1);
+                }}
+              >
+                {tabLabel(value, label)}
+              </button>
+            ))}
           </div>
-        ) : (
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="border-b border-border/80 bg-muted/40 text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3 font-medium">User</th>
-                <th className="px-4 py-3 font-medium">Created</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Approval</th>
-                <th className="px-4 py-3 font-medium">Active</th>
-                <th className="px-4 py-3 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data?.items.length === 0 ? (
+
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="relative min-w-[12rem] flex-1 lg:max-w-xs">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={searchDraft}
+                onChange={(e) => setSearchDraft(e.target.value)}
+                placeholder="Search user…"
+                className="w-full rounded-lg border border-border/80 bg-card py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Search users"
+              />
+            </label>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-lg border border-border/80 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+              onClick={() => void load()}
+              disabled={loading}
+            >
+              <RefreshCw className={cn("size-4", loading && "animate-spin")} aria-hidden />
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {error ? (
+          <p
+            className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            role="alert"
+          >
+            {error}
+          </p>
+        ) : null}
+
+        <div className="overflow-x-auto rounded-2xl border border-border/80 bg-card shadow-sm">
+          {loading && items.length === 0 ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+              <Loader2 className="size-6 animate-spin motion-reduce:animate-none" aria-hidden />
+              Loading users…
+            </div>
+          ) : (
+            <table className="w-full min-w-[760px] text-left text-sm">
+              <thead className="border-b border-border/80 bg-muted/40 text-muted-foreground">
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
-                    No users match this filter.
-                  </td>
+                  <th className="px-4 py-3 font-medium">User</th>
+                  <th className="px-4 py-3 font-medium">Created</th>
+                  <th className="px-4 py-3 font-medium">Last login</th>
+                  <th className="px-4 py-3 font-medium">Role</th>
+                  <th className="px-4 py-3 font-medium">Approval</th>
+                  <th className="px-4 py-3 font-medium">Active</th>
                 </tr>
-              ) : (
-                data?.items.map((u) => {
-                  const isSelf = user != null && u.id === user.id;
-                  return (
-                  <tr
-                    key={u.id}
-                    className={cn(
-                      "border-b border-border/60 last:border-0",
-                      isSelf && "bg-primary/[0.07] dark:bg-primary/15",
-                    )}
-                  >
-                    <td className="px-4 py-3 align-middle">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium text-foreground">{u.full_name}</span>
-                        {isSelf ? (
-                          <span className="inline-flex rounded-full border border-primary/35 bg-primary/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                            Your account
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{u.email}</div>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground tabular-nums">
-                      {formatDateTime(u.created_at)}
-                    </td>
-                    <td className="px-4 py-3 capitalize text-muted-foreground">{u.role}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={cn(
-                          "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                          badgeClass(u.approval_status),
-                        )}
-                      >
-                        {approvalLabel(u.approval_status)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">{u.is_active ? "Yes" : "No"}</td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex flex-wrap justify-end gap-2">
-                        {u.approval_status !== "approved" ? (
-                          <button
-                            type="button"
-                            className="rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
-                            disabled={actionUserId === u.id}
-                            onClick={() => void patchApproval(u.id, "approved")}
-                          >
-                            Approve
-                          </button>
-                        ) : null}
-                        {u.approval_status !== "rejected" ? (
-                          <button
-                            type="button"
-                            className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-50"
-                            disabled={actionUserId === u.id || isSelf}
-                            title={
-                              isSelf ? "You cannot reject your own account" : undefined
-                            }
-                            aria-label={
-                              isSelf ? "Reject unavailable for your own account" : "Reject"
-                            }
-                            onClick={() => void patchApproval(u.id, "rejected")}
-                          >
-                            Reject
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-500/20 disabled:opacity-50 dark:text-amber-100"
-                          disabled={actionUserId === u.id}
-                          onClick={() => void resetPassword(u.id, u.email)}
-                        >
-                          Reset password
-                        </button>
-                      </div>
+              </thead>
+              <tbody>
+                {filteredItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                      {searchDraft.trim() ? "No users match your search." : "No users match this filter."}
                     </td>
                   </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        )}
+                ) : (
+                  filteredItems.map((u) => {
+                    const isSelf = user != null && u.id === user.id;
+                    const isSelected = selectedUserId === u.id;
+                    return (
+                      <tr
+                        key={u.id}
+                        className={cn(
+                          "cursor-pointer border-b border-border/60 transition-colors last:border-0 hover:bg-muted/40",
+                          isSelf && "bg-primary/[0.07] dark:bg-primary/15",
+                          isSelected && "bg-primary/10",
+                        )}
+                        onClick={() => setSelectedUserId(u.id)}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`View details for ${u.full_name}`}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelectedUserId(u.id);
+                          }
+                        }}
+                      >
+                        <td className="px-4 py-3 align-middle">
+                          <div className="flex items-center gap-3">
+                            <ApplicantAvatar
+                              userId={u.id}
+                              name={u.full_name || u.email}
+                              profilePictureUrl={u.profile_picture_url}
+                              hasAvatar={u.has_avatar}
+                              sizeClass="size-9"
+                              textClass="text-xs"
+                            />
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium text-foreground">{u.full_name}</span>
+                                {isSelf ? (
+                                  <span className="inline-flex rounded-full border border-primary/35 bg-primary/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                                    Your account
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div className="truncate text-xs text-muted-foreground">{u.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 tabular-nums text-muted-foreground">
+                          {formatDateTime(u.created_at)}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 tabular-nums text-muted-foreground">
+                          {u.last_login_at ? formatDateTime(u.last_login_at) : "—"}
+                        </td>
+                        <td className="px-4 py-3 capitalize text-muted-foreground">{u.role}</td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={cn(
+                              "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                              approvalBadgeClass(u.approval_status),
+                            )}
+                          >
+                            {approvalLabel(u.approval_status)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">{u.is_active ? "Yes" : "No"}</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Showing {filteredItems.length} of {total} users
+          {searchDraft.trim() ? " (filtered)" : ""}
+          {page > 1 ? ` · page ${page}` : ""}
+        </p>
       </div>
 
-      {data ? (
-        <p className="text-xs text-muted-foreground">
-          Showing {data.items.length} of {data.total} users (page {data.page}).
-        </p>
-      ) : null}
-    </div>
+      <AdminUserDetailPanel
+        userId={selectedUserId}
+        onClose={() => setSelectedUserId(null)}
+        onUpdated={() => void load()}
+      />
+    </>
   );
 }

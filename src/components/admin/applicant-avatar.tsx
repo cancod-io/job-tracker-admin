@@ -9,6 +9,10 @@ type ApplicantAvatarProps = {
   /** Used for initials + deterministic tint when no avatar is available. */
   name: string;
   profilePictureUrl: string | null;
+  /** Backend signal when URL is absent but an avatar file exists. */
+  hasAvatar?: boolean;
+  /** Always attempt download (e.g. open user detail panel). */
+  attemptFetch?: boolean;
   /** Tailwind size class for the circle, e.g. "size-7", "size-12". */
   sizeClass?: string;
   /** Initials font-size class. */
@@ -27,12 +31,17 @@ export function ApplicantAvatar({
   userId,
   name,
   profilePictureUrl,
+  hasAvatar,
+  attemptFetch,
   sizeClass = "size-7",
   textClass = "text-[0.7rem]",
   ring = false,
   title,
 }: ApplicantAvatarProps) {
-  const { displayUrl } = useApplicantAvatar(userId, profilePictureUrl);
+  const { displayUrl } = useApplicantAvatar(userId, profilePictureUrl, {
+    hasAvatar,
+    attemptFetch,
+  });
 
   const base = cn(
     "flex shrink-0 items-center justify-center overflow-hidden rounded-full",

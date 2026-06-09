@@ -21,7 +21,7 @@ export type AdminJobApplicant = {
   created_at: string;
   /**
    * Existence signal for the applicant's avatar. Non-empty means an avatar can be
-   * fetched (Bearer) from `GET /api/admin/users/{user_id}/avatar/download`.
+   * fetched (Bearer) from `GET /api/admin/users/{user_id}/avatar`.
    * Browsers cannot attach auth headers on `<img src>`, so we never load this URL
    * directly — see `useApplicantAvatar`.
    */
