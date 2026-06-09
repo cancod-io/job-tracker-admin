@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  Ban,
   Briefcase,
+  CheckCircle2,
   Copy,
   Download,
   Eye,
@@ -292,7 +294,7 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
             <dl>
               <DetailRow label="Full Name">{detail.full_name || "—"}</DetailRow>
               <DetailRow label="Email">{detail.email || "—"}</DetailRow>
-              <DetailRow label="Phone">{detail.phone || "—"}</DetailRow>
+              {/* <DetailRow label="Phone">{detail.phone || "—"}</DetailRow> */}
               <DetailRow label="Registered On">{formatDateTime(detail.created_at)}</DetailRow>
               <DetailRow label="Last Login">
                 {detail.last_login_at ? formatDateTime(detail.last_login_at) : "—"}
@@ -362,8 +364,8 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
               <DetailRow label="Country">{detail.country || "—"}</DetailRow>
               <DetailRow label="City">{detail.city || "—"}</DetailRow>
               <DetailRow label="Zip Code">{detail.zip_code || "—"}</DetailRow>
-              <DetailRow label="Location">{formatLocation(detail)}</DetailRow>
-              <DetailRow label="Website">
+              {/* <DetailRow label="Location">{formatLocation(detail)}</DetailRow> */}
+              {/* <DetailRow label="Website">
                 {detail.website ? (
                   <a
                     href={detail.website}
@@ -377,7 +379,7 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                 ) : (
                   "—"
                 )}
-              </DetailRow>
+              </DetailRow> */}
               <DetailRow label="Bio">
                 {detail.bio ? (
                   <p className="whitespace-pre-wrap text-sm leading-relaxed">{detail.bio}</p>
@@ -499,17 +501,20 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
           ) : null}
 
           {/* Actions */}
-          <section className="space-y-3 px-5 py-5">
-            <h3 className="text-sm font-semibold text-foreground">Actions</h3>
-            <div className="flex full-width justify-between  gap-2">
+          <section className="border-t border-border/60 px-5 py-5">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Actions
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
               {canApproveReject && detail.approval_status !== "approved" ? (
                 <button
                   type="button"
                   disabled={actionLoading}
                   onClick={() => handleApproval("approved")}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
                 >
-                  Approve User
+                  <CheckCircle2 className="size-4 shrink-0" aria-hidden />
+                  Approve
                 </button>
               ) : null}
               {canApproveReject && detail.approval_status !== "rejected" ? (
@@ -518,19 +523,20 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                   disabled={actionLoading || isSelf}
                   title={isSelf ? "You cannot reject your own account" : undefined}
                   onClick={() => handleApproval("rejected")}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2.5 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-500/20 disabled:opacity-50 dark:text-amber-100"
                 >
-                  Reject User
+                  <Ban className="size-4 shrink-0" aria-hidden />
+                  Reject
                 </button>
               ) : null}
               <button
                 type="button"
                 disabled={actionLoading}
                 onClick={handleResetPassword}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border/80 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
+                className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border/80 bg-card px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
               >
-                <KeyRound className="size-4" aria-hidden />
-                Reset Password
+                <KeyRound className="size-4 shrink-0" aria-hidden />
+                Reset password
               </button>
               {canRemoveUser ? (
                 <button
@@ -538,17 +544,17 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                   disabled={actionLoading || isSelf}
                   title={isSelf ? "You cannot delete your own account" : undefined}
                   onClick={handleDeleteUser}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                  className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-destructive/35 bg-destructive/5 px-3 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
                 >
-                  <Trash2 className="size-4" aria-hidden />
-                  Remove User
+                  <Trash2 className="size-4 shrink-0" aria-hidden />
+                  Remove
                 </button>
               ) : null}
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-lg border border-border/80 bg-card px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+              className="mt-3 w-full rounded-lg border border-border/80 bg-muted/30 px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               Close
             </button>
