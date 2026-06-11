@@ -22,7 +22,7 @@ function LoginFormInner() {
   const { status, login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") ?? "/jobs";
+  const nextPath = searchParams.get("next") ?? "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { ConflictError, getMonitorStatus, runAllProviders, runJSearch, runSerpApi } from "@/lib/scraper-api";
 import { cn } from "@/lib/utils";
+import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import type { DatePostedFilter, IngestParams, IngestProvider, IngestResult } from "@/types/scraper-api";
 
 // ---------------------------------------------------------------------------
@@ -111,6 +112,9 @@ function isProxyDrop(e: Error): boolean {
 // ---------------------------------------------------------------------------
 
 export function ScraperIngestPanel() {
+  const { can } = useAdminPermissions();
+  const canManage = can("scraping.manage");
+
   // ── Form state ──
   const [query,      setQuery]      = useState("");
   const [countries,  setCountries]  = useState("");
@@ -342,6 +346,7 @@ export function ScraperIngestPanel() {
         </div>
 
         {/* ── Action buttons ── */}
+        {canManage ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {INGEST_ACTIONS.map(({ provider, label, description, idleColor, activeColor }) => {
             const thisRunning = ingestState.phase === "running" && ingestState.provider === provider;
@@ -366,6 +371,12 @@ export function ScraperIngestPanel() {
             );
           })}
         </div>
+        ) : (
+          <p className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
+            You have read-only access to scraping settings. Running ingestion requires{" "}
+            <code className="text-xs">scraping.manage</code>.
+          </p>
+        )}
 
         {/* ── Status banner ── */}
         {ingestState.phase !== "idle" && (

@@ -9,6 +9,20 @@ export function canDeleteUser(role: UserRole | string | undefined): boolean {
   return role === "admin";
 }
 
+export function canChangeUserRole(role: UserRole | string | undefined): boolean {
+  return role === "admin";
+}
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  admin: "Admin",
+  moderator: "Moderator",
+  user: "User",
+};
+
+export function roleLabel(role: UserRole | string): string {
+  return ROLE_LABELS[role as UserRole] ?? role;
+}
+
 export function formatApprovedBy(detail: Pick<
   AdminUserDetail,
   "approved_by_name" | "approved_by_role" | "approved_by_id"

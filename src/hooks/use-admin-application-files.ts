@@ -22,7 +22,11 @@ type UseAdminApplicationFilesResult = {
  * Loads an applicant's attachments for the admin Jobs screen and supports
  * deletion. Preview/download blobs are fetched on demand by the preview modal.
  */
-export function useAdminApplicationFiles(applicationId: number): UseAdminApplicationFilesResult {
+export function useAdminApplicationFiles(
+  applicationId: number,
+  options?: { enabled?: boolean },
+): UseAdminApplicationFilesResult {
+  const enabled = options?.enabled ?? true;
   const { accessToken } = useAuth();
 
   const [files, setFiles] = useState<AdminApplicationFile[]>([]);
@@ -32,7 +36,7 @@ export function useAdminApplicationFiles(applicationId: number): UseAdminApplica
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!accessToken) {
+    if (!enabled || !accessToken) {
       setFiles([]);
       setLoading(false);
       return;
@@ -48,7 +52,7 @@ export function useAdminApplicationFiles(applicationId: number): UseAdminApplica
     } finally {
       setLoading(false);
     }
-  }, [accessToken, applicationId]);
+  }, [accessToken, applicationId, enabled]);
 
   useEffect(() => {
     void load();

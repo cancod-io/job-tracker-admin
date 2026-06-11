@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { AdminPermissionRedirect } from "@/components/admin/admin-permission-redirect";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 import { AdminTopBar } from "@/components/admin/admin-top-bar";
 
@@ -9,6 +10,7 @@ export function AdminDashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background md:flex-row">
+      <AdminPermissionRedirect />
       <div
         className="pointer-events-none absolute inset-0 -z-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.12),transparent_45%)]"
         aria-hidden
