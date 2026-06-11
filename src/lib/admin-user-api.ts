@@ -14,6 +14,7 @@
  *   POST  /api/v1/admin/users/{user_id}/reset-password
  */
 import { fetchAuthedJson, fetchAuthedResponse } from "@/lib/fetch-authed";
+import { resolveSocialFields } from "@/lib/admin-user-social";
 import type {
   AdminUserCv,
   AdminUserDetail,
@@ -22,7 +23,7 @@ import type {
   AdminUserRow,
   AdminUserSocialLink,
 } from "@/types/admin-user-api";
-import type { UserApprovalStatus } from "@/types/auth";
+import type { UserApprovalStatus, UserRole } from "@/types/auth";
 
 const BASE = "/api/admin/users";
 
@@ -175,6 +176,8 @@ function normalizeUserDetail(raw: unknown): AdminUserDetail {
 
   const permissions = strArray(r.permissions);
   const approvedBy = formatApprovedBy(r);
+  const website = strOrNull(r.website ?? r.website_url);
+  const social = resolveSocialFields(r, social_links, website);
 
   return {
     ...(row ?? {
@@ -195,7 +198,7 @@ function normalizeUserDetail(raw: unknown): AdminUserDetail {
     zip_code: strOrNull(r.zip_code ?? r.postal_code ?? r.zip),
     company: strOrNull(r.company),
     job_title: strOrNull(r.job_title),
-    website: strOrNull(r.website ?? r.website_url),
+    website,
     bio: strOrNull(r.bio ?? r.about),
     last_login_at: strOrNull(r.last_login_at ?? r.last_login),
     approved_at: strOrNull(r.approved_at),
@@ -204,6 +207,7 @@ function normalizeUserDetail(raw: unknown): AdminUserDetail {
     approved_by_role: approvedBy.approved_by_role,
     permissions,
     two_factor_enabled: bool(r.two_factor_enabled ?? r.is_2fa_enabled ?? r.mfa_enabled),
+    social,
     social_links,
     job_applications,
     cvs,
@@ -275,6 +279,17 @@ export async function patchUserActiveStatus(
 export async function resetUserPassword(token: string, userId: number): Promise<void> {
   await fetchAuthedJson<unknown>(token, `/api/v1/admin/users/${userId}/reset-password`, {
     method: "POST",
+  });
+}
+
+export async function patchUserRole(
+  token: string,
+  userId: number,
+  role: UserRole,
+): Promise<void> {
+  await fetchAuthedJson<unknown>(token, `${BASE}/${userId}/role`, {
+    method: "PATCH",
+    body: { role },
   });
 }
 

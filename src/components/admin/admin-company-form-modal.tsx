@@ -213,7 +213,7 @@ export function AdminCompanyFormModal({
 
         <div className="space-y-1">
           <label htmlFor="company-career-id" className="text-sm font-medium text-foreground">
-            Career page URL ID
+          Career page Endpoint
           </label>
           <input
             id="company-career-id"
@@ -223,7 +223,7 @@ export function AdminCompanyFormModal({
             placeholder="1"
             inputMode="numeric"
           />
-          {initial?.career_page_url ? (
+          {/* {initial?.career_page_url ? (
             <p className="text-xs text-muted-foreground">
               Resolved URL: {initial.career_page_url}
             </p>
@@ -231,12 +231,12 @@ export function AdminCompanyFormModal({
             <p className="text-xs text-muted-foreground">
               FK to the career page URL lookup table. Leave blank if unknown.
             </p>
-          )}
+          )} */}
           {showFieldError("career_page_url_id") ? (
             <p className="text-xs text-destructive">{showFieldError("career_page_url_id")}</p>
           ) : null}
         </div>
-
+{/* 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
             <label htmlFor="company-method-id" className="text-sm font-medium text-foreground">
@@ -279,9 +279,9 @@ export function AdminCompanyFormModal({
               <p className="text-xs text-destructive">{showFieldError("api_endpoint")}</p>
             ) : null}
           </div>
-        </div>
+        </div> */}
 
-        <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
+        {/* <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
           <input
             type="checkbox"
             checked={values.is_active}
@@ -290,7 +290,7 @@ export function AdminCompanyFormModal({
           />
           Active
           <span className="text-xs text-muted-foreground">(scraper runs against this company)</span>
-        </label>
+        </label> */}
 
         {submitError ? (
           <p

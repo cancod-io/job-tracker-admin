@@ -3,7 +3,6 @@
 import { useEffect, type ComponentType, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Modal } from "@/components/ui/modal";
 import { useAuth } from "@/providers/auth-provider";
 
 type AdminRouteProps = {
@@ -15,7 +14,7 @@ type AdminRouteProps = {
  * Wrap segment layouts or pages that require an admin session.
  */
 export function AdminRoute({ children }: AdminRouteProps) {
-  const { status, user, logout } = useAuth();
+  const { status } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -53,55 +52,6 @@ export function AdminRoute({ children }: AdminRouteProps) {
           Go to sign in
         </Link>
       </div>
-    );
-  }
-
-  if (user && user.role !== "admin") {
-    function goToAuth(path: "/login" | "/register") {
-      logout();
-      router.replace(path);
-    }
-
-    return (
-      <Modal
-        aria-label="Admin access required"
-        title="Admin access required"
-        description="This console is restricted to administrator accounts."
-        onClose={() => goToAuth("/login")}
-        maxWidth="max-w-lg"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            You are signed in as <span className="font-medium text-foreground">{user.email}</span>{" "}
-            with role <span className="font-medium text-foreground">{user.role}</span>.
-          </p>
-          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              onClick={() => goToAuth("/login")}
-              className="hover:bg-primary/92 inline-flex h-10 min-w-[10rem] items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors"
-            >
-              Back to sign in
-            </button>
-            <button
-              type="button"
-              onClick={() => goToAuth("/register")}
-              className="inline-flex h-10 min-w-[10rem] items-center justify-center rounded-lg border border-border bg-background px-5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"
-            >
-              Register
-            </button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Looking for the public job board?{" "}
-            <a
-              href={process.env.NEXT_PUBLIC_USER_APP_URL ?? "http://localhost:3000"}
-              className="font-medium text-primary underline-offset-4 hover:underline"
-            >
-              Open main app
-            </a>
-          </p>
-        </div>
-      </Modal>
     );
   }
 

@@ -14,7 +14,7 @@ function RegisterFormInner() {
   const { status, register } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") ?? "/jobs";
+  const nextPath = searchParams.get("next") ?? "/";
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");

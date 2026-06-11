@@ -19,27 +19,33 @@ import {
 import { SidePanel } from "@/components/ui/side-panel";
 import { ApplicantAvatar } from "@/components/admin/applicant-avatar";
 import { AdminUserCvPreviewModal } from "@/components/admin/admin-user-cv-preview-modal";
+import { AdminRolePermissionsChecklist } from "@/components/admin/admin-role-permissions-checklist";
+import { updateRolePermissions } from "@/lib/admin-permissions-api";
+import { AdminUserRoleSection } from "@/components/admin/admin-user-role-section";
+import { AdminUserSocialLinksSection } from "@/components/admin/admin-user-social-links-section";
 import {
   deleteAdminUser,
   downloadUserCv,
   getAdminUser,
   patchUserApproval,
+  patchUserRole,
   resetUserPassword,
 } from "@/lib/admin-user-api";
 import { canPreviewFilename, formatFileSize } from "@/lib/admin-file-utils";
+import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { formatDateTime } from "@/lib/format-date";
 import { applicantBadgeClass, formatApplicantStatus } from "@/lib/applicant-status";
 import {
   approvalBadgeClass,
   approvalLabel,
-  canDeleteUser,
-  canManageUserApproval,
   formatApprovedBy,
+  roleLabel,
 } from "@/lib/user-approval";
 import { cn } from "@/lib/utils";
+import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
 import type { AdminUserCv, AdminUserDetail } from "@/types/admin-user-api";
-import type { UserApprovalStatus } from "@/types/auth";
+import type { UserApprovalStatus, UserRole } from "@/types/auth";
 
 type AdminUserDetailPanelProps = {
   userId: number | null;
@@ -83,6 +89,8 @@ function formatLocation(detail: AdminUserDetail): string {
 
 export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDetailPanelProps) {
   const { accessToken, user: currentUser } = useAuth();
+  const { can, matrix, loading: permissionsLoading, refetch: refetchPermissions } =
+    useAdminPermissions();
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -116,8 +124,11 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
   }, [userId, load]);
 
   const isSelf = currentUser != null && userId != null && currentUser.id === userId;
-  const canApproveReject = canManageUserApproval(currentUser?.role);
-  const canRemoveUser = canDeleteUser(currentUser?.role);
+  const canApproveReject = can("users.approve");
+  const canRemoveUser = can("users.delete");
+  const canResetPassword = can("users.reset_password");
+  const canChangeRole = can("users.change_role");
+  const canManagePermissions = can("permissions.manage");
 
   const runAction = async (fn: () => Promise<void>) => {
     setActionLoading(true);
@@ -140,6 +151,11 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
       return;
     }
     void runAction(() => patchUserApproval(accessToken, userId, status));
+  };
+
+  const handleSaveRole = async (role: UserRole) => {
+    if (!accessToken || userId == null) return;
+    await runAction(() => patchUserRole(accessToken, userId, role));
   };
 
   const handleResetPassword = () => {
@@ -195,10 +211,12 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
     }
   };
 
-  const copyEmail = async () => {
-    if (!detail?.email) return;
+  const copyEmail = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!detail?.email?.trim()) return;
     try {
-      await navigator.clipboard.writeText(detail.email);
+      await copyTextToClipboard(detail.email);
+      setError(null);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -263,10 +281,13 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                   <span className="truncate">{detail.email}</span>
                   <button
                     type="button"
-                    onClick={() => void copyEmail()}
-                    className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    aria-label="Copy email"
-                    title={copied ? "Copied" : "Copy email"}
+                    onClick={(e) => void copyEmail(e)}
+                    className={cn(
+                      "shrink-0 rounded p-1 transition-colors hover:bg-muted hover:text-foreground",
+                      copied ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground",
+                    )}
+                    aria-label={copied ? "Email copied" : "Copy email"}
+                    title={copied ? "Copied!" : "Copy email"}
                   >
                     <Copy className="size-3.5" aria-hidden />
                   </button>
@@ -274,8 +295,8 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                 <p className="mt-1 text-xs text-muted-foreground">
                   User ID: <span className="tabular-nums text-foreground">USR-{detail.id}</span>
                 </p>
-                <p className="text-xs capitalize text-muted-foreground">
-                  Role: <span className="text-foreground">{detail.role}</span>
+                <p className="text-xs text-muted-foreground">
+                  Role: <span className="text-foreground">{roleLabel(detail.role)}</span>
                 </p>
               </div>
             </div>
@@ -330,9 +351,6 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                 {detail.approved_at ? formatDateTime(detail.approved_at) : "—"}
               </DetailRow>
               <DetailRow label="Approved By">{formatApprovedBy(detail)}</DetailRow>
-              <DetailRow label="Role">
-                <span className="capitalize">{detail.role}</span>
-              </DetailRow>
               <DetailRow label="2FA">
                 <span
                   className={cn(
@@ -345,18 +363,30 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                   {detail.two_factor_enabled ? "Enabled" : "Disabled"}
                 </span>
               </DetailRow>
-              <DetailRow label="Permissions">
-                {detail.permissions.length > 0 ? (
-                  <ul className="list-inside list-disc space-y-0.5">
-                    {detail.permissions.map((p) => (
-                      <li key={p}>{p}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  "—"
-                )}
-              </DetailRow>
             </dl>
+            {canManagePermissions ? (
+              <div className="mt-4 border-t border-border/50 pt-4">
+                <AdminRolePermissionsChecklist
+                  targetRole={detail.role}
+                  matrix={matrix}
+                  loading={permissionsLoading}
+                  editable={canManagePermissions}
+                  compact
+                  onSave={
+                    detail.role !== "admin" && accessToken
+                      ? async (permissions) => {
+                          await updateRolePermissions(
+                            accessToken,
+                            detail.role as Exclude<UserRole, "admin">,
+                            { permissions },
+                          );
+                          await refetchPermissions();
+                        }
+                      : undefined
+                  }
+                />
+              </div>
+            ) : null}
           </Section>
 
           <Section icon={Briefcase} title="Profile Information">
@@ -389,6 +419,16 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
               </DetailRow>
             </dl>
           </Section>
+
+          <AdminUserRoleSection
+            currentRole={detail.role}
+            canEdit={canChangeRole}
+            isSelf={isSelf}
+            saving={actionLoading}
+            onSave={handleSaveRole}
+          />
+
+          <AdminUserSocialLinksSection social={detail.social} />
 
           {detail.job_applications.length > 0 ? (
             <Section icon={Briefcase} title="Job Applications">
@@ -480,26 +520,6 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
             </Section>
           ) : null}
 
-          {detail.social_links.length > 0 ? (
-            <Section icon={ExternalLink} title="Social Links">
-              <ul className="space-y-2">
-                {detail.social_links.map((link) => (
-                  <li key={`${link.platform}-${link.url}`}>
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                    >
-                      <span className="font-medium capitalize">{link.platform}</span>
-                      <ExternalLink className="size-3 opacity-70" aria-hidden />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </Section>
-          ) : null}
-
           {/* Actions */}
           <section className="border-t border-border/60 px-5 py-5">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -529,15 +549,17 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                   Reject
                 </button>
               ) : null}
-              <button
-                type="button"
-                disabled={actionLoading}
-                onClick={handleResetPassword}
-                className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border/80 bg-card px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
-              >
-                <KeyRound className="size-4 shrink-0" aria-hidden />
-                Reset password
-              </button>
+              {canResetPassword ? (
+                <button
+                  type="button"
+                  disabled={actionLoading}
+                  onClick={handleResetPassword}
+                  className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border/80 bg-card px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                >
+                  <KeyRound className="size-4 shrink-0" aria-hidden />
+                  Reset password
+                </button>
+              ) : null}
               {canRemoveUser ? (
                 <button
                   type="button"

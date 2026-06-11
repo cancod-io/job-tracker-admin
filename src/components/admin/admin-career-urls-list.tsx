@@ -19,6 +19,7 @@ import {
 } from "@/lib/career-url-api";
 import { formatDateTime } from "@/lib/format-date";
 import { cn } from "@/lib/utils";
+import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
 import { AdminCareerUrlDeleteConfirm } from "@/components/admin/admin-career-url-delete-confirm";
 import { AdminCareerUrlFormModal } from "@/components/admin/admin-career-url-form-modal";
@@ -59,6 +60,8 @@ function parseDomainParts(rawUrl: string): { host: string; domain: string; subdo
 
 export function AdminCareerUrlsList() {
   const { accessToken } = useAuth();
+  const { can } = useAdminPermissions();
+  const canManage = can("career_urls.manage");
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
@@ -202,14 +205,16 @@ export function AdminCareerUrlsList() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
-          >
-            <Plus className="size-4" aria-hidden />
-            Add Career URL
-          </button>
+          {canManage ? (
+            <button
+              type="button"
+              onClick={() => setShowCreate(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+            >
+              <Plus className="size-4" aria-hidden />
+              Add Career URL
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => void load()}
@@ -313,26 +318,30 @@ export function AdminCareerUrlsList() {
                         {formatDateTime(row.updated_at)}
                       </td>
                       <td className="px-4 py-3 align-middle text-right">
-                        <div className="flex justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => setEditing(row)}
-                            className="rounded-lg border border-border bg-card p-1.5 text-foreground hover:bg-muted"
-                            aria-label={`Edit career URL #${row.id}`}
-                            title="Edit"
-                          >
-                            <Pencil className="size-4" aria-hidden />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleting(row)}
-                            className="rounded-lg border border-destructive/30 bg-destructive/5 p-1.5 text-destructive hover:bg-destructive/10"
-                            aria-label={`Delete career URL #${row.id}`}
-                            title="Delete"
-                          >
-                            <Trash2 className="size-4" aria-hidden />
-                          </button>
-                        </div>
+                        {canManage ? (
+                          <div className="flex justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setEditing(row)}
+                              className="rounded-lg border border-border bg-card p-1.5 text-foreground hover:bg-muted"
+                              aria-label={`Edit career URL #${row.id}`}
+                              title="Edit"
+                            >
+                              <Pencil className="size-4" aria-hidden />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleting(row)}
+                              className="rounded-lg border border-destructive/30 bg-destructive/5 p-1.5 text-destructive hover:bg-destructive/10"
+                              aria-label={`Delete career URL #${row.id}`}
+                              title="Delete"
+                            >
+                              <Trash2 className="size-4" aria-hidden />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </td>
                     </tr>
                   );

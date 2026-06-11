@@ -21,6 +21,7 @@ import {
 } from "@/lib/applicant-status";
 import { formatDateTime } from "@/lib/format-date";
 import { cn } from "@/lib/utils";
+import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
 import { AdminJobDetailModal } from "@/components/admin/admin-job-detail-modal";
 import { AdminJobRemoveConfirm } from "@/components/admin/admin-job-remove-confirm";
@@ -56,6 +57,9 @@ function toCsvCell(value: string): string {
 
 export function AdminJobsList() {
   const { accessToken } = useAuth();
+  const { can } = useAdminPermissions();
+  const canDeleteJobs = can("jobs.delete");
+  const canViewApplications = can("applications.read");
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
@@ -368,6 +372,8 @@ export function AdminJobsList() {
                     job={job}
                     expanded={expanded.has(job.id)}
                     applicants={applicantsById[job.id]}
+                    canDelete={canDeleteJobs}
+                    canViewApplications={canViewApplications}
                     onToggle={() => toggleExpand(job)}
                     onRetryApplicants={() => void loadApplicants(job.id)}
                     onViewDetail={() => setViewingJob(job)}
@@ -509,6 +515,8 @@ type JobRowProps = {
   job: AdminJobDetail;
   expanded: boolean;
   applicants: ApplicantsState | undefined;
+  canDelete: boolean;
+  canViewApplications: boolean;
   onToggle: () => void;
   onRetryApplicants: () => void;
   onViewDetail: () => void;
@@ -520,13 +528,16 @@ function JobRow({
   job,
   expanded,
   applicants,
+  canDelete,
+  canViewApplications,
   onToggle,
   onRetryApplicants,
   onViewDetail,
   onRemove,
   onSelectApplicant,
 }: JobRowProps) {
-  const hasApplicants = job.applicants_total > 0 || job.applicants_preview.length > 0;
+  const hasApplicants =
+    canViewApplications && (job.applicants_total > 0 || job.applicants_preview.length > 0);
 
   return (
     <>
@@ -625,22 +636,24 @@ function JobRow({
               <Eye className="size-3.5" aria-hidden />
               Details
             </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove();
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="size-3.5" aria-hidden />
-              Remove
-            </button>
+            {canDelete ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove();
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="size-3.5" aria-hidden />
+                Remove
+              </button>
+            ) : null}
           </div>
         </td>
       </tr>
 
-      {expanded ? (
+      {expanded && canViewApplications ? (
         <tr className="border-b border-border/60 bg-muted/20">
           <td colSpan={5} className="px-4 py-4">
             <div className="border-l-2 border-primary/20 pl-4">

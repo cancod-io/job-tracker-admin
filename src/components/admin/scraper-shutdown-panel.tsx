@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { getExitInfo, gracefulShutdown } from "@/lib/scraper-api";
+import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import type { ExitInfoResponse } from "@/types/scraper-api";
 
 // ---------------------------------------------------------------------------
@@ -18,6 +19,9 @@ import type { ExitInfoResponse } from "@/types/scraper-api";
 // ---------------------------------------------------------------------------
 
 export function ScraperShutdownPanel() {
+  const { can } = useAdminPermissions();
+  const canManage = can("scraping.manage");
+
   // ── GET /exit ──
   const [infoLoading, setInfoLoading] = useState(false);
   const [infoData, setInfoData] = useState<ExitInfoResponse | null>(null);
@@ -139,6 +143,10 @@ export function ScraperShutdownPanel() {
                   </p>
                 </div>
               </div>
+            ) : !canManage ? (
+              <p className="text-xs text-muted-foreground">
+                Shutdown requires <code className="text-[10px]">scraping.manage</code> permission.
+              </p>
             ) : confirmOpen ? (
               <ConfirmShutdown
                 loading={shutdownLoading}

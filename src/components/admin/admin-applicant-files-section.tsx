@@ -10,6 +10,7 @@ import {
   formatFileSize,
 } from "@/lib/admin-file-utils";
 import { useAdminApplicationFiles } from "@/hooks/use-admin-application-files";
+import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { AdminApplicationFilePreviewModal } from "@/components/admin/admin-application-file-preview-modal";
 import { Spinner } from "@/components/ui/spinner";
 import type { AdminApplicationFile } from "@/types/admin-application-file";
@@ -17,11 +18,13 @@ import type { AdminApplicationFile } from "@/types/admin-application-file";
 function FileRow({
   file,
   busy,
+  canDelete,
   onPreview,
   onDelete,
 }: {
   file: AdminApplicationFile;
   busy: boolean;
+  canDelete: boolean;
   onPreview: () => void;
   onDelete: () => void;
 }) {
@@ -65,19 +68,21 @@ function FileRow({
             <Eye className="size-3.5" aria-hidden />
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={busy}
-          className={cn(
-            "inline-flex size-8 items-center justify-center rounded-md border border-destructive/30 text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60",
-          )}
-          aria-label={`Delete ${file.filename}`}
-        >
-          {busy ? <Spinner className="size-3.5 border-destructive/30 border-t-destructive" /> : (
-            <Trash2 className="size-3.5" aria-hidden />
-          )}
-        </button>
+        {canDelete ? (
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={busy}
+            className={cn(
+              "inline-flex size-8 items-center justify-center rounded-md border border-destructive/30 text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60",
+            )}
+            aria-label={`Delete ${file.filename}`}
+          >
+            {busy ? <Spinner className="size-3.5 border-destructive/30 border-t-destructive" /> : (
+              <Trash2 className="size-3.5" aria-hidden />
+            )}
+          </button>
+        ) : null}
       </div>
     </li>
   );
@@ -85,9 +90,20 @@ function FileRow({
 
 /** Applicant attachments for the admin Jobs screen — preview + delete only. */
 export function AdminApplicantFilesSection({ applicationId }: { applicationId: number }) {
+  const { can } = useAdminPermissions();
+  const canRead = can("applications.read");
+  const canDelete = can("applications.delete");
   const { files, loading, loadError, deletingId, deleteError, deleteFile } =
-    useAdminApplicationFiles(applicationId);
+    useAdminApplicationFiles(applicationId, { enabled: canRead });
   const [previewFile, setPreviewFile] = useState<AdminApplicationFile | null>(null);
+
+  if (!canRead) {
+    return (
+      <p className="text-xs italic text-muted-foreground">
+        You do not have permission to view application attachments.
+      </p>
+    );
+  }
 
   async function handleDelete(file: AdminApplicationFile) {
     if (!window.confirm(`Delete “${file.filename}”? This permanently removes the file.`)) return;
@@ -127,6 +143,7 @@ export function AdminApplicantFilesSection({ applicationId }: { applicationId: n
               key={file.id}
               file={file}
               busy={deletingId === file.id}
+              canDelete={canDelete}
               onPreview={() => setPreviewFile(file)}
               onDelete={() => void handleDelete(file)}
             />

@@ -12,6 +12,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   "career-urls": "Career URLs",
   scrapers: "Scrapers",
   logs: "Logs",
+  permissions: "Role Permissions",
   login: "Sign in",
   register: "Register",
 };

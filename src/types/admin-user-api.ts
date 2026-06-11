@@ -25,6 +25,14 @@ export type AdminUserSocialLink = {
   url: string;
 };
 
+/** Flat social URLs from the user profile (matches the member app form). */
+export type AdminUserSocialFields = {
+  linkedin_url: string | null;
+  twitter_url: string | null;
+  github_url: string | null;
+  portfolio_url: string | null;
+};
+
 export type AdminUserJobApplication = {
   application_id: number;
   job_id: number;
@@ -66,6 +74,7 @@ export type AdminUserDetail = {
   approved_by_role: string | null;
   permissions: string[];
   two_factor_enabled: boolean;
+  social: AdminUserSocialFields;
   social_links: AdminUserSocialLink[];
   job_applications: AdminUserJobApplication[];
   cvs: AdminUserCv[];

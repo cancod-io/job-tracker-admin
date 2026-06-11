@@ -22,6 +22,7 @@ import {
 } from "@/lib/company-api";
 import { formatDateTime } from "@/lib/format-date";
 import { cn } from "@/lib/utils";
+import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
 import { AdminCompanyFormModal } from "@/components/admin/admin-company-form-modal";
 import { AdminCompanyDeleteConfirm } from "@/components/admin/admin-company-delete-confirm";
@@ -41,6 +42,8 @@ type Toast = { kind: "success" | "error"; message: string } | null;
 
 export function AdminCompaniesList() {
   const { accessToken } = useAuth();
+  const { can } = useAdminPermissions();
+  const canManage = can("companies.manage");
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
@@ -252,35 +255,41 @@ export function AdminCompaniesList() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowImport(true)}
-            className="inline-flex items-center gap-2 rounded-lg border border-border/80 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-          >
-            <Upload className="size-4" aria-hidden />
-            Import CSV
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleExport()}
-            disabled={exporting}
-            className="inline-flex items-center gap-2 rounded-lg border border-border/80 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
-          >
-            {exporting ? (
-              <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
-            ) : (
-              <Download className="size-4" aria-hidden />
-            )}
-            Export CSV
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
-          >
-            <Plus className="size-4" aria-hidden />
-            Add Company
-          </button>
+          {canManage ? (
+            <button
+              type="button"
+              onClick={() => setShowImport(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-border/80 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              <Upload className="size-4" aria-hidden />
+              Import CSV
+            </button>
+          ) : null}
+          {canManage ? (
+            <button
+              type="button"
+              onClick={() => void handleExport()}
+              disabled={exporting}
+              className="inline-flex items-center gap-2 rounded-lg border border-border/80 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
+            >
+              {exporting ? (
+                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
+              ) : (
+                <Download className="size-4" aria-hidden />
+              )}
+              Export CSV
+            </button>
+          ) : null}
+          {canManage ? (
+            <button
+              type="button"
+              onClick={() => setShowCreate(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+            >
+              <Plus className="size-4" aria-hidden />
+              Add Company
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => void load()}
@@ -326,15 +335,12 @@ export function AdminCompaniesList() {
             Loading companies…
           </div>
         ) : (
-          <table className="w-full min-w-[960px] text-left text-sm">
+          <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-border/80 bg-muted/40 text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Website URL</th>
                 <th className="px-4 py-3 font-medium">Career Page URL</th>
-                <th className="px-4 py-3 font-medium">Method</th>
-                <th className="px-4 py-3 font-medium">API Endpoint</th>
-                <th className="px-4 py-3 font-medium">Active</th>
                 <th className="px-4 py-3 font-medium">Last Scraped At</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
@@ -342,7 +348,7 @@ export function AdminCompaniesList() {
             <tbody>
               {!data || data.items.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
                     {filtersActive
                       ? "No companies match the current filters."
                       : "No companies yet. Add your first company or import a CSV to get started."}
@@ -360,48 +366,34 @@ export function AdminCompaniesList() {
                     <td className="px-4 py-3 align-middle">
                       <ExternalLinkCell url={c.career_page_url} />
                     </td>
-                    <td className="px-4 py-3 align-middle text-muted-foreground">
-                      {c.scraping_method ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 align-middle text-muted-foreground">
-                      {c.api_endpoint ? <ExternalLinkCell url={c.api_endpoint} /> : "—"}
-                    </td>
-                    <td className="px-4 py-3 align-middle">
-                      <span
-                        className={cn(
-                          "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                          c.is_active
-                            ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200"
-                            : "border-border bg-muted text-muted-foreground",
-                        )}
-                      >
-                        {c.is_active ? "Active" : "Inactive"}
-                      </span>
-                    </td>
                     <td className="whitespace-nowrap px-4 py-3 align-middle text-muted-foreground tabular-nums">
                       {c.last_scraped_at ? formatDateTime(c.last_scraped_at) : "—"}
                     </td>
                     <td className="px-4 py-3 align-middle text-right">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setEditing(c)}
-                          className="rounded-lg border border-border bg-card p-1.5 text-foreground hover:bg-muted"
-                          aria-label={`Edit ${c.name}`}
-                          title="Edit"
-                        >
-                          <Pencil className="size-4" aria-hidden />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleting(c)}
-                          className="rounded-lg border border-destructive/30 bg-destructive/5 p-1.5 text-destructive hover:bg-destructive/10"
-                          aria-label={`Delete ${c.name}`}
-                          title="Delete"
-                        >
-                          <Trash2 className="size-4" aria-hidden />
-                        </button>
-                      </div>
+                      {canManage ? (
+                        <div className="flex justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setEditing(c)}
+                            className="rounded-lg border border-border bg-card p-1.5 text-foreground hover:bg-muted"
+                            aria-label={`Edit ${c.name}`}
+                            title="Edit"
+                          >
+                            <Pencil className="size-4" aria-hidden />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleting(c)}
+                            className="rounded-lg border border-destructive/30 bg-destructive/5 p-1.5 text-destructive hover:bg-destructive/10"
+                            aria-label={`Delete ${c.name}`}
+                            title="Delete"
+                          >
+                            <Trash2 className="size-4" aria-hidden />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </td>
                   </tr>
                 ))
