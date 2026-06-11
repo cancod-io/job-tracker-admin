@@ -46,6 +46,25 @@ export type CompanyUpdatePatch = {
   last_scraped_at?: string | null;
 };
 
+/** Form payload — career page is entered as URL text and resolved before the API call. */
+export type CompanyFormPayload = {
+  name: string;
+  website_url?: string | null;
+  career_page_url?: string | null;
+  scraping_method_id?: number | null;
+  api_endpoint?: string | null;
+  is_active: boolean;
+};
+
+export type CompanyFormUpdatePayload = {
+  name?: string | null;
+  website_url?: string | null;
+  career_page_url?: string | null;
+  scraping_method_id?: number | null;
+  api_endpoint?: string | null;
+  is_active?: boolean | null;
+};
+
 /** Filter the list view by active/inactive. `all` means no filter. */
 export type CompanyStatusFilter = "all" | "active" | "inactive";
 
