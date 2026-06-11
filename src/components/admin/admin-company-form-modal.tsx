@@ -4,11 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
-import type {
-  Company,
-  CompanyCreateRequest,
-  CompanyUpdatePatch,
-} from "@/types/company-api";
+import type { Company, CompanyFormPayload, CompanyFormUpdatePayload } from "@/types/company-api";
 
 type Mode = "create" | "edit";
 
@@ -16,13 +12,13 @@ type AdminCompanyFormModalProps = {
   mode: Mode;
   initial?: Company | null;
   onClose: () => void;
-  onSubmit: (payload: CompanyCreateRequest | CompanyUpdatePatch) => Promise<void>;
+  onSubmit: (payload: CompanyFormPayload | CompanyFormUpdatePayload) => Promise<void>;
 };
 
 type FormValues = {
   name: string;
   website_url: string;
-  career_page_url_id: string;
+  career_page_url: string;
   scraping_method_id: string;
   api_endpoint: string;
   is_active: boolean;
@@ -51,8 +47,7 @@ function toFormValues(initial?: Company | null): FormValues {
   return {
     name: initial?.name ?? "",
     website_url: initial?.website_url ?? "",
-    career_page_url_id:
-      initial?.career_page_url_id != null ? String(initial.career_page_url_id) : "",
+    career_page_url: initial?.career_page_url ?? "",
     scraping_method_id:
       initial?.scraping_method_id != null ? String(initial.scraping_method_id) : "",
     api_endpoint: initial?.api_endpoint ?? "",
@@ -74,11 +69,6 @@ function validate(values: FormValues): FieldErrors {
     errors.website_url = "Enter a valid http(s) URL or leave blank.";
   }
 
-  const careerId = values.career_page_url_id.trim();
-  if (careerId && parseOptionalId(careerId) == null) {
-    errors.career_page_url_id = "Enter a positive integer ID or leave blank.";
-  }
-
   const methodId = values.scraping_method_id.trim();
   if (methodId && parseOptionalId(methodId) == null) {
     errors.scraping_method_id = "Enter a positive integer ID or leave blank.";
@@ -92,22 +82,22 @@ function validate(values: FormValues): FieldErrors {
   return errors;
 }
 
-function toCreatePayload(values: FormValues): CompanyCreateRequest {
+function toCreatePayload(values: FormValues): CompanyFormPayload {
   return {
     name: values.name.trim(),
     website_url: values.website_url.trim() || null,
-    career_page_url_id: parseOptionalId(values.career_page_url_id),
+    career_page_url: values.career_page_url.trim() || null,
     scraping_method_id: parseOptionalId(values.scraping_method_id),
     api_endpoint: values.api_endpoint.trim() || null,
     is_active: values.is_active,
   };
 }
 
-function toUpdatePayload(values: FormValues): CompanyUpdatePatch {
+function toUpdatePayload(values: FormValues): CompanyFormUpdatePayload {
   return {
     name: values.name.trim() || null,
     website_url: values.website_url.trim() || null,
-    career_page_url_id: parseOptionalId(values.career_page_url_id),
+    career_page_url: values.career_page_url.trim() || null,
     scraping_method_id: parseOptionalId(values.scraping_method_id),
     api_endpoint: values.api_endpoint.trim() || null,
     is_active: values.is_active,
@@ -212,85 +202,25 @@ export function AdminCompanyFormModal({
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="company-career-id" className="text-sm font-medium text-foreground">
-          Career page Endpoint
+          <label htmlFor="company-career-url" className="text-sm font-medium text-foreground">
+            Career Page URL
           </label>
           <input
-            id="company-career-id"
-            value={values.career_page_url_id}
-            onChange={(e) => setField("career_page_url_id", e.target.value)}
-            className={inputClass("career_page_url_id")}
-            placeholder="1"
-            inputMode="numeric"
+            id="company-career-url"
+            value={values.career_page_url}
+            onChange={(e) => setField("career_page_url", e.target.value)}
+            className={inputClass("career_page_url")}
+            placeholder="https://acme.com/careers"
+            inputMode="url"
           />
-          {/* {initial?.career_page_url ? (
-            <p className="text-xs text-muted-foreground">
-              Resolved URL: {initial.career_page_url}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              FK to the career page URL lookup table. Leave blank if unknown.
-            </p>
-          )} */}
-          {showFieldError("career_page_url_id") ? (
-            <p className="text-xs text-destructive">{showFieldError("career_page_url_id")}</p>
+          <p className="text-xs text-muted-foreground">
+            If this URL already exists in Career URLs, the company links to that record. Otherwise
+            it is added automatically.
+          </p>
+          {showFieldError("career_page_url") ? (
+            <p className="text-xs text-destructive">{showFieldError("career_page_url")}</p>
           ) : null}
         </div>
-{/* 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1">
-            <label htmlFor="company-method-id" className="text-sm font-medium text-foreground">
-              Scraping method ID
-            </label>
-            <input
-              id="company-method-id"
-              value={values.scraping_method_id}
-              onChange={(e) => setField("scraping_method_id", e.target.value)}
-              className={inputClass("scraping_method_id")}
-              placeholder="1"
-              inputMode="numeric"
-            />
-            {initial?.scraping_method ? (
-              <p className="text-xs text-muted-foreground">
-                Resolved method: {initial.scraping_method}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                FK to the scraping method lookup table.
-              </p>
-            )}
-            {showFieldError("scraping_method_id") ? (
-              <p className="text-xs text-destructive">{showFieldError("scraping_method_id")}</p>
-            ) : null}
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="company-endpoint" className="text-sm font-medium text-foreground">
-              API endpoint
-            </label>
-            <input
-              id="company-endpoint"
-              value={values.api_endpoint}
-              onChange={(e) => setField("api_endpoint", e.target.value)}
-              className={inputClass("api_endpoint")}
-              placeholder="https://api.example.com/jobs"
-              inputMode="url"
-            />
-            {showFieldError("api_endpoint") ? (
-              <p className="text-xs text-destructive">{showFieldError("api_endpoint")}</p>
-            ) : null}
-          </div>
-        </div> */}
-
-        {/* <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            checked={values.is_active}
-            onChange={(e) => setField("is_active", e.target.checked)}
-            className="rounded border-border"
-          />
-          Active
-          <span className="text-xs text-muted-foreground">(scraper runs against this company)</span>
-        </label> */}
 
         {submitError ? (
           <p

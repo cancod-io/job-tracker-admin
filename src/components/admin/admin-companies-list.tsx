@@ -12,6 +12,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+import { toCompanyCreateRequest, toCompanyUpdatePatch } from "@/lib/company-form-api";
 import {
   createCompany,
   deleteCompany,
@@ -29,10 +30,10 @@ import { AdminCompanyDeleteConfirm } from "@/components/admin/admin-company-dele
 import { AdminCompanyCsvImportModal } from "@/components/admin/admin-company-csv-import-modal";
 import type {
   Company,
-  CompanyCreateRequest,
+  CompanyFormPayload,
+  CompanyFormUpdatePayload,
   CompanyListResponse,
   CompanyStatusFilter,
-  CompanyUpdatePatch,
 } from "@/types/company-api";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
@@ -118,18 +119,20 @@ export function AdminCompaniesList() {
     setPage(1);
   };
 
-  const handleCreate = async (payload: CompanyCreateRequest | CompanyUpdatePatch) => {
+  const handleCreate = async (payload: CompanyFormPayload | CompanyFormUpdatePayload) => {
     if (!accessToken) throw new Error("Not signed in.");
-    await createCompany(accessToken, payload as CompanyCreateRequest);
+    const apiPayload = await toCompanyCreateRequest(accessToken, payload as CompanyFormPayload);
+    await createCompany(accessToken, apiPayload);
     const name = typeof payload.name === "string" ? payload.name : "Company";
     setToast({ kind: "success", message: `Created “${name}”.` });
     setPage(1);
     await load();
   };
 
-  const handleUpdate = async (id: number, payload: CompanyCreateRequest | CompanyUpdatePatch) => {
+  const handleUpdate = async (id: number, payload: CompanyFormPayload | CompanyFormUpdatePayload) => {
     if (!accessToken) throw new Error("Not signed in.");
-    await updateCompany(accessToken, id, payload as CompanyUpdatePatch);
+    const apiPayload = await toCompanyUpdatePatch(accessToken, payload as CompanyFormUpdatePayload);
+    await updateCompany(accessToken, id, apiPayload);
     const name = typeof payload.name === "string" ? payload.name : "Company";
     setToast({ kind: "success", message: `Updated “${name}”.` });
     await load();
