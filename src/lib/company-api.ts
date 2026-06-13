@@ -107,6 +107,32 @@ export async function listCompanies(
   return normalizeCompanyListResponse(raw, params.page, params.page_size);
 }
 
+const LIST_ALL_PAGE_SIZE = 100;
+
+/** Fetch every company matching the list filters (paginates until complete). */
+export async function listAllCompanies(
+  token: string,
+  params: Omit<ListCompaniesParams, "page" | "page_size">,
+): Promise<Company[]> {
+  const all: Company[] = [];
+  let page = 1;
+  let total = 0;
+
+  do {
+    const body = await listCompanies(token, {
+      ...params,
+      page,
+      page_size: LIST_ALL_PAGE_SIZE,
+    });
+    total = body.total;
+    all.push(...body.items);
+    if (body.items.length === 0) break;
+    page += 1;
+  } while (all.length < total);
+
+  return all;
+}
+
 export function getCompany(token: string, companyId: number): Promise<Company> {
   return fetchAuthedJson<Company>(token, `${BASE}/${companyId}`);
 }
