@@ -18,6 +18,7 @@ import {
   deleteCompany,
   exportCompaniesCsv,
   importCompaniesCsv,
+  listAllCompanies,
   listCompanies,
   updateCompany,
 } from "@/lib/company-api";
@@ -41,6 +42,10 @@ const DEFAULT_PAGE_SIZE = 10;
 
 type Toast = { kind: "success" | "error"; message: string } | null;
 
+type DeleteConfirmState =
+  | { mode: "selected"; companies: Company[] }
+  | { mode: "all"; total: number; filtered: boolean };
+
 export function AdminCompaniesList() {
   const { accessToken } = useAuth();
   const { can } = useAdminPermissions();
@@ -60,7 +65,9 @@ export function AdminCompaniesList() {
   const [exporting, setExporting] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<Company | null>(null);
-  const [deleting, setDeleting] = useState<Company | null>(null);
+  const [deleting, setDeleting] = useState<DeleteConfirmState | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
   // Auto-dismiss toast.
@@ -107,6 +114,45 @@ export function AdminCompaniesList() {
     if (data && page > totalPages) setPage(totalPages);
   }, [data, page, totalPages]);
 
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page, pageSize, search, status]);
+
+  const pageItems = data?.items ?? [];
+  const selectedOnPageCount = pageItems.filter((c) => selectedIds.has(c.id)).length;
+  const allOnPageSelected =
+    pageItems.length > 0 && selectedOnPageCount === pageItems.length;
+  const someOnPageSelected =
+    selectedOnPageCount > 0 && selectedOnPageCount < pageItems.length;
+
+  const selectedCompanies = useMemo(
+    () => pageItems.filter((c) => selectedIds.has(c.id)),
+    [pageItems, selectedIds],
+  );
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllOnPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allOnPageSelected) {
+        for (const c of pageItems) next.delete(c.id);
+      } else {
+        for (const c of pageItems) next.add(c.id);
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
   const applySearch = () => {
     setSearch(searchDraft.trim());
     setPage(1);
@@ -138,11 +184,45 @@ export function AdminCompaniesList() {
     await load();
   };
 
-  const handleDelete = async (company: Company) => {
+  const handleDelete = async (companies: Company[]) => {
     if (!accessToken) throw new Error("Not signed in.");
-    await deleteCompany(accessToken, company.id);
-    setToast({ kind: "success", message: `Deleted “${company.name}”.` });
+    const results = await Promise.allSettled(
+      companies.map((c) => deleteCompany(accessToken, c.id)),
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const succeeded = companies.length - failed;
+
+    if (succeeded > 0) {
+      setToast({
+        kind: failed > 0 ? "error" : "success",
+        message:
+          failed > 0
+            ? `Deleted ${succeeded} of ${companies.length} companies. ${failed} failed.`
+            : companies.length === 1
+              ? `Deleted “${companies[0]?.name ?? "company"}”.`
+              : `Deleted ${succeeded} companies.`,
+      });
+    }
+    if (failed > 0 && succeeded === 0) {
+      const firstError = results.find((r) => r.status === "rejected");
+      throw new Error(
+        firstError?.status === "rejected" && firstError.reason instanceof Error
+          ? firstError.reason.message
+          : "Delete failed.",
+      );
+    }
+
+    clearSelection();
     await load();
+  };
+
+  const handleDeleteAll = async () => {
+    if (!accessToken) throw new Error("Not signed in.");
+    const all = await listAllCompanies(accessToken, { search, status });
+    if (all.length === 0) {
+      throw new Error("No companies to delete.");
+    }
+    await handleDelete(all);
   };
 
   const handleExport = async () => {
@@ -293,6 +373,23 @@ export function AdminCompaniesList() {
               Add Company
             </button>
           ) : null}
+          {canManage && paginationTotal > 0 ? (
+            <button
+              type="button"
+              onClick={() =>
+                setDeleting({
+                  mode: "all",
+                  total: paginationTotal,
+                  filtered: filtersActive,
+                })
+              }
+              disabled={bulkDeleting || loading}
+              className="inline-flex items-center gap-2 rounded-lg border border-destructive/35 bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive hover:bg-destructive/15 disabled:opacity-50"
+            >
+              <Trash2 className="size-4" aria-hidden />
+              Delete all
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => void load()}
@@ -330,6 +427,34 @@ export function AdminCompaniesList() {
         </p>
       ) : null}
 
+      {canManage && selectedIds.size > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3">
+          <p className="text-sm text-foreground">
+            <span className="font-semibold tabular-nums">{selectedIds.size}</span>{" "}
+            {selectedIds.size === 1 ? "company" : "companies"} selected on this page
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={clearSelection}
+              disabled={bulkDeleting}
+              className="rounded-lg border border-border/80 bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
+            >
+              Clear selection
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeleting({ mode: "selected", companies: selectedCompanies })}
+              disabled={bulkDeleting}
+              className="inline-flex items-center gap-2 rounded-lg border border-destructive/35 bg-destructive/10 px-3 py-1.5 text-sm font-semibold text-destructive hover:bg-destructive/15 disabled:opacity-50"
+            >
+              <Trash2 className="size-4" aria-hidden />
+              Delete selected
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {/* Table */}
       <div className="overflow-x-auto rounded-2xl border border-border/80 bg-card shadow-sm">
         {loading && !data ? (
@@ -341,6 +466,21 @@ export function AdminCompaniesList() {
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-border/80 bg-muted/40 text-muted-foreground">
               <tr>
+                {canManage ? (
+                  <th className="w-10 px-4 py-3">
+                    <input
+                      type="checkbox"
+                      className="size-4 rounded border-border accent-primary"
+                      checked={allOnPageSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = someOnPageSelected;
+                      }}
+                      onChange={toggleSelectAllOnPage}
+                      disabled={pageItems.length === 0 || loading}
+                      aria-label="Select all companies on this page"
+                    />
+                  </th>
+                ) : null}
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Website URL</th>
                 <th className="px-4 py-3 font-medium">Career Page URL</th>
@@ -351,7 +491,7 @@ export function AdminCompaniesList() {
             <tbody>
               {!data || data.items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={canManage ? 6 : 5} className="px-4 py-12 text-center text-muted-foreground">
                     {filtersActive
                       ? "No companies match the current filters."
                       : "No companies yet. Add your first company or import a CSV to get started."}
@@ -359,7 +499,24 @@ export function AdminCompaniesList() {
                 </tr>
               ) : (
                 data.items.map((c) => (
-                  <tr key={c.id} className="border-b border-border/60 last:border-0">
+                  <tr
+                    key={c.id}
+                    className={cn(
+                      "border-b border-border/60 last:border-0",
+                      selectedIds.has(c.id) && "bg-primary/5",
+                    )}
+                  >
+                    {canManage ? (
+                      <td className="px-4 py-3 align-middle">
+                        <input
+                          type="checkbox"
+                          className="size-4 rounded border-border accent-primary"
+                          checked={selectedIds.has(c.id)}
+                          onChange={() => toggleSelect(c.id)}
+                          aria-label={`Select ${c.name}`}
+                        />
+                      </td>
+                    ) : null}
                     <td className="px-4 py-3 align-middle font-medium text-foreground">
                       {c.name}
                     </td>
@@ -386,7 +543,7 @@ export function AdminCompaniesList() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setDeleting(c)}
+                            onClick={() => setDeleting({ mode: "selected", companies: [c] })}
                             className="rounded-lg border border-destructive/30 bg-destructive/5 p-1.5 text-destructive hover:bg-destructive/10"
                             aria-label={`Delete ${c.name}`}
                             title="Delete"
@@ -485,9 +642,25 @@ export function AdminCompaniesList() {
 
       {deleting ? (
         <AdminCompanyDeleteConfirm
-          company={deleting}
+          companies={deleting.mode === "selected" ? deleting.companies : []}
+          deleteAll={
+            deleting.mode === "all"
+              ? { total: deleting.total, filtered: deleting.filtered }
+              : undefined
+          }
           onClose={() => setDeleting(null)}
-          onConfirm={() => handleDelete(deleting)}
+          onConfirm={async () => {
+            setBulkDeleting(true);
+            try {
+              if (deleting.mode === "all") {
+                await handleDeleteAll();
+              } else {
+                await handleDelete(deleting.companies);
+              }
+            } finally {
+              setBulkDeleting(false);
+            }
+          }}
         />
       ) : null}
 
