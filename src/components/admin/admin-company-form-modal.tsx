@@ -201,7 +201,7 @@ export function AdminCompanyFormModal({
           ) : null}
         </div>
 
-        <div className="space-y-1">
+        {/* <div className="space-y-1">
           <label htmlFor="company-career-url" className="text-sm font-medium text-foreground">
             Career Page URL
           </label>
@@ -220,7 +220,7 @@ export function AdminCompanyFormModal({
           {showFieldError("career_page_url") ? (
             <p className="text-xs text-destructive">{showFieldError("career_page_url")}</p>
           ) : null}
-        </div>
+        </div> */}
 
         {submitError ? (
           <p

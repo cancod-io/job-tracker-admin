@@ -338,7 +338,7 @@ export function AdminCompaniesList() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {canManage ? (
+          {/* {canManage ? (
             <button
               type="button"
               onClick={() => setShowImport(true)}
@@ -347,8 +347,8 @@ export function AdminCompaniesList() {
               <Upload className="size-4" aria-hidden />
               Import CSV
             </button>
-          ) : null}
-          {canManage ? (
+          ) : null} */}
+          {/* {canManage ? (
             <button
               type="button"
               onClick={() => void handleExport()}
@@ -362,7 +362,7 @@ export function AdminCompaniesList() {
               )}
               Export CSV
             </button>
-          ) : null}
+          ) : null} */}
           {canManage ? (
             <button
               type="button"
@@ -483,7 +483,7 @@ export function AdminCompaniesList() {
                 ) : null}
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Website URL</th>
-                <th className="px-4 py-3 font-medium">Career Page URL</th>
+                {/* <th className="px-4 py-3 font-medium">Career Page URL</th> */}
                 <th className="px-4 py-3 font-medium">Last Scraped At</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
@@ -523,9 +523,9 @@ export function AdminCompaniesList() {
                     <td className="px-4 py-3 align-middle">
                       <ExternalLinkCell url={c.website_url} />
                     </td>
-                    <td className="px-4 py-3 align-middle">
+                    {/* <td className="px-4 py-3 align-middle">
                       <ExternalLinkCell url={c.career_page_url} />
-                    </td>
+                    </td> */}
                     <td className="whitespace-nowrap px-4 py-3 align-middle text-muted-foreground tabular-nums">
                       {c.last_scraped_at ? formatDateTime(c.last_scraped_at) : "—"}
                     </td>
