@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
+import { ConfirmDialogFooter } from "@/components/ui/confirm-dialog-footer";
 import type { CareerUrl } from "@/types/career-url-api";
 
 type AdminCareerUrlDeleteConfirmProps = {
@@ -46,36 +46,12 @@ export function AdminCareerUrlDeleteConfirm({
       </p>
       <p className="mt-2 break-all text-sm text-muted-foreground">{careerUrl.career_url}</p>
 
-      {error ? (
-        <p
-          className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          role="alert"
-        >
-          {error}
-        </p>
-      ) : null}
-
-      <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={busy}
-          className="rounded-lg border border-border/80 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={() => void handleConfirm()}
-          disabled={busy}
-          className="inline-flex items-center gap-2 rounded-lg bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground shadow-sm hover:bg-destructive/90 disabled:opacity-60"
-        >
-          {busy ? (
-            <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
-          ) : null}
-          Delete
-        </button>
-      </div>
+      <ConfirmDialogFooter
+        error={error}
+        busy={busy}
+        onClose={onClose}
+        onConfirm={() => void handleConfirm()}
+      />
     </Modal>
   );
 }

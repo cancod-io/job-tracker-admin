@@ -23,6 +23,8 @@ import { AdminRolePermissionsChecklist } from "@/components/admin/admin-role-per
 import { updateRolePermissions } from "@/lib/admin-permissions-api";
 import { AdminUserRoleSection } from "@/components/admin/admin-user-role-section";
 import { AdminUserSocialLinksSection } from "@/components/admin/admin-user-social-links-section";
+import { DetailRow } from "@/components/admin/shared/detail-row";
+import { DetailSection } from "@/components/admin/shared/detail-section";
 import {
   deleteAdminUser,
   downloadUserCv,
@@ -52,35 +54,6 @@ type AdminUserDetailPanelProps = {
   onClose: () => void;
   onUpdated: () => void;
 };
-
-function Section({
-  icon: Icon,
-  title,
-  children,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="border-b border-border/60 px-5 py-4 last:border-0">
-      <div className="mb-3 flex items-center gap-2">
-        <Icon className="size-4 text-primary" aria-hidden />
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-[7.5rem_1fr] gap-3 py-1.5 text-sm sm:grid-cols-[8.5rem_1fr]">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-foreground">{children}</dd>
-    </div>
-  );
-}
 
 function formatLocation(detail: AdminUserDetail): string {
   const parts = [detail.city, detail.country, detail.zip_code].filter(Boolean);
@@ -311,7 +284,7 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
             </p>
           ) : null}
 
-          <Section icon={UserRound} title="Account Information">
+          <DetailSection icon={UserRound} title="Account Information">
             <dl>
               <DetailRow label="Full Name">{detail.full_name || "—"}</DetailRow>
               <DetailRow label="Email">{detail.email || "—"}</DetailRow>
@@ -333,9 +306,9 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                 </span>
               </DetailRow>
             </dl>
-          </Section>
+          </DetailSection>
 
-          <Section icon={Shield} title="Status & Permissions">
+          <DetailSection icon={Shield} title="Status & Permissions">
             <dl>
               <DetailRow label="Approval Status">
                 <span
@@ -387,9 +360,9 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                 />
               </div>
             ) : null}
-          </Section>
+          </DetailSection>
 
-          <Section icon={Briefcase} title="Profile Information">
+          <DetailSection icon={Briefcase} title="Profile Information">
             <dl>
               <DetailRow label="Country">{detail.country || "—"}</DetailRow>
               <DetailRow label="City">{detail.city || "—"}</DetailRow>
@@ -418,7 +391,7 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                 )}
               </DetailRow>
             </dl>
-          </Section>
+          </DetailSection>
 
           <AdminUserRoleSection
             currentRole={detail.role}
@@ -431,7 +404,7 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
           <AdminUserSocialLinksSection social={detail.social} />
 
           {detail.job_applications.length > 0 ? (
-            <Section icon={Briefcase} title="Job Applications">
+            <DetailSection icon={Briefcase} title="Job Applications">
               <ul className="space-y-2">
                 {detail.job_applications.map((app) => (
                   <li
@@ -460,11 +433,11 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                   </li>
                 ))}
               </ul>
-            </Section>
+            </DetailSection>
           ) : null}
 
           {detail.cvs.length > 0 ? (
-            <Section icon={Download} title="CVs / Resumes">
+            <DetailSection icon={Download} title="CVs / Resumes">
               <ul className="space-y-2">
                 {detail.cvs.map((cv) => (
                   <li
@@ -517,7 +490,7 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                   </li>
                 ))}
               </ul>
-            </Section>
+            </DetailSection>
           ) : null}
 
           {/* Actions */}
