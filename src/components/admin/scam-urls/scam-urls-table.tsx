@@ -138,15 +138,15 @@ function EmptyState({
   onAdd: () => void;
 }) {
   const message = filtersActive || searchActive
-    ? "No scam URLs match the current search or filters."
-    : "You haven't added any scam URLs yet.";
+    ? "No Block Lists match the current search or filters."
+    : "You haven't added any Block Lists yet.";
 
   return (
     <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
       <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
         <ShieldAlert className="size-7" aria-hidden />
       </div>
-      <p className="text-base font-medium text-foreground">No scam URLs found</p>
+      <p className="text-base font-medium text-foreground">No Block Lists found</p>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">{message}</p>
       {canManage && !filtersActive && !searchActive ? (
         <button
@@ -192,7 +192,7 @@ export function ScamUrlsTable({
     <>
       <div className="space-y-3 md:hidden">
         {loading && !hasLoaded ? (
-          <DataTable loading loadingMessage="Loading scam URLs…">
+          <DataTable loading loadingMessage="Loading Block Lists…">
             <tbody />
           </DataTable>
         ) : (
@@ -230,7 +230,7 @@ export function ScamUrlsTable({
 
       <DataTable
         loading={loading && !hasLoaded}
-        loadingMessage="Loading scam URLs…"
+        loadingMessage="Loading Block Lists…"
         minWidth="900px"
         className="hidden md:block"
       >

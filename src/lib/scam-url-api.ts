@@ -1,5 +1,5 @@
 /**
- * Browser-side client for the Scam URLs admin API.
+ * Browser-side client for the Block Lists admin API.
  *
  * Endpoints:
  *   GET    /api/admin/scam-urls              — list (page, page_size, q)
