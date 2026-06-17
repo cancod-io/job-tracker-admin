@@ -63,7 +63,7 @@ export function ScamUrlsToolbar({
             onChange={onSearchDraftChange}
             onSearch={onSearch}
             placeholder="Search URL or domain…"
-            ariaLabel="Search scam URLs"
+            ariaLabel="Search Block Lists"
           />
           <label className="flex items-center gap-2 whitespace-nowrap text-sm text-muted-foreground">
             <span className="sr-only sm:not-sr-only">Type</span>
@@ -121,7 +121,7 @@ export function ScamUrlsToolbar({
           <RefreshButton
             onClick={onRefresh}
             loading={loading}
-            ariaLabel="Refresh scam URLs"
+            ariaLabel="Refresh Block Lists"
           />
         </div>
       </div>

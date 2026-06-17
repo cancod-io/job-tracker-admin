@@ -75,7 +75,7 @@ export function AdminScamUrlsList() {
       setData(body);
     } catch (e) {
       setData(null);
-      setError(e instanceof Error ? e.message : "Failed to load scam URLs.");
+      setError(e instanceof Error ? e.message : "Failed to load Block Lists.");
     } finally {
       setLoading(false);
     }
@@ -159,7 +159,7 @@ export function AdminScamUrlsList() {
   };
 
   if (!accessToken) {
-    return <AuthRequiredNotice resourceLabel="scam URLs" />;
+    return <AuthRequiredNotice resourceLabel="Block Lists" />;
   }
 
   const rangeStart =
