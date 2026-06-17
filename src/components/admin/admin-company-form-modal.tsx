@@ -18,10 +18,6 @@ type AdminCompanyFormModalProps = {
 type FormValues = {
   name: string;
   website_url: string;
-  career_page_url: string;
-  scraping_method_id: string;
-  api_endpoint: string;
-  is_active: boolean;
 };
 
 type FieldErrors = Partial<Record<keyof FormValues, string>>;
@@ -47,11 +43,6 @@ function toFormValues(initial?: Company | null): FormValues {
   return {
     name: initial?.name ?? "",
     website_url: initial?.website_url ?? "",
-    career_page_url: initial?.career_page_url ?? "",
-    scraping_method_id:
-      initial?.scraping_method_id != null ? String(initial.scraping_method_id) : "",
-    api_endpoint: initial?.api_endpoint ?? "",
-    is_active: initial?.is_active ?? true,
   };
 }
 
@@ -69,16 +60,6 @@ function validate(values: FormValues): FieldErrors {
     errors.website_url = "Enter a valid http(s) URL or leave blank.";
   }
 
-  const methodId = values.scraping_method_id.trim();
-  if (methodId && parseOptionalId(methodId) == null) {
-    errors.scraping_method_id = "Enter a positive integer ID or leave blank.";
-  }
-
-  const endpoint = values.api_endpoint.trim();
-  if (endpoint && !isHttpUrl(endpoint)) {
-    errors.api_endpoint = "Enter a valid http(s) URL or leave blank.";
-  }
-
   return errors;
 }
 
@@ -86,10 +67,6 @@ function toCreatePayload(values: FormValues): CompanyFormPayload {
   return {
     name: values.name.trim(),
     website_url: values.website_url.trim() || null,
-    career_page_url: values.career_page_url.trim() || null,
-    scraping_method_id: parseOptionalId(values.scraping_method_id),
-    api_endpoint: values.api_endpoint.trim() || null,
-    is_active: values.is_active,
   };
 }
 
@@ -97,10 +74,6 @@ function toUpdatePayload(values: FormValues): CompanyFormUpdatePayload {
   return {
     name: values.name.trim() || null,
     website_url: values.website_url.trim() || null,
-    career_page_url: values.career_page_url.trim() || null,
-    scraping_method_id: parseOptionalId(values.scraping_method_id),
-    api_endpoint: values.api_endpoint.trim() || null,
-    is_active: values.is_active,
   };
 }
 

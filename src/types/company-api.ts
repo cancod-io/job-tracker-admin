@@ -7,12 +7,6 @@ export type Company = {
   id: number;
   name: string;
   website_url: string | null;
-  career_page_url_id: number | null;
-  career_page_url: string | null;
-  scraping_method_id: number | null;
-  scraping_method: string | null;
-  api_endpoint: string | null;
-  is_active: boolean;
   last_scraped_at: string | null;
   created_at: string;
   updated_at: string;
@@ -29,20 +23,12 @@ export type CompanyListResponse = {
 export type CompanyCreateRequest = {
   name: string;
   website_url?: string | null;
-  career_page_url_id?: number | null;
-  scraping_method_id?: number | null;
-  api_endpoint?: string | null;
-  is_active: boolean;
 };
 
 /** Payload for `PATCH /api/admin/companies/{company_id}`. */
 export type CompanyUpdatePatch = {
   name?: string | null;
   website_url?: string | null;
-  career_page_url_id?: number | null;
-  scraping_method_id?: number | null;
-  api_endpoint?: string | null;
-  is_active?: boolean | null;
   last_scraped_at?: string | null;
 };
 
@@ -50,19 +36,11 @@ export type CompanyUpdatePatch = {
 export type CompanyFormPayload = {
   name: string;
   website_url?: string | null;
-  career_page_url?: string | null;
-  scraping_method_id?: number | null;
-  api_endpoint?: string | null;
-  is_active: boolean;
 };
 
 export type CompanyFormUpdatePayload = {
   name?: string | null;
   website_url?: string | null;
-  career_page_url?: string | null;
-  scraping_method_id?: number | null;
-  api_endpoint?: string | null;
-  is_active?: boolean | null;
 };
 
 /** Filter the list view by active/inactive. `all` means no filter. */

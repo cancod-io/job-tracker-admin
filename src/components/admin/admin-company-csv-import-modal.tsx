@@ -76,7 +76,7 @@ export function AdminCompanyCsvImportModal({
     <Modal
       aria-label="Import companies from CSV"
       title="Import companies from CSV"
-      description="Upload a UTF-8 CSV. Required column: name. Optional: website_url, career_page_url, scraping_method, api_endpoint, is_active."
+      description="Upload a UTF-8 CSV. Required column: name. Optional: website_url."
       onClose={onClose}
       maxWidth="max-w-lg"
     >
