@@ -29,9 +29,9 @@ export function ExternalLink({
       title={typeof children === "string" ? children : href}
     >
       <span className={cn(truncate && "truncate")}>{children ?? href}</span>
-      {showIcon ? (
+      {/* {showIcon ? (
         <ExternalLinkIcon className="size-3.5 shrink-0 opacity-70" aria-hidden />
-      ) : null}
+      ) : null} */}
     </a>
   );
 }

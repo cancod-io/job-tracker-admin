@@ -46,14 +46,6 @@ function normalizeCompany(raw: Partial<Company> & { id: number }): Company {
     id: raw.id,
     name: typeof raw.name === "string" ? raw.name : "—",
     website_url: typeof raw.website_url === "string" ? raw.website_url : null,
-    career_page_url_id:
-      typeof raw.career_page_url_id === "number" ? raw.career_page_url_id : null,
-    career_page_url: typeof raw.career_page_url === "string" ? raw.career_page_url : null,
-    scraping_method_id:
-      typeof raw.scraping_method_id === "number" ? raw.scraping_method_id : null,
-    scraping_method: typeof raw.scraping_method === "string" ? raw.scraping_method : null,
-    api_endpoint: typeof raw.api_endpoint === "string" ? raw.api_endpoint : null,
-    is_active: raw.is_active ?? true,
     last_scraped_at: typeof raw.last_scraped_at === "string" ? raw.last_scraped_at : null,
     created_at: typeof raw.created_at === "string" ? raw.created_at : new Date(0).toISOString(),
     updated_at: typeof raw.updated_at === "string" ? raw.updated_at : new Date(0).toISOString(),
