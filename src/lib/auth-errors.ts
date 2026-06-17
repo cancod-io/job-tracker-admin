@@ -97,3 +97,22 @@ export function createLoginAuthError(resolved: ResolvedLoginError): LoginAuthErr
 export function isLoginAuthError(err: unknown): err is LoginAuthError {
   return err instanceof Error && ("code" in err || "fields" in err);
 }
+
+export const SESSION_EXPIRED_MESSAGE =
+  "Your session has expired. Please log in again.";
+
+export class SessionExpiredError extends Error {
+  override readonly name = "SessionExpiredError";
+
+  constructor(message = SESSION_EXPIRED_MESSAGE) {
+    super(message);
+  }
+}
+
+export function createSessionExpiredError(): SessionExpiredError {
+  return new SessionExpiredError();
+}
+
+export function isSessionExpiredError(err: unknown): err is SessionExpiredError {
+  return err instanceof SessionExpiredError;
+}

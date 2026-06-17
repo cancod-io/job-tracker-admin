@@ -21,6 +21,10 @@ type CompaniesTableProps = {
   onDelete: (company: Company) => void;
 };
 
+/** Fixed column widths — long name/URL truncate instead of stretching the table. */
+const COL_NAME = "10rem";
+const COL_URL = "14rem";
+
 export function CompaniesTable({
   data,
   loading,
@@ -35,14 +39,26 @@ export function CompaniesTable({
   onDelete,
 }: CompaniesTableProps) {
   const pageItems = data?.items ?? [];
-  const colSpan = canManage ? 6 : 5;
+  const colSpan = canManage ? 5 : 4;
 
   return (
-    <DataTable loading={loading && !data} loadingMessage="Loading companies…" minWidth="720px">
+    <DataTable
+      loading={loading && !data}
+      loadingMessage="Loading companies…"
+      minWidth="720px"
+      tableClassName="table-fixed"
+    >
+      <colgroup>
+        {canManage ? <col style={{ width: "2.5rem" }} /> : null}
+        <col style={{ width: COL_NAME }} />
+        <col style={{ width: COL_URL }} />
+        <col style={{ width: "9rem" }} />
+        <col style={{ width: "5.5rem" }} />
+      </colgroup>
       <thead className="border-b border-border/80 bg-muted/40 text-muted-foreground">
         <tr>
           {canManage ? (
-            <th className="w-10 px-4 py-3">
+            <th className="px-4 py-3">
               <input
                 type="checkbox"
                 className="size-4 rounded border-border accent-primary"
@@ -91,10 +107,15 @@ export function CompaniesTable({
                   />
                 </td>
               ) : null}
-              <td className="px-4 py-3 align-middle font-medium text-foreground">
-                {company.name}
+              <td className="max-w-0 px-4 py-3 align-middle">
+                <span
+                  className="block truncate font-medium text-foreground"
+                  title={company.name}
+                >
+                  {company.name}
+                </span>
               </td>
-              <td className="px-4 py-3 align-middle">
+              <td className="max-w-0 px-4 py-3 align-middle">
                 <ExternalLinkCell url={company.website_url} />
               </td>
               <td className="whitespace-nowrap px-4 py-3 align-middle text-muted-foreground tabular-nums">

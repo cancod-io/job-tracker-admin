@@ -13,13 +13,21 @@ import { assertUserApproved } from "@/lib/auth-approval";
 import {
   apiErrorMessage,
   createLoginAuthError,
+  isSessionExpiredError,
   resolveLoginError,
 } from "@/lib/auth-errors";
 import {
+  applyTokenResponse,
+  ensureAccessToken,
+  isTransientNetworkError,
+  refreshAccessToken,
+  scheduleProactiveRefresh,
+} from "@/lib/auth-session";
+import {
   clearStoredTokens,
+  getStoredAccessToken,
   SESSION_EXPIRED_EVENT,
-  setStoredTokens,
-  TOKEN_STORAGE_KEY,
+  TOKEN_REFRESHED_EVENT,
 } from "@/lib/auth-token";
 import { apiUrl } from "@/lib/api";
 import { fetchWithTimeout } from "@/lib/http";
@@ -50,10 +58,34 @@ async function fetchMe(token: string): Promise<AuthUser> {
     headers: { Authorization: `Bearer ${token}` },
     credentials: "omit",
   });
+  if (res.status === 401) {
+    throw Object.assign(new Error("Unauthorized"), { status: 401 });
+  }
   if (!res.ok) {
-    throw new Error("Unauthorized");
+    throw new Error("Could not load your profile.");
   }
   return (await res.json()) as AuthUser;
+}
+
+async function loadUserProfile(): Promise<{ token: string; user: AuthUser } | null> {
+  let token = await ensureAccessToken();
+  if (!token) return null;
+
+  try {
+    const me = await fetchMe(token);
+    assertUserApproved(me);
+    return { token, user: me };
+  } catch (err) {
+    if (isSessionExpiredError(err) || (err as { status?: number }).status === 401) {
+      const refreshed = await refreshAccessToken();
+      if (!refreshed) return null;
+      token = refreshed;
+      const me = await fetchMe(token);
+      assertUserApproved(me);
+      return { token, user: me };
+    }
+    throw err;
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -70,20 +102,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshSession = useCallback(async () => {
     if (typeof window === "undefined") return;
-    const token = window.sessionStorage.getItem(TOKEN_STORAGE_KEY);
-    if (!token) {
+    if (!getStoredAccessToken()) {
       setUser(null);
       setAccessToken(null);
       setStatus("unauthenticated");
       return;
     }
+
     try {
-      const me = await fetchMe(token);
-      assertUserApproved(me);
-      setAccessToken(token);
-      setUser(me);
+      const session = await loadUserProfile();
+      if (!session) {
+        clearStoredTokens();
+        setAccessToken(null);
+        setUser(null);
+        setStatus("unauthenticated");
+        return;
+      }
+      setAccessToken(session.token);
+      setUser(session.user);
       setStatus("authenticated");
-    } catch {
+    } catch (err) {
+      if (isTransientNetworkError(err)) {
+        const token = getStoredAccessToken();
+        setAccessToken(token);
+        setStatus("authenticated");
+        return;
+      }
       clearStoredTokens();
       setAccessToken(null);
       setUser(null);
@@ -100,6 +144,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
     return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onSessionExpired);
   }, [logout]);
+
+  useEffect(() => {
+    const onTokenRefreshed = (event: Event) => {
+      const detail = (event as CustomEvent<{ accessToken: string }>).detail;
+      if (detail?.accessToken) setAccessToken(detail.accessToken);
+    };
+    window.addEventListener(TOKEN_REFRESHED_EVENT, onTokenRefreshed);
+    return () => window.removeEventListener(TOKEN_REFRESHED_EVENT, onTokenRefreshed);
+  }, []);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    return scheduleProactiveRefresh(() => {
+      void refreshAccessToken();
+    });
+  }, [status, accessToken]);
 
   const login = useCallback(async (email: string, password: string) => {
     let res: Response;
@@ -122,6 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw createLoginAuthError(resolveLoginError(err));
     }
     const data = (await res.json()) as TokenResponse;
+    applyTokenResponse(data);
     const me = await fetchMe(data.access_token);
     try {
       assertUserApproved(me);
@@ -129,7 +190,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearStoredTokens();
       throw e;
     }
-    setStoredTokens(data.access_token, data.refresh_token);
     setAccessToken(data.access_token);
     setUser(me);
     setStatus("authenticated");

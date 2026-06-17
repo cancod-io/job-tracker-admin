@@ -7,6 +7,7 @@ type DataTableProps = {
   minWidth?: string;
   children: React.ReactNode;
   className?: string;
+  tableClassName?: string;
 };
 
 export function DataTable({
@@ -15,6 +16,7 @@ export function DataTable({
   minWidth = "720px",
   children,
   className,
+  tableClassName,
 }: DataTableProps) {
   return (
     <div
@@ -30,7 +32,7 @@ export function DataTable({
         </div>
       ) : (
         <table
-          className="w-full text-left text-sm"
+          className={cn("w-full text-left text-sm", tableClassName)}
           style={{ minWidth }}
         >
           {children}

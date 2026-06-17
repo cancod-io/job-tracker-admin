@@ -38,9 +38,14 @@ export function ExternalLink({
 
 type ExternalLinkCellProps = {
   url: string | null;
+  className?: string;
 };
 
-export function ExternalLinkCell({ url }: ExternalLinkCellProps) {
+export function ExternalLinkCell({ url, className }: ExternalLinkCellProps) {
   if (!url) return <span className="text-muted-foreground">—</span>;
-  return <ExternalLink href={url}>{url}</ExternalLink>;
+  return (
+    <ExternalLink href={url} className={cn("block min-w-0 max-w-full", className)}>
+      {url}
+    </ExternalLink>
+  );
 }
