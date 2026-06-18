@@ -2,6 +2,8 @@
 
 import { Check, Shield } from "lucide-react";
 import {
+  displayDescriptionForPermission,
+  displayLabelForPermission,
   filterDisplayCatalog,
   filterDisplayPermissions,
   groupCatalogByCategory,
@@ -75,9 +77,13 @@ export function AdminUserPermissionsDisplay({
                     {enabled ? <Check className="size-3" /> : null}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block font-medium text-foreground">{item.label}</span>
+                    <span className="block font-medium text-foreground">
+                      {displayLabelForPermission(item)}
+                    </span>
                     {item.description ? (
-                      <span className="block text-xs text-muted-foreground">{item.description}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {displayDescriptionForPermission(item)}
+                      </span>
                     ) : null}
                   </span>
                 </li>

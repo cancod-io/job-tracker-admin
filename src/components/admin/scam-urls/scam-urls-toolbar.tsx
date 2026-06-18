@@ -115,7 +115,7 @@ export function ScamUrlsToolbar({
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
             >
               <Plus className="size-4" aria-hidden />
-              Add Scam URL
+              Add Block List
             </button>
           ) : null}
           <RefreshButton

@@ -11,13 +11,14 @@ export default function AdminScamUrlsPage() {
             Block Lists
           </h1>
           <p className="mt-2 max-w-2xl text-muted-foreground">
-            Manage Block Lists. Jobs from these URLs will be removed and never added.
+            Manage blocked domains and URLs. Jobs from these entries are removed and never added
+            again.
           </p>
         </header>
         <div className="rounded-2xl border border-border/80 bg-card/50 p-4 shadow-sm md:p-6">
           <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
             <ShieldAlert className="size-4 shrink-0 text-primary" aria-hidden />
-            <span>Scam URL list, search, filters, and management actions</span>
+            <span>Block Lists search, filters, and management actions</span>
           </div>
           <AdminScamUrlsList />
         </div>

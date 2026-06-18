@@ -123,7 +123,7 @@ export async function createScamUrl(
 
   const scamUrl = raw.scam_url;
   if (!scamUrl || typeof scamUrl.id !== "number") {
-    throw new Error("Unexpected response from create scam URL.");
+    throw new Error("Unexpected response from create Block List.");
   }
 
   return {

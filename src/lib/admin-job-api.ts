@@ -13,7 +13,6 @@ import type {
   AdminJobDetail,
   AdminJobListResponse,
 } from "@/types/admin-job-api";
-
 const BASE = "/api/admin/jobs";
 
 export type AdminJobSortBy = "posted_at" | "created_at" | "id";
@@ -25,6 +24,8 @@ export type ListAdminJobsParams = {
   q?: string;
   sort_by?: AdminJobSortBy;
   sort_order?: SortOrder;
+  /** Exact match on scraper/source name. */
+  source?: string;
 };
 
 export type ListJobApplicantsParams = {
@@ -119,6 +120,8 @@ export async function listAdminJobs(
   if (q) search.set("q", q);
   if (params.sort_by) search.set("sort_by", params.sort_by);
   if (params.sort_order) search.set("sort_order", params.sort_order);
+  const source = params.source?.trim();
+  if (source) search.set("source", source);
 
   const raw = await fetchAuthedJson<{
     items?: unknown;

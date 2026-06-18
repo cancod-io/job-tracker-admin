@@ -6,7 +6,7 @@ import { Download, FileQuestion, Maximize2, Minimize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 
-export type FilePreviewKind = "image" | "pdf";
+export type FilePreviewKind = "image" | "pdf" | "text" | "video" | "audio" | "docx" | "embed";
 
 type FilePreviewModalProps = {
   /** When false the modal renders nothing. */
@@ -16,10 +16,14 @@ type FilePreviewModalProps = {
   subtitle?: string;
   loading: boolean;
   error: string | null;
-  /** Resolved preview type, or `null` when the file can't be previewed inline. */
+  /** Resolved preview type. */
   previewKind: FilePreviewKind | null;
   /** Object URL for the fetched blob. */
   previewUrl: string | null;
+  /** Populated when `previewKind` is `text`. */
+  previewText?: string | null;
+  /** Populated when `previewKind` is `docx`. */
+  previewHtml?: string | null;
   /** Message shown in the "can't preview" fallback. */
   unsupportedHint?: string;
   /** When omitted, the download affordance is hidden (e.g. admin preview-only). */
@@ -41,7 +45,9 @@ export function FilePreviewModal({
   error,
   previewKind,
   previewUrl,
-  unsupportedHint = "This file type can't be previewed in the browser.",
+  previewText = null,
+  previewHtml = null,
+  unsupportedHint = "This file could not be rendered inline. Download it to open in another app.",
   onDownload,
   onClose,
 }: FilePreviewModalProps) {
@@ -157,6 +163,33 @@ export function FilePreviewModal({
               <img src={previewUrl} alt={title} className="max-h-full max-w-full object-contain" />
             </div>
           ) : previewKind === "pdf" && previewUrl ? (
+            <iframe src={previewUrl} title={title} className="h-full w-full border-0 bg-background" />
+          ) : previewKind === "text" && previewText ? (
+            <div className="h-full overflow-auto p-4 sm:p-5">
+              <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-foreground sm:text-sm">
+                {previewText}
+              </pre>
+            </div>
+          ) : previewKind === "docx" && previewHtml ? (
+            <div className="h-full overflow-auto bg-background p-6 sm:p-8">
+              <div
+                className="docx-preview mx-auto max-w-[48rem] text-sm leading-relaxed text-foreground [&_h1]:mb-4 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:text-xl [&_h2]:font-semibold [&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-3 [&_strong]:font-semibold [&_table]:mb-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:p-2 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6"
+                dangerouslySetInnerHTML={{ __html: previewHtml }}
+              />
+            </div>
+          ) : previewKind === "video" && previewUrl ? (
+            <div className="flex h-full w-full items-center justify-center overflow-auto p-3 sm:p-5">
+              <video src={previewUrl} controls className="max-h-full max-w-full" playsInline>
+                <track kind="captions" />
+              </video>
+            </div>
+          ) : previewKind === "audio" && previewUrl ? (
+            <div className="flex h-full w-full items-center justify-center p-6">
+              <audio src={previewUrl} controls className="w-full max-w-lg">
+                <track kind="captions" />
+              </audio>
+            </div>
+          ) : previewKind === "embed" && previewUrl ? (
             <iframe src={previewUrl} title={title} className="h-full w-full border-0 bg-background" />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">

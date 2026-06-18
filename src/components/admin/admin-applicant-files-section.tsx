@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/format-date";
 import {
   applicationFileIcon,
-  canPreviewApplicationFile,
   formatFileSize,
 } from "@/lib/admin-file-utils";
 import { useAdminApplicationFiles } from "@/hooks/use-admin-application-files";
@@ -29,7 +28,6 @@ function FileRow({
   onDelete: () => void;
 }) {
   const Icon = applicationFileIcon(file);
-  const previewable = canPreviewApplicationFile(file);
 
   return (
     <li className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5">
@@ -37,37 +35,29 @@ function FileRow({
         <Icon className="size-4" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        {previewable ? (
-          <button
-            type="button"
-            onClick={onPreview}
-            className="block max-w-full truncate text-left text-sm font-medium text-foreground underline-offset-2 hover:text-primary hover:underline"
-            title={`Preview ${file.filename}`}
-          >
-            {file.filename}
-          </button>
-        ) : (
-          <p className="truncate text-sm font-medium text-foreground" title={file.filename}>
-            {file.filename}
-          </p>
-        )}
+        <button
+          type="button"
+          onClick={onPreview}
+          className="block max-w-full truncate text-left text-sm font-medium text-foreground underline-offset-2 hover:text-primary hover:underline"
+          title={`Preview ${file.filename}`}
+        >
+          {file.filename}
+        </button>
         <p className="text-[11px] text-muted-foreground">
           {formatFileSize(file.size_bytes)}
           {file.created_at ? ` · ${formatDateTime(file.created_at)}` : null}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        {previewable ? (
-          <button
-            type="button"
-            onClick={onPreview}
-            disabled={busy}
-            className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
-            aria-label={`Preview ${file.filename}`}
-          >
-            <Eye className="size-3.5" aria-hidden />
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={onPreview}
+          disabled={busy}
+          className="inline-flex size-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
+          aria-label={`Preview ${file.filename}`}
+        >
+          <Eye className="size-3.5" aria-hidden />
+        </button>
         {canDelete ? (
           <button
             type="button"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { getApiConfig, patchApiConfig } from "@/lib/api-config-api";
 import {
   buildFormValuesFromConfig,
@@ -12,6 +12,7 @@ import { formatDateTime } from "@/lib/format-date";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
 import { ApiConfigGroupSection } from "@/components/admin/api-config/api-config-group-section";
+import { ApiConfigToolbar } from "@/components/admin/api-config/api-config-toolbar";
 import { AuthRequiredNotice } from "@/components/admin/shared/auth-required-notice";
 import { ListNotifications } from "@/components/admin/shared/list-notifications";
 import { AlertBanner } from "@/components/ui/alert-banner";
@@ -21,6 +22,7 @@ import type { ApiConfigField, ApiConfigResponse } from "@/types/api-config-api";
 export function AdminApiConfigPanel() {
   const { accessToken } = useAuth();
   const { can } = useAdminPermissions();
+  const canRead = can("api_config.read");
   const canManage = can("api_config.manage");
   const { toast, setToast } = useToast();
 
@@ -48,7 +50,7 @@ export function AdminApiConfigPanel() {
   }, []);
 
   const load = useCallback(async () => {
-    if (!accessToken) {
+    if (!accessToken || !canRead) {
       setConfig(null);
       setLoading(false);
       return;
@@ -64,7 +66,7 @@ export function AdminApiConfigPanel() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, applyConfig]);
+  }, [accessToken, canRead, applyConfig]);
 
   useEffect(() => {
     void load();
@@ -110,7 +112,7 @@ export function AdminApiConfigPanel() {
   };
 
   const handleSave = async () => {
-    if (!accessToken || !config) return;
+    if (!accessToken || !config || !canManage) return;
 
     const errors = validateForm(allFields);
     if (Object.keys(errors).length > 0) {
@@ -143,6 +145,15 @@ export function AdminApiConfigPanel() {
     return <AuthRequiredNotice resourceLabel="API configuration" />;
   }
 
+  if (!canRead) {
+    return (
+      <AlertBanner variant="warning">
+        You do not have the <code className="text-xs">api_config.read</code> permission required to
+        view API configuration.
+      </AlertBanner>
+    );
+  }
+
   if (loading && !config) {
     return (
       <div
@@ -158,38 +169,34 @@ export function AdminApiConfigPanel() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
+        <div className="space-y-1 text-sm text-muted-foreground">
           {config?.updated_at ? (
-            <p className="text-sm text-muted-foreground">
+            <p>
               Last updated:{" "}
               <time dateTime={config.updated_at}>{formatDateTime(config.updated_at)}</time>
             </p>
           ) : (
-            <p className="text-sm text-muted-foreground">No settings saved yet.</p>
+            <p>No configuration saved yet.</p>
           )}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs">
             Changes apply on the api-service&apos;s next config refresh or scrape run.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          disabled={loading || saving}
-          className="inline-flex shrink-0 items-center gap-2 self-start rounded-lg border border-border/80 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
-        >
-          <RefreshCw
-            className={`size-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`}
-            aria-hidden
-          />
-          Refresh
-        </button>
+        <ApiConfigToolbar
+          loading={loading}
+          saving={saving}
+          canManage={canManage}
+          onRefresh={() => void load()}
+          onSave={() => void handleSave()}
+        />
       </div>
 
       <ListNotifications toast={toast} error={error} />
 
       {!canManage ? (
         <AlertBanner variant="warning">
-          You have read-only access. Contact an administrator if you need to edit these settings.
+          You have read-only access (<code className="text-xs">api_config.read</code>). Saving
+          requires <code className="text-xs">api_config.manage</code>.
         </AlertBanner>
       ) : null}
 
@@ -202,7 +209,7 @@ export function AdminApiConfigPanel() {
           className="space-y-4"
           noValidate
         >
-          {config.groups.map((group, index) => (
+          {config.groups.map((group) => (
             <ApiConfigGroupSection
               key={group.key}
               group={group}
@@ -210,27 +217,11 @@ export function AdminApiConfigPanel() {
               fieldErrors={fieldErrors}
               clearedKeys={clearedKeys}
               disabled={!canManage || saving}
-              defaultOpen={index === 0}
               onFieldChange={handleFieldChange}
               onClearSecret={handleClearSecret}
               onUndoClearSecret={handleUndoClearSecret}
             />
           ))}
-
-          {canManage ? (
-            <div className="flex justify-end border-t border-border/60 pt-4">
-              <button
-                type="submit"
-                disabled={saving || loading}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-60"
-              >
-                {saving ? (
-                  <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
-                ) : null}
-                Save changes
-              </button>
-            </div>
-          ) : null}
         </form>
       ) : null}
     </div>

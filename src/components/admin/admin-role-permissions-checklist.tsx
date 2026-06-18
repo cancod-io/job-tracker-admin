@@ -10,13 +10,17 @@ import {
   Loader2,
   Radar,
   Save,
+  Settings,
   Settings2,
   Shield,
+  ShieldAlert,
   ShieldCheck,
   Users,
   type LucideIcon,
 } from "lucide-react";
 import {
+  displayDescriptionForPermission,
+  displayLabelForPermission,
   filterDisplayCatalog,
   filterDisplayPermissions,
   groupCatalogByCategory,
@@ -37,6 +41,14 @@ const CATEGORY_STYLES: Record<string, { icon: LucideIcon; tile: string }> = {
   applications: { icon: FileText, tile: "bg-amber-500/15 text-amber-600 dark:text-amber-300" },
   companies: { icon: Building2, tile: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300" },
   scraping: { icon: Radar, tile: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-300" },
+  "api configuration": {
+    icon: Settings,
+    tile: "bg-orange-500/15 text-orange-600 dark:text-orange-300",
+  },
+  "block lists": {
+    icon: ShieldAlert,
+    tile: "bg-red-500/15 text-red-600 dark:text-red-300",
+  },
   "career urls": { icon: Link2, tile: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-300" },
   stats: { icon: BarChart3, tile: "bg-rose-500/15 text-rose-600 dark:text-rose-300" },
   analytics: { icon: BarChart3, tile: "bg-rose-500/15 text-rose-600 dark:text-rose-300" },
@@ -337,11 +349,11 @@ export function AdminRolePermissionsChecklist({
                       >
                         <span className="min-w-0 flex-1">
                           <span className="block text-sm font-medium text-foreground">
-                            {item.label}
+                            {displayLabelForPermission(item)}
                           </span>
                           {item.description ? (
                             <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
-                              {item.description}
+                              {displayDescriptionForPermission(item)}
                             </span>
                           ) : null}
                         </span>
