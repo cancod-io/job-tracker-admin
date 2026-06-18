@@ -7,6 +7,7 @@
  *   DELETE /api/admin/job-fetch-runs/{run_id}  (requires jobs.delete)
  */
 import { fetchAuthedJson } from "@/lib/fetch-authed";
+import { dateKeyToPostedFromUtc, dateKeyToPostedToUtc, isDateKey } from "@/lib/date-utils";
 import type { AdminJobDetail, AdminJobListResponse } from "@/types/admin-job-api";
 import type {
   ApiFetchChangeType,
@@ -40,7 +41,20 @@ export type ListJobsFetchDiffParams = {
   /** Omit to use the latest run for the source. */
   fetch_run_id?: number;
   q?: string;
+  posted_from?: string;
+  posted_to?: string;
 };
+
+function appendPostedDateRange(
+  search: URLSearchParams,
+  postedFrom?: string,
+  postedTo?: string,
+): void {
+  const from = postedFrom?.trim();
+  const to = postedTo?.trim();
+  if (from && isDateKey(from)) search.set("posted_from", dateKeyToPostedFromUtc(from));
+  if (to && isDateKey(to)) search.set("posted_to", dateKeyToPostedToUtc(to));
+}
 
 function positiveInt(value: unknown, fallback: number): number {
   const n = typeof value === "number" ? value : Number(value);
@@ -144,6 +158,7 @@ export async function listJobsForFetchDiff(
   }
   const q = params.q?.trim();
   if (q) search.set("q", q);
+  appendPostedDateRange(search, params.posted_from, params.posted_to);
 
   const raw = await fetchAuthedJson<V1JobListResponse>(token, `/api/v1/jobs?${search}`);
 

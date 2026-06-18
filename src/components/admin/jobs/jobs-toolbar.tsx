@@ -1,6 +1,7 @@
 "use client";
 
 import { Download } from "lucide-react";
+import { DateRangeFilter } from "@/components/admin/jobs/date-range-filter";
 import { ListSearchInput } from "@/components/admin/shared/list-search-input";
 import { RefreshButton } from "@/components/admin/shared/refresh-button";
 
@@ -10,6 +11,9 @@ type JobsToolbarProps = {
   onSearch: () => void;
   searchActive: boolean;
   onClearSearch: () => void;
+  postedFrom: string;
+  postedTo: string;
+  onPostedDateChange: (from: string, to: string) => void;
   loading: boolean;
   onExport: () => void;
   onRefresh: () => void;
@@ -21,6 +25,9 @@ export function JobsToolbar({
   onSearch,
   searchActive,
   onClearSearch,
+  postedFrom,
+  postedTo,
+  onPostedDateChange,
   loading,
   onExport,
   onRefresh,
@@ -48,6 +55,7 @@ export function JobsToolbar({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        <DateRangeFilter from={postedFrom} to={postedTo} onChange={onPostedDateChange} />
         <button
           type="button"
           onClick={onExport}

@@ -9,6 +9,7 @@ import {
   listJobsForFetchDiff,
 } from "@/lib/admin-jobs-filter-api";
 import { formatJobSourceLabel } from "@/lib/job-source-utils";
+import { formatDateRange } from "@/lib/date-utils";
 import { getPaginationMeta } from "@/lib/pagination-constants";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
@@ -51,11 +52,16 @@ function toCsvCell(value: string): string {
 function emptyJobsMessage(args: {
   search: string;
   source: string;
+  postedFrom: string;
+  postedTo: string;
   fetchChange: ApiFetchChangeType | null;
   total: number;
 }): string {
   if (args.fetchChange && args.total === 0) {
     return `No ${args.fetchChange} jobs in this fetch run. Try another change type or run.`;
+  }
+  if ((args.postedFrom || args.postedTo) && args.total === 0) {
+    return `No jobs posted ${formatDateRange(args.postedFrom, args.postedTo).toLowerCase()}. Try widening the date range.`;
   }
   if (args.source && args.total === 0) {
     return `No jobs found for ${formatJobSourceLabel(args.source)}.`;
@@ -77,6 +83,8 @@ export function AdminJobsList() {
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
+  const [postedFrom, setPostedFrom] = useState("");
+  const [postedTo, setPostedTo] = useState("");
   const [source, setSource] = useState(ALL_JOB_SOURCES_VALUE);
   const [fetchRunId, setFetchRunId] = useState<number | null>(null);
   const [fetchChange, setFetchChange] = useState<ApiFetchChangeType | null>(null);
@@ -120,6 +128,8 @@ export function AdminJobsList() {
             fetch_change: fetchChange!,
             fetch_run_id: fetchRunId ?? undefined,
             q: search,
+            posted_from: postedFrom || undefined,
+            posted_to: postedTo || undefined,
           })
         : await listAdminJobs(accessToken, {
             page,
@@ -128,6 +138,8 @@ export function AdminJobsList() {
             sort_by: "created_at",
             sort_order: "desc",
             source: source || undefined,
+            posted_from: postedFrom || undefined,
+            posted_to: postedTo || undefined,
           });
       setData(body);
       setExpanded(new Set());
@@ -138,7 +150,7 @@ export function AdminJobsList() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, page, pageSize, search, source, fetchRunId, fetchChange, inDiffMode]);
+  }, [accessToken, page, pageSize, search, source, fetchRunId, fetchChange, inDiffMode, postedFrom, postedTo]);
 
   useEffect(() => {
     void load();
@@ -245,6 +257,12 @@ export function AdminJobsList() {
     setPage(1);
   };
 
+  const handlePostedDateChange = (from: string, to: string) => {
+    setPostedFrom(from);
+    setPostedTo(to);
+    setPage(1);
+  };
+
   const handleRefresh = useCallback(() => {
     const nextSearch = searchDraft.trim();
     if (nextSearch !== search) {
@@ -333,7 +351,7 @@ export function AdminJobsList() {
       setToast({ kind: "error", message: "Nothing to export on this page." });
       return;
     }
-    const header = ["ID", "Job Title", "Company", "Location", "Status", "Applicants", "Created"];
+    const header = ["ID", "Job Title", "Company", "Location", "Status", "Applicants", "Posted", "Created"];
     const lines = rows.map((job) =>
       [
         String(job.id),
@@ -342,6 +360,7 @@ export function AdminJobsList() {
         job.location ?? "",
         representativeStatus(job) ?? "",
         String(job.applicants_total),
+        job.posted_at ?? "",
         job.created_at,
       ]
         .map(toCsvCell)
@@ -418,6 +437,9 @@ export function AdminJobsList() {
         onSearch={applySearch}
         searchActive={search.length > 0 || searchDraft.length > 0}
         onClearSearch={clearSearch}
+        postedFrom={postedFrom}
+        postedTo={postedTo}
+        onPostedDateChange={handlePostedDateChange}
         loading={loading}
         onExport={handleExport}
         onRefresh={handleRefresh}
@@ -451,7 +473,7 @@ export function AdminJobsList() {
             <th className="min-w-[12rem] px-4 py-3 font-medium">Job Title</th>
             <th className="px-4 py-3 font-medium">Company</th>
             <th className="px-4 py-3 font-medium">Users (Applicants)</th>
-            <th className="px-4 py-3 font-medium">Created Date</th>
+            <th className="px-4 py-3 font-medium">Posted</th>
             <th className="px-4 py-3 text-right font-medium">Actions</th>
           </tr>
         </thead>
@@ -462,6 +484,8 @@ export function AdminJobsList() {
                 {emptyJobsMessage({
                   search,
                   source,
+                  postedFrom,
+                  postedTo,
                   fetchChange,
                   total: paginationTotal,
                 })}

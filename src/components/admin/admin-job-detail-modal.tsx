@@ -102,6 +102,7 @@ export function AdminJobDetailModal({ job, onClose }: AdminJobDetailModalProps) 
         <Field label="Applicants">
           <span className="tabular-nums">{job.applicants_total}</span>
         </Field>
+        <Field label="Posted">{formatDateTime(job.posted_at)}</Field>
         <Field label="Created">{formatDateTime(job.created_at)}</Field>
         <Field label="Updated">{formatDateTime(job.updated_at)}</Field>
         {job.scraped_at ? (
