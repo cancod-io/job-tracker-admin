@@ -14,6 +14,8 @@ const SEGMENT_LABELS: Record<string, string> = {
   scrapers: "Scrapers",
   logs: "Logs",
   permissions: "Role Permissions",
+  settings: "Settings",
+  "api-config": "API Configuration",
   login: "Sign in",
   register: "Register",
 };

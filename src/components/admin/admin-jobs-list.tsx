@@ -102,6 +102,22 @@ export function AdminJobsList() {
     setPage(1);
   };
 
+  const clearSearch = () => {
+    setSearchDraft("");
+    setSearch("");
+    setPage(1);
+  };
+
+  const handleRefresh = useCallback(() => {
+    const nextSearch = searchDraft.trim();
+    if (nextSearch !== search) {
+      setSearch(nextSearch);
+      setPage(1);
+      return;
+    }
+    void load();
+  }, [searchDraft, search, load]);
+
   const loadApplicants = useCallback(
     async (jobId: number) => {
       if (!accessToken) return;
@@ -221,9 +237,11 @@ export function AdminJobsList() {
         searchDraft={searchDraft}
         onSearchDraftChange={setSearchDraft}
         onSearch={applySearch}
+        searchActive={filtersActive || searchDraft.length > 0}
+        onClearSearch={clearSearch}
         loading={loading}
         onExport={handleExport}
-        onRefresh={() => void load()}
+        onRefresh={handleRefresh}
       />
 
       <ListNotifications toast={toast} error={error} />

@@ -10,6 +10,7 @@ export const ADMIN_ROUTE_PERMISSIONS: Record<string, string> = {
   "/permissions": "permissions.manage",
   "/scrapers": "scraping.read",
   "/logs": "scraping.read",
+  "/settings/api-config": "api_config.read",
 };
 
 export function permissionForPath(pathname: string): string | null {
