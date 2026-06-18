@@ -4,6 +4,7 @@ import { MoreHorizontal, Pencil, Plus, ShieldAlert, Trash2 } from "lucide-react"
 import { useState } from "react";
 import {
   displayUrlHref,
+  formatBlockListReason,
   formatScamUrlType,
 } from "@/components/admin/scam-urls/constants";
 import { DataTable } from "@/components/ui/data-table";
@@ -61,7 +62,7 @@ function RowActions({
           type="button"
           onClick={() => onEdit(row)}
           className="rounded-lg border border-border bg-card p-1.5 text-foreground hover:bg-muted"
-          aria-label={`Edit scam URL ${row.url}`}
+          aria-label={`Edit Block List ${row.url}`}
           title="Edit"
         >
           <Pencil className="size-4" aria-hidden />
@@ -70,7 +71,7 @@ function RowActions({
           type="button"
           onClick={() => onDelete(row)}
           className="rounded-lg border border-destructive/30 bg-destructive/5 p-1.5 text-destructive hover:bg-destructive/10"
-          aria-label={`Delete scam URL ${row.url}`}
+          aria-label={`Delete Block List ${row.url}`}
           title="Delete"
         >
           <Trash2 className="size-4" aria-hidden />
@@ -155,7 +156,7 @@ function EmptyState({
           className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
         >
           <Plus className="size-4" aria-hidden />
-          Add Scam URL
+          Add Block List
         </button>
       ) : null}
     </div>
@@ -208,7 +209,7 @@ export function ScamUrlsTable({
                   </ExternalLink>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <TypeBadge type={row.url_type} />
-                    <span className="text-xs text-muted-foreground">{row.reason}</span>
+                    <span className="text-xs text-muted-foreground">{formatBlockListReason(row.reason)}</span>
                   </div>
                 </div>
                 <RowActions row={row} canManage={canManage} onEdit={onEdit} onDelete={onDelete} />
@@ -255,7 +256,9 @@ export function ScamUrlsTable({
               <td className="whitespace-nowrap px-4 py-3 align-middle">
                 <TypeBadge type={row.url_type} />
               </td>
-              <td className="px-4 py-3 align-middle text-foreground">{row.reason}</td>
+              <td className="px-4 py-3 align-middle text-foreground">
+                {formatBlockListReason(row.reason)}
+              </td>
               <td className="hidden whitespace-nowrap px-4 py-3 align-middle text-muted-foreground lg:table-cell">
                 {row.reported_by_name}
               </td>

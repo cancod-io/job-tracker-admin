@@ -40,6 +40,43 @@ export type PermissionCategoryGroup = {
   items: PermissionCatalogItem[];
 };
 
+const PERMISSION_UI_LABELS: Record<string, string> = {
+  "scam_urls.read": "View Block Lists",
+  "scam_urls.manage": "Manage Block Lists",
+};
+
+/** Display category for the role-permissions UI (may differ from the API catalog). */
+export function displayCategoryForPermission(item: PermissionCatalogItem): string {
+  if (item.key.startsWith("api_config.")) {
+    return "API Configuration";
+  }
+  if (item.key.startsWith("scam_urls.")) {
+    return "Block Lists";
+  }
+  return replaceScamUrlUiText(item.category);
+}
+
+/** User-facing permission label (API catalog may still say "scam URL"). */
+export function displayLabelForPermission(item: PermissionCatalogItem): string {
+  const mapped = PERMISSION_UI_LABELS[item.key];
+  if (mapped) return mapped;
+  return replaceScamUrlUiText(item.label);
+}
+
+/** User-facing permission description. */
+export function displayDescriptionForPermission(item: PermissionCatalogItem): string {
+  if (!item.description) return "";
+  return replaceScamUrlUiText(item.description);
+}
+
+function replaceScamUrlUiText(text: string): string {
+  return text
+    .replace(/\bscam urls\b/gi, "Block Lists")
+    .replace(/\bscam url\b/gi, "Block List")
+    .replace(/\bscam-urls\b/gi, "Block Lists")
+    .replace(/\bscam-url\b/gi, "Block List");
+}
+
 /** Permission keys omitted from the role settings UI. */
 export const HIDDEN_PERMISSION_KEYS = new Set(["users.ban"]);
 
@@ -54,9 +91,10 @@ export function filterDisplayPermissions(permissions: readonly string[]): string
 export function groupCatalogByCategory(catalog: PermissionCatalogItem[]): PermissionCategoryGroup[] {
   const map = new Map<string, PermissionCatalogItem[]>();
   for (const item of filterDisplayCatalog(catalog)) {
-    const list = map.get(item.category) ?? [];
+    const category = displayCategoryForPermission(item);
+    const list = map.get(category) ?? [];
     list.push(item);
-    map.set(item.category, list);
+    map.set(category, list);
   }
   return Array.from(map.entries()).map(([category, items]) => ({ category, items }));
 }

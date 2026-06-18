@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchUserCvBlob } from "@/lib/admin-user-api";
-import { filenameFilePreviewKind, formatFileSize } from "@/lib/admin-file-utils";
+import { formatFileSize, prepareBlobFilePreview } from "@/lib/admin-file-utils";
 import { useAuth } from "@/providers/auth-provider";
 import { FilePreviewModal, type FilePreviewKind } from "@/components/ui/file-preview-modal";
 import type { AdminUserCv } from "@/types/admin-user-api";
@@ -24,52 +24,50 @@ export function AdminUserCvPreviewModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewText, setPreviewText] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewKind, setPreviewKind] = useState<FilePreviewKind | null>(null);
 
   useEffect(() => {
-    function clearUrl() {
+    function clearPreview() {
       setPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;
       });
+      setPreviewText(null);
+      setPreviewHtml(null);
+      setPreviewKind(null);
     }
 
     if (!cv || userId == null || !accessToken) {
       setLoading(false);
       setError(null);
-      setPreviewKind(null);
-      clearUrl();
-      return;
-    }
-
-    const kind = filenameFilePreviewKind(cv.filename);
-    if (kind === "none") {
-      setLoading(false);
-      setError(null);
-      setPreviewKind(null);
-      clearUrl();
+      clearPreview();
       return;
     }
 
     let cancelled = false;
     setLoading(true);
     setError(null);
-    setPreviewKind(kind);
+    clearPreview();
 
     void (async () => {
       try {
         const blob = await fetchUserCvBlob(accessToken, userId, cv.id);
         if (cancelled) return;
-        const url = URL.createObjectURL(blob);
-        setPreviewUrl((prev) => {
-          if (prev) URL.revokeObjectURL(prev);
-          return url;
-        });
+        const prepared = await prepareBlobFilePreview(blob, cv.filename);
+        if (cancelled) {
+          URL.revokeObjectURL(prepared.url);
+          return;
+        }
+        setPreviewKind(prepared.kind);
+        setPreviewUrl(prepared.url || null);
+        setPreviewText(prepared.text);
+        setPreviewHtml(prepared.html);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Could not preview resume.");
-        setPreviewKind(null);
-        clearUrl();
+        clearPreview();
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -95,7 +93,8 @@ export function AdminUserCvPreviewModal({
       error={error}
       previewKind={previewKind}
       previewUrl={previewUrl}
-      unsupportedHint="This resume type can't be previewed in the browser. Use Download instead."
+      previewText={previewText}
+      previewHtml={previewHtml}
       onDownload={onDownload}
       onClose={onClose}
     />

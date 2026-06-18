@@ -33,7 +33,7 @@ import {
   patchUserRole,
   resetUserPassword,
 } from "@/lib/admin-user-api";
-import { canPreviewFilename, formatFileSize } from "@/lib/admin-file-utils";
+import { formatFileSize } from "@/lib/admin-file-utils";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { formatDateTime } from "@/lib/format-date";
 import { applicantBadgeClass, formatApplicantStatus } from "@/lib/applicant-status";
@@ -445,34 +445,28 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                     className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/70 bg-muted/20 px-3 py-2.5"
                   >
                     <div className="min-w-0 flex-1">
-                      {canPreviewFilename(cv.filename) ? (
-                        <button
-                          type="button"
-                          onClick={() => setPreviewCv(cv)}
-                          className="block max-w-full truncate text-left text-sm font-medium text-foreground underline-offset-2 hover:text-primary hover:underline"
-                          title={`Preview ${cv.filename}`}
-                        >
-                          {cv.filename}
-                        </button>
-                      ) : (
-                        <p className="truncate text-sm font-medium text-foreground">{cv.filename}</p>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => setPreviewCv(cv)}
+                        className="block max-w-full truncate text-left text-sm font-medium text-foreground underline-offset-2 hover:text-primary hover:underline"
+                        title={`Preview ${cv.filename}`}
+                      >
+                        {cv.filename}
+                      </button>
                       <p className="text-xs text-muted-foreground">
                         {cv.file_size != null ? formatFileSize(cv.file_size) : "—"}
                         {cv.uploaded_at ? ` · ${formatDateTime(cv.uploaded_at)}` : ""}
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
-                      {canPreviewFilename(cv.filename) ? (
-                        <button
-                          type="button"
-                          onClick={() => setPreviewCv(cv)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-border/80 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
-                        >
-                          <Eye className="size-3.5" aria-hidden />
-                          Preview
-                        </button>
-                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setPreviewCv(cv)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border/80 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+                      >
+                        <Eye className="size-3.5" aria-hidden />
+                        Preview
+                      </button>
                       <button
                         type="button"
                         disabled={downloadingCvId === cv.id}

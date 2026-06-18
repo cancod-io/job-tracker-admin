@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchAdminApplicationFileBlob } from "@/lib/admin-application-files-api";
-import { applicationFilePreviewKind, formatFileSize } from "@/lib/admin-file-utils";
+import { formatFileSize, prepareBlobFilePreview } from "@/lib/admin-file-utils";
 import { useAuth } from "@/providers/auth-provider";
 import { FilePreviewModal, type FilePreviewKind } from "@/components/ui/file-preview-modal";
 import type { AdminApplicationFile } from "@/types/admin-application-file";
@@ -26,52 +26,50 @@ export function AdminApplicationFilePreviewModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewText, setPreviewText] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewKind, setPreviewKind] = useState<FilePreviewKind | null>(null);
 
   useEffect(() => {
-    function clearUrl() {
+    function clearPreview() {
       setPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;
       });
+      setPreviewText(null);
+      setPreviewHtml(null);
+      setPreviewKind(null);
     }
 
     if (!file || !accessToken) {
       setLoading(false);
       setError(null);
-      setPreviewKind(null);
-      clearUrl();
-      return;
-    }
-
-    const kind = applicationFilePreviewKind(file);
-    if (kind === "none") {
-      setLoading(false);
-      setError(null);
-      setPreviewKind(null);
-      clearUrl();
+      clearPreview();
       return;
     }
 
     let cancelled = false;
     setLoading(true);
     setError(null);
-    setPreviewKind(kind);
+    clearPreview();
 
     void (async () => {
       try {
         const { blob } = await fetchAdminApplicationFileBlob(accessToken, applicationId, file);
         if (cancelled) return;
-        const url = URL.createObjectURL(blob);
-        setPreviewUrl((prev) => {
-          if (prev) URL.revokeObjectURL(prev);
-          return url;
-        });
+        const prepared = await prepareBlobFilePreview(blob, file.filename, file.content_type);
+        if (cancelled) {
+          URL.revokeObjectURL(prepared.url);
+          return;
+        }
+        setPreviewKind(prepared.kind);
+        setPreviewUrl(prepared.url || null);
+        setPreviewText(prepared.text);
+        setPreviewHtml(prepared.html);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Could not preview file.");
-        setPreviewKind(null);
-        clearUrl();
+        clearPreview();
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -97,6 +95,8 @@ export function AdminApplicationFilePreviewModal({
       error={error}
       previewKind={previewKind}
       previewUrl={previewUrl}
+      previewText={previewText}
+      previewHtml={previewHtml}
       onClose={onClose}
     />
   );

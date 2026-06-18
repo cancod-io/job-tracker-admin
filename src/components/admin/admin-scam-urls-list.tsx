@@ -139,7 +139,7 @@ export function AdminScamUrlsList() {
       result.removed_jobs > 0
         ? ` ${result.removed_jobs} matching job${result.removed_jobs === 1 ? "" : "s"} removed.`
         : "";
-    setToast({ kind: "success", message: `Scam URL added successfully.${jobsMsg}` });
+    setToast({ kind: "success", message: `Block List added successfully.${jobsMsg}` });
     setPage(1);
     await load();
   };
@@ -147,14 +147,14 @@ export function AdminScamUrlsList() {
   const handleUpdate = async (id: number, payload: ScamUrlCreateRequest | ScamUrlUpdatePatch) => {
     if (!accessToken) throw new Error("Not signed in.");
     await updateScamUrl(accessToken, id, payload as ScamUrlUpdatePatch);
-    setToast({ kind: "success", message: "Scam URL updated successfully." });
+    setToast({ kind: "success", message: "Block List updated successfully." });
     await load();
   };
 
   const handleDelete = async (scamUrl: ScamUrl) => {
     if (!accessToken) throw new Error("Not signed in.");
     await deleteScamUrl(accessToken, scamUrl.id);
-    setToast({ kind: "success", message: "Scam URL deleted successfully." });
+    setToast({ kind: "success", message: "Block List deleted successfully." });
     await load();
   };
 

@@ -111,7 +111,7 @@ export function JobRow({
         </td>
 
         <td className="whitespace-nowrap px-4 py-4 align-middle tabular-nums text-muted-foreground">
-          {formatDateTime(job.created_at)}
+          {formatDateTime(job.posted_at)}
         </td>
 
         <td className="px-4 py-4 text-right align-middle">

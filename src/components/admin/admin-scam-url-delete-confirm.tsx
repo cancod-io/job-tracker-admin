@@ -35,8 +35,8 @@ export function AdminScamUrlDeleteConfirm({
 
   return (
     <Modal
-      aria-label="Delete scam URL confirmation"
-      title="Delete Scam URL"
+      aria-label="Delete Block List confirmation"
+      title="Delete Block List"
       onClose={onClose}
       maxWidth="max-w-md"
     >

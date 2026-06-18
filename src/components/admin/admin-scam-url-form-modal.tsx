@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
-import { SCAM_URL_REASONS } from "@/components/admin/scam-urls/constants";
+import { BLOCK_LIST_REASON_OPTIONS } from "@/components/admin/scam-urls/constants";
 import { validateScamUrlInput } from "@/lib/scam-url-validation";
 import type {
   ScamUrl,
@@ -29,7 +29,7 @@ export function AdminScamUrlFormModal({
 }: AdminScamUrlFormModalProps) {
   const [urlType, setUrlType] = useState<ScamUrlType>(initial?.url_type ?? "domain");
   const [url, setUrl] = useState(initial?.url ?? "");
-  const [reason, setReason] = useState(initial?.reason ?? SCAM_URL_REASONS[0]);
+  const [reason, setReason] = useState(initial?.reason ?? BLOCK_LIST_REASON_OPTIONS[0].value);
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [urlError, setUrlError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -38,7 +38,7 @@ export function AdminScamUrlFormModal({
   useEffect(() => {
     setUrlType(initial?.url_type ?? "domain");
     setUrl(initial?.url ?? "");
-    setReason(initial?.reason ?? SCAM_URL_REASONS[0]);
+    setReason(initial?.reason ?? BLOCK_LIST_REASON_OPTIONS[0].value);
     setNotes(initial?.notes ?? "");
     setUrlError(null);
     setSubmitError(null);
@@ -83,7 +83,7 @@ export function AdminScamUrlFormModal({
       }
       onClose();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to save scam URL.");
+      setSubmitError(err instanceof Error ? err.message : "Failed to save Block List.");
     } finally {
       setSubmitting(false);
     }
@@ -91,12 +91,12 @@ export function AdminScamUrlFormModal({
 
   return (
     <Modal
-      aria-label={mode === "create" ? "Add scam URL" : "Edit scam URL"}
-      title={mode === "create" ? "Add Scam URL" : "Edit Scam URL"}
+      aria-label={mode === "create" ? "Add Block List" : "Edit Block List"}
+      title={mode === "create" ? "Add Block List" : "Edit Block List"}
       description={
         mode === "create"
           ? "Block a domain or URL so jobs from it are removed and never added again."
-          : `Update scam URL record for ${initial?.url ?? ""}.`
+          : `Update Block List for ${initial?.url ?? ""}.`
       }
       onClose={onClose}
       maxWidth="max-w-lg"
@@ -142,11 +142,11 @@ export function AdminScamUrlFormModal({
         </fieldset>
 
         <div className="space-y-1">
-          <label htmlFor="scam-url-input" className="text-sm font-medium text-foreground">
+          <label htmlFor="block-list-url-input" className="text-sm font-medium text-foreground">
             URL / Domain
           </label>
           <input
-            id="scam-url-input"
+            id="block-list-url-input"
             value={url}
             onChange={(e) => {
               setUrl(e.target.value);
@@ -156,39 +156,39 @@ export function AdminScamUrlFormModal({
             className="w-full rounded-lg border border-border/80 bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             placeholder={urlType === "domain" ? "badjobs.com" : "https://site.com/jobs"}
             aria-invalid={urlError != null}
-            aria-describedby={urlError ? "scam-url-error" : undefined}
+            aria-describedby={urlError ? "block-list-url-error" : undefined}
           />
           {urlError ? (
-            <p id="scam-url-error" className="text-xs text-destructive" role="alert">
+            <p id="block-list-url-error" className="text-xs text-destructive" role="alert">
               {urlError}
             </p>
           ) : null}
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="scam-reason-select" className="text-sm font-medium text-foreground">
+          <label htmlFor="block-list-reason-select" className="text-sm font-medium text-foreground">
             Reason
           </label>
           <select
-            id="scam-reason-select"
+            id="block-list-reason-select"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             className="w-full rounded-lg border border-border/80 bg-card px-3 py-2 text-sm text-foreground"
           >
-            {SCAM_URL_REASONS.map((r) => (
-              <option key={r} value={r}>
-                {r}
+            {BLOCK_LIST_REASON_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="scam-notes-input" className="text-sm font-medium text-foreground">
+          <label htmlFor="block-list-notes-input" className="text-sm font-medium text-foreground">
             Notes <span className="font-normal text-muted-foreground">(Optional)</span>
           </label>
           <textarea
-            id="scam-notes-input"
+            id="block-list-notes-input"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}

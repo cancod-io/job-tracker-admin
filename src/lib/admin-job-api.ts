@@ -7,13 +7,13 @@
  *   DELETE /api/admin/jobs/{job_id}            — delete (204)
  */
 import { fetchAuthedJson } from "@/lib/fetch-authed";
+import { dateKeyToPostedFromUtc, dateKeyToPostedToUtc, isDateKey } from "@/lib/date-utils";
 import type {
   AdminJobApplicant,
   AdminJobApplicantListResponse,
   AdminJobDetail,
   AdminJobListResponse,
 } from "@/types/admin-job-api";
-
 const BASE = "/api/admin/jobs";
 
 export type AdminJobSortBy = "posted_at" | "created_at" | "id";
@@ -25,6 +25,11 @@ export type ListAdminJobsParams = {
   q?: string;
   sort_by?: AdminJobSortBy;
   sort_order?: SortOrder;
+  /** Exact match on scraper/source name. */
+  source?: string;
+  /** Inclusive posted-at range (`YYYY-MM-DD` keys converted to UTC ISO before send). */
+  posted_from?: string;
+  posted_to?: string;
 };
 
 export type ListJobApplicantsParams = {
@@ -119,6 +124,16 @@ export async function listAdminJobs(
   if (q) search.set("q", q);
   if (params.sort_by) search.set("sort_by", params.sort_by);
   if (params.sort_order) search.set("sort_order", params.sort_order);
+  const source = params.source?.trim();
+  if (source) search.set("source", source);
+  const postedFrom = params.posted_from?.trim();
+  const postedTo = params.posted_to?.trim();
+  if (postedFrom && isDateKey(postedFrom)) {
+    search.set("posted_from", dateKeyToPostedFromUtc(postedFrom));
+  }
+  if (postedTo && isDateKey(postedTo)) {
+    search.set("posted_to", dateKeyToPostedToUtc(postedTo));
+  }
 
   const raw = await fetchAuthedJson<{
     items?: unknown;
