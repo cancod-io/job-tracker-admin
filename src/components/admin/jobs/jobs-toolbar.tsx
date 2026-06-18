@@ -8,6 +8,8 @@ type JobsToolbarProps = {
   searchDraft: string;
   onSearchDraftChange: (value: string) => void;
   onSearch: () => void;
+  searchActive: boolean;
+  onClearSearch: () => void;
   loading: boolean;
   onExport: () => void;
   onRefresh: () => void;
@@ -17,20 +19,33 @@ export function JobsToolbar({
   searchDraft,
   onSearchDraftChange,
   onSearch,
+  searchActive,
+  onClearSearch,
   loading,
   onExport,
   onRefresh,
 }: JobsToolbarProps) {
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <ListSearchInput
-        value={searchDraft}
-        onChange={onSearchDraftChange}
-        onSearch={onSearch}
-        placeholder="Search by job title, company…"
-        ariaLabel="Search jobs"
-        className="flex min-w-0 flex-1 gap-2 lg:max-w-md"
-      />
+      <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center lg:max-w-xl">
+        <ListSearchInput
+          value={searchDraft}
+          onChange={onSearchDraftChange}
+          onSearch={onSearch}
+          placeholder="Search by job title, company…"
+          ariaLabel="Search jobs"
+          className="flex min-w-0 flex-1 gap-2"
+        />
+        {searchActive ? (
+          <button
+            type="button"
+            onClick={onClearSearch}
+            className="shrink-0 rounded-lg border border-border/80 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Clear
+          </button>
+        ) : null}
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <button

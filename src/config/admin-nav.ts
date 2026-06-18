@@ -2,6 +2,7 @@ import {
   Briefcase,
   Building2,
   Link2,
+  Settings,
   Shield,
   ShieldAlert,
   Users,
@@ -21,6 +22,12 @@ export const adminNavItems: AdminNavItem[] = [
   { href: "/jobs", label: "Jobs", icon: Briefcase, permission: "jobs.read" },
   { href: "/users", label: "Users", icon: Users, permission: "users.read" },
   { href: "/companies", label: "Companies", icon: Building2, permission: "companies.read" },
+  {
+    href: "/settings/api-config",
+    label: "API Configuration",
+    icon: Settings,
+    permission: "api_config.read",
+  },
   { href: "/scam-urls", label: "Block Lists", icon: ShieldAlert, permission: "scam_urls.read" },
   // { href: "/career-urls", label: "Career URLs", icon: Link2, permission: "career_urls.read" },
   {

@@ -1,21 +1,64 @@
 "use client";
 
+import { useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { formatDateTime } from "@/lib/format-date";
 import { cn } from "@/lib/utils";
 import type { AdminJobDetail } from "@/types/admin-job-api";
 
+const EXTERNAL_ID_PREVIEW_LENGTH = 32;
+
 type AdminJobDetailModalProps = {
   job: AdminJobDetail;
   onClose: () => void;
 };
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="space-y-0.5">
+    <div className={cn("min-w-0 space-y-0.5", className)}>
       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="text-sm text-foreground">{children}</dd>
+      <dd className="min-w-0 text-sm text-foreground">{children}</dd>
+    </div>
+  );
+}
+
+function ExternalIdValue({ value }: { value: string }) {
+  const [visible, setVisible] = useState(false);
+  const preview =
+    value.length > EXTERNAL_ID_PREVIEW_LENGTH
+      ? `${value.slice(0, EXTERNAL_ID_PREVIEW_LENGTH)}…`
+      : value;
+
+  return (
+    <div className="flex items-start gap-2">
+      <span
+        className={cn(
+          "min-w-0 flex-1 font-mono text-xs text-foreground",
+          visible ? "break-all leading-relaxed" : "truncate",
+        )}
+        title={visible ? undefined : value}
+      >
+        {visible ? value : preview}
+      </span>
+      {value.length > EXTERNAL_ID_PREVIEW_LENGTH ? (
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          className="shrink-0 rounded-md border border-border/80 bg-card px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-expanded={visible}
+        >
+          {visible ? "Hide" : "Show"}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -27,7 +70,7 @@ export function AdminJobDetailModal({ job, onClose }: AdminJobDetailModalProps) 
       title={job.job_title}
       description={`${job.company}${job.location ? ` · ${job.location}` : ""}`}
       onClose={onClose}
-      maxWidth="max-w-2xl"
+      maxWidth="max-w-4xl"
     >
       <div className="flex items-start gap-3">
         {job.company_logo_url ? (
@@ -64,7 +107,11 @@ export function AdminJobDetailModal({ job, onClose }: AdminJobDetailModalProps) 
         {job.scraped_at ? (
           <Field label="Scraped">{formatDateTime(job.scraped_at)}</Field>
         ) : null}
-        {job.job_id ? <Field label="External ID">{job.job_id}</Field> : null}
+        {job.job_id ? (
+          <Field label="External ID" className="col-span-2 sm:col-span-3">
+            <ExternalIdValue value={job.job_id} />
+          </Field>
+        ) : null}
       </dl>
 
       {job.skills.length > 0 ? (
@@ -90,7 +137,7 @@ export function AdminJobDetailModal({ job, onClose }: AdminJobDetailModalProps) 
         {job.description.trim() ? (
           <div
             className={cn(
-              "max-h-72 overflow-y-auto rounded-lg border border-border/70 bg-muted/20 px-3 py-2",
+              "max-h-96 overflow-y-auto rounded-lg border border-border/70 bg-muted/20 px-3 py-2",
               "text-sm leading-relaxed text-foreground whitespace-pre-wrap",
             )}
           >
