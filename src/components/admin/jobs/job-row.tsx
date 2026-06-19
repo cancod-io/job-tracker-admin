@@ -20,6 +20,8 @@ type JobRowProps = {
   applicants: ApplicantsState | undefined;
   canDelete: boolean;
   canViewApplications: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
   onToggle: () => void;
   onRetryApplicants: () => void;
   onViewDetail: () => void;
@@ -33,6 +35,8 @@ export function JobRow({
   applicants,
   canDelete,
   canViewApplications,
+  selected = false,
+  onToggleSelect,
   onToggle,
   onRetryApplicants,
   onViewDetail,
@@ -49,9 +53,25 @@ export function JobRow({
           "border-b border-border/60 align-top last:border-0",
           hasApplicants && "cursor-pointer transition-colors hover:bg-muted/30",
           expanded && "bg-muted/30",
+          selected && "bg-primary/5",
         )}
         onClick={hasApplicants ? onToggle : undefined}
       >
+        {canDelete ? (
+          <td className="w-10 px-3 py-4 align-middle">
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={(e) => {
+                e.stopPropagation();
+                onToggleSelect?.();
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="size-4 rounded border-border accent-primary"
+              aria-label={`Select ${job.job_title}`}
+            />
+          </td>
+        ) : null}
         <td className="px-4 py-4">
           <div className="flex items-center gap-2">
             <button
@@ -146,7 +166,7 @@ export function JobRow({
 
       {expanded && canViewApplications ? (
         <tr className="border-b border-border/60 bg-muted/20">
-          <td colSpan={5} className="px-4 py-4">
+          <td colSpan={canDelete ? 6 : 5} className="px-4 py-4">
             <div className="border-l-2 border-primary/20 pl-4">
               <ApplicantsPanel
                 state={applicants}
