@@ -118,7 +118,7 @@ function RunCard({
               <Trash2 className="size-3.5" aria-hidden />
             </button>
           ) : null}
-        {isInitial ? (
+        {/* {isInitial ? (
           <span className="shrink-0 rounded-md border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-800 dark:text-amber-200">
             Baseline
           </span>
@@ -126,7 +126,7 @@ function RunCard({
           <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-medium tabular-nums text-muted-foreground">
             Δ {deltaTotal}
           </span>
-        )}
+        )} */}
         </div>
       </div>
 

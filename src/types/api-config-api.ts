@@ -19,12 +19,47 @@ export type ApiConfigGroup = {
   fields: ApiConfigField[];
 };
 
+export type ApiConfigSource = {
+  id: string;
+  label: string;
+  config_key: string;
+  active_key_id: number | null;
+  is_set: boolean;
+};
+
+export type ApiKeyListItem = {
+  id: number;
+  source: string;
+  source_label: string;
+  masked_key: string;
+  is_active: boolean;
+  credits_remaining: string | null;
+  credits_updated_at: string | null;
+  created_at: string;
+};
+
+/** GET /api/admin/api-config — key vault summary. */
 export type ApiConfigResponse = {
+  sources: ApiConfigSource[];
+  keys: ApiKeyListItem[];
+  updated_at: string | null;
+};
+
+/** GET /api/admin/api-config/settings — env settings (non-key config). */
+export type ApiConfigSettingsResponse = {
   groups: ApiConfigGroup[];
   updated_at: string | null;
 };
 
-/** Payload for `PATCH /api/admin/api-config`. */
-export type ApiConfigPatchRequest = {
+/** PATCH /api/admin/api-config/settings */
+export type ApiConfigSettingsPatchRequest = {
   values: Record<string, string | null>;
 };
+
+/** POST /api/admin/api-config/keys */
+export type ApiKeyCreateRequest = {
+  source: string;
+  api_key: string;
+};
+
+export type ApiConfigTab = "settings" | "keys";

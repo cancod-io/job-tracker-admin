@@ -142,7 +142,9 @@ export function ApiConfigFieldInput({
             </button>
           </div>
           {secretConfigured && !value && !cleared ? (
-            <p className="text-xs text-muted-foreground">Configured. Leave blank to keep the current value.</p>
+            <p className="text-xs text-muted-foreground">
+              Configured. Leave blank to keep the current value.
+            </p>
           ) : null}
         </div>
       ) : field.value_type === "int" ? (

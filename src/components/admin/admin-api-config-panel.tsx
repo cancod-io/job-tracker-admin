@@ -1,23 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { getApiConfig, patchApiConfig } from "@/lib/api-config-api";
-import {
-  buildFormValuesFromConfig,
-  buildPatchValues,
-  validateFieldValue,
-} from "@/lib/api-config-validation";
-import { formatDateTime } from "@/lib/format-date";
+import { useCallback, useEffect, useState } from "react";
+import { KeyRound, Loader2, SlidersHorizontal } from "lucide-react";
+import { getApiConfig } from "@/lib/api-config-api";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
-import { ApiConfigGroupSection } from "@/components/admin/api-config/api-config-group-section";
-import { ApiConfigToolbar } from "@/components/admin/api-config/api-config-toolbar";
+import { AdminApiConfigSettingsPanel } from "@/components/admin/admin-api-config-settings-panel";
+import { AdminApiConfigVaultPanel } from "@/components/admin/admin-api-config-vault-panel";
 import { AuthRequiredNotice } from "@/components/admin/shared/auth-required-notice";
-import { ListNotifications } from "@/components/admin/shared/list-notifications";
 import { AlertBanner } from "@/components/ui/alert-banner";
+import { ListNotifications } from "@/components/admin/shared/list-notifications";
 import { useToast } from "@/hooks/use-toast";
-import type { ApiConfigField, ApiConfigResponse } from "@/types/api-config-api";
+import { cn } from "@/lib/utils";
+import type { ApiConfigResponse, ApiConfigTab } from "@/types/api-config-api";
+
+const TABS: { id: ApiConfigTab; label: string; icon: typeof SlidersHorizontal }[] = [
+  { id: "settings", label: "Settings", icon: SlidersHorizontal },
+  { id: "keys", label: "Keys", icon: KeyRound },
+];
 
 export function AdminApiConfigPanel() {
   const { accessToken } = useAuth();
@@ -25,121 +25,28 @@ export function AdminApiConfigPanel() {
   const canRead = can("api_config.read");
   const canManage = can("api_config.manage");
   const { toast, setToast } = useToast();
-
+  const [tab, setTab] = useState<ApiConfigTab>("settings");
   const [config, setConfig] = useState<ApiConfigResponse | null>(null);
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
-  const [initialValues, setInitialValues] = useState<Record<string, string>>({});
-  const [clearedKeys, setClearedKeys] = useState<Set<string>>(() => new Set());
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [keysLoading, setKeysLoading] = useState(false);
+  const [keysError, setKeysError] = useState<string | null>(null);
 
-  const allFields = useMemo(
-    () => config?.groups.flatMap((group) => group.fields) ?? [],
-    [config],
-  );
-
-  const applyConfig = useCallback((body: ApiConfigResponse) => {
-    const values = buildFormValuesFromConfig(body.groups);
-    setConfig(body);
-    setFormValues(values);
-    setInitialValues(values);
-    setClearedKeys(new Set());
-    setFieldErrors({});
-  }, []);
-
-  const load = useCallback(async () => {
-    if (!accessToken || !canRead) {
-      setConfig(null);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setError(null);
+  const loadKeys = useCallback(async () => {
+    if (!accessToken) return;
+    setKeysLoading(true);
+    setKeysError(null);
     try {
-      const body = await getApiConfig(accessToken);
-      applyConfig(body);
+      setConfig(await getApiConfig(accessToken));
     } catch (e) {
       setConfig(null);
-      setError(e instanceof Error ? e.message : "Failed to load API configuration.");
+      setKeysError(e instanceof Error ? e.message : "Failed to load API keys.");
     } finally {
-      setLoading(false);
+      setKeysLoading(false);
     }
-  }, [accessToken, canRead, applyConfig]);
+  }, [accessToken]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
-
-  const handleFieldChange = (key: string, value: string) => {
-    setFormValues((prev) => ({ ...prev, [key]: value }));
-    setFieldErrors((prev) => {
-      if (!prev[key]) return prev;
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-  };
-
-  const handleClearSecret = (key: string) => {
-    setClearedKeys((prev) => new Set(prev).add(key));
-    setFormValues((prev) => ({ ...prev, [key]: "" }));
-  };
-
-  const handleUndoClearSecret = (key: string) => {
-    setClearedKeys((prev) => {
-      const next = new Set(prev);
-      next.delete(key);
-      return next;
-    });
-  };
-
-  const validateForm = (fields: ApiConfigField[]): Record<string, string> => {
-    const errors: Record<string, string> = {};
-    for (const field of fields) {
-      if (field.is_secret) {
-        if (clearedKeys.has(field.key)) continue;
-        const typed = (formValues[field.key] ?? "").trim();
-        if (typed) continue;
-        continue;
-      }
-      const value = formValues[field.key] ?? "";
-      const message = validateFieldValue(field, value);
-      if (message) errors[field.key] = message;
-    }
-    return errors;
-  };
-
-  const handleSave = async () => {
-    if (!accessToken || !config || !canManage) return;
-
-    const errors = validateForm(allFields);
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      setToast({ kind: "error", message: "Fix validation errors before saving." });
-      return;
-    }
-
-    const patchValues = buildPatchValues(allFields, formValues, initialValues, clearedKeys);
-    if (Object.keys(patchValues).length === 0) {
-      setToast({ kind: "error", message: "No changes to save." });
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
-    try {
-      const body = await patchApiConfig(accessToken, { values: patchValues });
-      applyConfig(body);
-      setToast({ kind: "success", message: "API configuration saved successfully." });
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to save API configuration.";
-      setToast({ kind: "error", message });
-    } finally {
-      setSaving(false);
-    }
-  };
+    if (tab === "keys") void loadKeys();
+  }, [tab, loadKeys]);
 
   if (!accessToken) {
     return <AuthRequiredNotice resourceLabel="API configuration" />;
@@ -154,76 +61,70 @@ export function AdminApiConfigPanel() {
     );
   }
 
-  if (loading && !config) {
-    return (
-      <div
-        className="flex min-h-[20rem] flex-col items-center justify-center gap-3 text-muted-foreground"
-        aria-busy="true"
-      >
-        <Loader2 className="size-8 animate-spin motion-reduce:animate-none" aria-hidden />
-        <p className="text-sm">Loading API configuration…</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1 text-sm text-muted-foreground">
-          {config?.updated_at ? (
-            <p>
-              Last updated:{" "}
-              <time dateTime={config.updated_at}>{formatDateTime(config.updated_at)}</time>
-            </p>
-          ) : (
-            <p>No configuration saved yet.</p>
-          )}
-          <p className="text-xs">
-            Changes apply on the api-service&apos;s next config refresh or scrape run.
-          </p>
-        </div>
-        <ApiConfigToolbar
-          loading={loading}
-          saving={saving}
-          canManage={canManage}
-          onRefresh={() => void load()}
-          onSave={() => void handleSave()}
-        />
+    <div className="space-y-6">
+      <div
+        className="flex flex-wrap gap-2 border-b border-border/80 pb-1"
+        role="tablist"
+        aria-label="API configuration sections"
+      >
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => setTab(id)}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-t-lg px-4 py-2.5 text-sm font-medium transition-colors",
+              tab === id
+                ? "border border-b-0 border-border/80 bg-card text-foreground"
+                : "text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+            )}
+          >
+            <Icon className="size-4" aria-hidden />
+            {label}
+          </button>
+        ))}
       </div>
 
-      <ListNotifications toast={toast} error={error} />
+      <p className="text-xs text-muted-foreground">
+        Changes apply on the api-service&apos;s next config refresh or scrape run.
+      </p>
+
+      <ListNotifications toast={toast} error={keysError} />
 
       {!canManage ? (
         <AlertBanner variant="warning">
           You have read-only access (<code className="text-xs">api_config.read</code>). Saving
-          requires <code className="text-xs">api_config.manage</code>.
+          settings or managing keys requires <code className="text-xs">api_config.manage</code>.
         </AlertBanner>
       ) : null}
 
-      {config ? (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void handleSave();
-          }}
-          className="space-y-4"
-          noValidate
+      {tab === "settings" ? (
+        <AdminApiConfigSettingsPanel
+          accessToken={accessToken}
+          canManage={canManage}
+          setToast={setToast}
+        />
+      ) : keysLoading && !config ? (
+        <div
+          className="flex min-h-[16rem] flex-col items-center justify-center gap-3 text-muted-foreground"
+          aria-busy="true"
         >
-          {config.groups.map((group) => (
-            <ApiConfigGroupSection
-              key={group.key}
-              group={group}
-              formValues={formValues}
-              fieldErrors={fieldErrors}
-              clearedKeys={clearedKeys}
-              disabled={!canManage || saving}
-              onFieldChange={handleFieldChange}
-              onClearSecret={handleClearSecret}
-              onUndoClearSecret={handleUndoClearSecret}
-            />
-          ))}
-        </form>
-      ) : null}
+          <Loader2 className="size-8 animate-spin motion-reduce:animate-none" aria-hidden />
+          <p className="text-sm">Loading API keys…</p>
+        </div>
+      ) : (
+        <AdminApiConfigVaultPanel
+          accessToken={accessToken}
+          canManage={canManage}
+          config={config}
+          loading={keysLoading}
+          onRefresh={loadKeys}
+          setToast={setToast}
+        />
+      )}
     </div>
   );
 }

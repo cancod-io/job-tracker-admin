@@ -23,7 +23,7 @@ export const adminNavItems: AdminNavItem[] = [
   { href: "/users", label: "Users", icon: Users, permission: "users.read" },
   { href: "/companies", label: "Companies", icon: Building2, permission: "companies.read" },
   {
-    href: "/api-config",
+    href: "/settings/api-config",
     label: "API Configuration",
     icon: Settings,
     permission: "api_config.read",
