@@ -8,10 +8,15 @@ import {
   deleteApiKey,
 } from "@/lib/api-config-api";
 import { AdminApiKeyDeleteConfirm } from "@/components/admin/admin-api-key-delete-confirm";
+import { AdminApiKeyViewModal } from "@/components/admin/admin-api-key-view-modal";
 import { ApiConfigAddKeyForm } from "@/components/admin/api-config/api-config-add-key-form";
 import { ApiConfigKeysTable } from "@/components/admin/api-config/api-config-keys-table";
 import { ApiConfigSourcesGrid } from "@/components/admin/api-config/api-config-sources-grid";
 import { ApiConfigVaultToolbar } from "@/components/admin/api-config/api-config-vault-toolbar";
+import {
+  applyKeyActivation,
+  sortApiKeysStable,
+} from "@/components/admin/api-config/api-key-utils";
 import type { ToastMessage } from "@/hooks/use-toast";
 import type { ApiConfigResponse, ApiKeyCreateRequest, ApiKeyListItem } from "@/types/api-config-api";
 
@@ -21,6 +26,7 @@ type AdminApiConfigVaultPanelProps = {
   config: ApiConfigResponse | null;
   loading: boolean;
   onRefresh: () => Promise<void>;
+  onConfigUpdate: (config: ApiConfigResponse) => void;
   setToast: (toast: ToastMessage | null) => void;
 };
 
@@ -30,16 +36,18 @@ export function AdminApiConfigVaultPanel({
   config,
   loading,
   onRefresh,
+  onConfigUpdate,
   setToast,
 }: AdminApiConfigVaultPanelProps) {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [submitting, setSubmitting] = useState(false);
   const [activatingId, setActivatingId] = useState<number | null>(null);
+  const [viewing, setViewing] = useState<ApiKeyListItem | null>(null);
   const [deleting, setDeleting] = useState<ApiKeyListItem | null>(null);
   const [addFormSource, setAddFormSource] = useState<string | undefined>();
 
   const sources = config?.sources ?? [];
-  const allKeys = config?.keys ?? [];
+  const allKeys = useMemo(() => sortApiKeysStable(config?.keys ?? []), [config?.keys]);
 
   const filteredKeys = useMemo(() => {
     if (sourceFilter === "all") return allKeys;
@@ -66,22 +74,22 @@ export function AdminApiConfigVaultPanel({
       });
       setSourceFilter(payload.source);
       await onRefresh();
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to save API key.";
-      setToast({ kind: "error", message });
-      throw e;
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleActivate = async (key: ApiKeyListItem) => {
-    if (!canManage) return;
+    if (!canManage || !config) return;
     setActivatingId(key.id);
     try {
-      await activateApiKey(accessToken, key.id);
+      const activated = await activateApiKey(accessToken, key.id);
+      const next = applyKeyActivation(config, activated);
+      onConfigUpdate(next);
+      setViewing((current) =>
+        current?.id === activated.id ? { ...current, ...activated, is_active: true } : current,
+      );
       setToast({ kind: "success", message: `${key.source_label} now uses this API key.` });
-      await onRefresh();
     } catch (e) {
       setToast({
         kind: "error",
@@ -97,6 +105,7 @@ export function AdminApiConfigVaultPanel({
     try {
       await deleteApiKey(accessToken, key.id);
       setToast({ kind: "success", message: "API key removed." });
+      if (viewing?.id === key.id) setViewing(null);
       await onRefresh();
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to delete API key.";
@@ -145,6 +154,7 @@ export function AdminApiConfigVaultPanel({
           canManage={canManage}
           sourceFilterActive={sourceFilter !== "all"}
           activatingId={activatingId}
+          onView={setViewing}
           onActivate={(key) => void handleActivate(key)}
           onDelete={setDeleting}
         />
@@ -156,6 +166,15 @@ export function AdminApiConfigVaultPanel({
         selectedSourceId={sourceFilter === "all" ? "" : sourceFilter}
         onSelectSource={handleSourceSelect}
       />
+
+      {viewing ? (
+        <AdminApiKeyViewModal
+          apiKey={viewing}
+          onClose={() => setViewing(null)}
+          onCopied={() => setToast({ kind: "success", message: "API key copied to clipboard." })}
+          onCopyError={(message) => setToast({ kind: "error", message })}
+        />
+      ) : null}
 
       {deleting ? (
         <AdminApiKeyDeleteConfirm

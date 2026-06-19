@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { KeyRound, Loader2, Plus } from "lucide-react";
 import type { ApiConfigSource, ApiKeyCreateRequest } from "@/types/api-config-api";
 
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 type ApiConfigAddKeyFormProps = {
   sources: ApiConfigSource[];
   defaultSource?: string;
@@ -18,6 +22,7 @@ export function ApiConfigAddKeyForm({
   onSubmit,
 }: ApiConfigAddKeyFormProps) {
   const [source, setSource] = useState(defaultSource ?? sources[0]?.id ?? "");
+  const [mailbox, setMailbox] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -33,13 +38,24 @@ export function ApiConfigAddKeyForm({
   const isFirstKeyForSource =
     selectedSource !== undefined && !selectedSource.is_set && selectedSource.active_key_id === null;
 
+  const canSubmit = Boolean(source && mailbox.trim() && apiKey.trim());
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
     const trimmedKey = apiKey.trim();
+    const trimmedMailbox = mailbox.trim();
     if (!source) {
       setError("Select a source.");
+      return;
+    }
+    if (!trimmedMailbox) {
+      setError("Enter an email address.");
+      return;
+    }
+    if (!isValidEmail(trimmedMailbox)) {
+      setError("Enter a valid email address.");
       return;
     }
     if (!trimmedKey) {
@@ -48,7 +64,8 @@ export function ApiConfigAddKeyForm({
     }
 
     try {
-      await onSubmit({ source, api_key: trimmedKey });
+      await onSubmit({ source, api_key: trimmedKey, mailbox: trimmedMailbox });
+      setMailbox("");
       setApiKey("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save API key.");
@@ -94,6 +111,23 @@ export function ApiConfigAddKeyForm({
           </select>
         </div>
 
+        <div className="min-w-0 flex-1 space-y-1.5 lg:max-w-sm">
+          <label htmlFor="vault-add-mailbox" className="text-xs font-medium text-muted-foreground">
+            Email <span className="text-destructive">*</span>
+          </label>
+          <input
+            id="vault-add-mailbox"
+            type="email"
+            autoComplete="email"
+            value={mailbox}
+            onChange={(e) => setMailbox(e.target.value)}
+            disabled={submitting}
+            required
+            placeholder="user@example.com"
+            className="w-full rounded-lg border border-border/80 bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground disabled:opacity-60"
+          />
+        </div>
+
         <div className="min-w-0 flex-[2] space-y-1.5">
           <label htmlFor="vault-add-key" className="text-xs font-medium text-muted-foreground">
             API key
@@ -112,7 +146,7 @@ export function ApiConfigAddKeyForm({
 
         <button
           type="submit"
-          disabled={submitting || !apiKey.trim()}
+          disabled={submitting || !canSubmit}
           className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-60 lg:min-w-[8.5rem]"
         >
           {submitting ? (

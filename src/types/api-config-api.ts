@@ -32,6 +32,8 @@ export type ApiKeyListItem = {
   source: string;
   source_label: string;
   masked_key: string;
+  api_key: string | null;
+  mailbox: string | null;
   is_active: boolean;
   credits_remaining: string | null;
   credits_updated_at: string | null;
@@ -60,6 +62,10 @@ export type ApiConfigSettingsPatchRequest = {
 export type ApiKeyCreateRequest = {
   source: string;
   api_key: string;
+  mailbox: string;
 };
+
+/** GET /api/admin/api-config/keys/{id} */
+export type ApiKeyDetail = ApiKeyListItem;
 
 export type ApiConfigTab = "settings" | "keys";

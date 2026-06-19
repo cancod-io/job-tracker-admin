@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { KeyRound, Loader2, SlidersHorizontal } from "lucide-react";
 import { getApiConfig } from "@/lib/api-config-api";
+import { withStableKeyOrder } from "@/components/admin/api-config/api-key-utils";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
 import { AdminApiConfigSettingsPanel } from "@/components/admin/admin-api-config-settings-panel";
@@ -35,7 +36,7 @@ export function AdminApiConfigPanel() {
     setKeysLoading(true);
     setKeysError(null);
     try {
-      setConfig(await getApiConfig(accessToken));
+      setConfig(withStableKeyOrder(await getApiConfig(accessToken)));
     } catch (e) {
       setConfig(null);
       setKeysError(e instanceof Error ? e.message : "Failed to load API keys.");
@@ -122,6 +123,7 @@ export function AdminApiConfigPanel() {
           config={config}
           loading={keysLoading}
           onRefresh={loadKeys}
+          onConfigUpdate={setConfig}
           setToast={setToast}
         />
       )}
