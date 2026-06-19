@@ -3,8 +3,9 @@
  *
  * Key vault:
  *   GET  /api/admin/api-config
- *   GET  /api/admin/api-config/keys
- *   POST /api/admin/api-config/keys
+ *   GET    /api/admin/api-config/keys
+ *   GET    /api/admin/api-config/keys/{id}
+ *   POST   /api/admin/api-config/keys
  *   POST /api/admin/api-config/keys/{id}/activate
  *   DELETE /api/admin/api-config/keys/{id}
  *
@@ -23,6 +24,7 @@ import type {
   ApiConfigSource,
   ApiConfigValueType,
   ApiKeyCreateRequest,
+  ApiKeyDetail,
   ApiKeyListItem,
 } from "@/types/api-config-api";
 
@@ -106,13 +108,17 @@ function isRawSource(value: unknown): value is Partial<ApiConfigSource> & { id: 
   );
 }
 
-function normalizeKey(raw: Partial<ApiKeyListItem> & { id: number }): ApiKeyListItem {
+function normalizeKey(
+  raw: Partial<ApiKeyListItem> & { id: number; api_key?: unknown; mailbox?: unknown },
+): ApiKeyListItem {
   const credits = raw.credits_remaining;
   return {
     id: raw.id,
     source: typeof raw.source === "string" ? raw.source : "",
     source_label: typeof raw.source_label === "string" ? raw.source_label : raw.source ?? "",
     masked_key: typeof raw.masked_key === "string" ? raw.masked_key : "••••",
+    api_key: typeof raw.api_key === "string" ? raw.api_key : null,
+    mailbox: typeof raw.mailbox === "string" ? raw.mailbox : null,
     is_active: raw.is_active === true,
     credits_remaining: typeof credits === "string" || credits === null ? credits : null,
     credits_updated_at:
@@ -183,6 +189,13 @@ export async function patchApiConfigSettings(
     body: payload,
   });
   return normalizeSettingsResponse(raw);
+}
+
+export async function getApiKey(token: string, keyId: number): Promise<ApiKeyDetail> {
+  const raw = await fetchAuthedJson<
+    Partial<ApiKeyListItem> & { id: number; api_key?: unknown; mailbox?: unknown }
+  >(token, `${BASE}/keys/${keyId}`);
+  return normalizeKey(raw);
 }
 
 export async function listApiKeys(

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Coins, KeyRound, Loader2, Trash2 } from "lucide-react";
+import { Check, Coins, Eye, KeyRound, Loader2, Trash2 } from "lucide-react";
 import { formatCredits } from "@/components/admin/api-config/constants";
 import { DataTable } from "@/components/ui/data-table";
 import { formatDateTime } from "@/lib/format-date";
@@ -14,6 +14,7 @@ type ApiConfigKeysTableProps = {
   canManage: boolean;
   sourceFilterActive: boolean;
   activatingId: number | null;
+  onView: (key: ApiKeyListItem) => void;
   onActivate: (key: ApiKeyListItem) => void;
   onDelete: (key: ApiKeyListItem) => void;
 };
@@ -46,6 +47,7 @@ export function ApiConfigKeysTable({
   canManage,
   sourceFilterActive,
   activatingId,
+  onView,
   onActivate,
   onDelete,
 }: ApiConfigKeysTableProps) {
@@ -55,26 +57,24 @@ export function ApiConfigKeysTable({
       : "No API keys saved yet. Add a key above. Keys take effect on the api-service's next config refresh or scrape run.";
 
   return (
-    <DataTable loading={loading} loadingMessage="Loading key vault…" minWidth="920px">
+    <DataTable loading={loading} loadingMessage="Loading key vault…" minWidth="1080px">
       {!loading ? (
         <>
           <thead>
             <tr className="border-b border-border/80 bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-4 py-3 font-medium">Source</th>
+              <th className="px-4 py-3 font-medium">Email</th>
               <th className="px-4 py-3 font-medium">Masked key</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Credits</th>
               <th className="px-4 py-3 font-medium">Added</th>
-              {canManage ? <th className="px-4 py-3 text-right font-medium">Actions</th> : null}
+              <th className="px-4 py-3 text-right font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {keys.length === 0 ? (
               <tr>
-                <td
-                  colSpan={canManage ? 6 : 5}
-                  className="px-4 py-16 text-center text-sm text-muted-foreground"
-                >
+                <td colSpan={7} className="px-4 py-16 text-center text-sm text-muted-foreground">
                   <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
                     <KeyRound className="size-8 text-muted-foreground/60" aria-hidden />
                     <p>{emptyMessage}</p>
@@ -90,14 +90,34 @@ export function ApiConfigKeysTable({
                     key={key.id}
                     className={cn(
                       "border-b border-border/60 last:border-b-0 hover:bg-muted/20",
-                      key.is_active && "bg-emerald-500/[0.03]",
+                      key.is_active && "bg-emerald-500/[0.06] ring-1 ring-inset ring-emerald-500/20",
                     )}
                   >
                     <td className="px-4 py-3">
                       <div className="font-medium text-foreground">{key.source_label}</div>
                       <div className="font-mono text-xs text-muted-foreground">{key.source}</div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-foreground">{key.masked_key}</td>
+                    <td className="px-4 py-3 text-sm text-foreground">
+                      {key.mailbox ?? (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="min-w-0 truncate font-mono text-xs text-foreground">
+                          {key.masked_key}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onView(key)}
+                          className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          aria-label={`View full API key for ${key.source_label}`}
+                          title="View full API key"
+                        >
+                          <Eye className="size-4" strokeWidth={2} aria-hidden />
+                        </button>
+                      </div>
+                    </td>
                     <td className="px-4 py-3">
                       {key.is_active ? (
                         <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
@@ -116,28 +136,26 @@ export function ApiConfigKeysTable({
                     <td className="px-4 py-3 text-sm text-muted-foreground">
                       {formatDateTime(key.created_at)}
                     </td>
-                    {canManage ? (
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-1.5">
-                          {!key.is_active ? (
-                            <button
-                              type="button"
-                              onClick={() => onActivate(key)}
-                              disabled={busy}
-                              className="rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
-                            >
-                              {busy ? (
-                                <Loader2
-                                  className="size-3.5 animate-spin motion-reduce:animate-none"
-                                  aria-hidden
-                                />
-                              ) : (
-                                "Use this API key"
-                              )}
-                            </button>
-                          ) : (
-                            <span className="px-2 py-1.5 text-xs text-muted-foreground">Current</span>
-                          )}
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-1.5">
+                        {canManage && !key.is_active ? (
+                          <button
+                            type="button"
+                            onClick={() => onActivate(key)}
+                            disabled={busy}
+                            className="rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
+                          >
+                            {busy ? (
+                              <Loader2
+                                className="size-3.5 animate-spin motion-reduce:animate-none"
+                                aria-hidden
+                              />
+                            ) : (
+                              "Use this API key"
+                            )}
+                          </button>
+                        ) : null}
+                        {canManage ? (
                           <button
                             type="button"
                             onClick={() => onDelete(key)}
@@ -148,9 +166,9 @@ export function ApiConfigKeysTable({
                           >
                             <Trash2 className="size-4" aria-hidden />
                           </button>
-                        </div>
-                      </td>
-                    ) : null}
+                        ) : null}
+                      </div>
+                    </td>
                   </tr>
                 );
               })
