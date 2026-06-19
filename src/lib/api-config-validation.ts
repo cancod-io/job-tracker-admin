@@ -29,7 +29,11 @@ export function fieldToFormValue(field: ApiConfigField): string {
 
 export function validateFieldValue(field: ApiConfigField, value: string): string | null {
   if (isApifyDatePostedField(field.key)) {
-    if (!APIFY_INDEED_DATE_POSTED_OPTIONS.includes(value as (typeof APIFY_INDEED_DATE_POSTED_OPTIONS)[number])) {
+    if (
+      !APIFY_INDEED_DATE_POSTED_OPTIONS.includes(
+        value as (typeof APIFY_INDEED_DATE_POSTED_OPTIONS)[number],
+      )
+    ) {
       return "Select 1, 3, 7, or 14 days.";
     }
     return null;
@@ -57,7 +61,9 @@ export function validateFieldValue(field: ApiConfigField, value: string): string
   return null;
 }
 
-export function buildFormValuesFromConfig(groups: { fields: ApiConfigField[] }[]): Record<string, string> {
+export function buildFormValuesFromConfig(
+  groups: { fields: ApiConfigField[] }[],
+): Record<string, string> {
   const values: Record<string, string> = {};
   for (const group of groups) {
     for (const field of group.fields) {
@@ -97,4 +103,13 @@ export function buildPatchValues(
   }
 
   return values;
+}
+
+export function groupHasChanges(
+  fields: ApiConfigField[],
+  formValues: Record<string, string>,
+  initialValues: Record<string, string>,
+  clearedKeys: Set<string>,
+): boolean {
+  return Object.keys(buildPatchValues(fields, formValues, initialValues, clearedKeys)).length > 0;
 }

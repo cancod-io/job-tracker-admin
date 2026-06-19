@@ -27,8 +27,10 @@ import { JobRow } from "@/components/admin/jobs/job-row";
 import { JobsToolbar } from "@/components/admin/jobs/jobs-toolbar";
 import type { ApplicantsState } from "@/components/admin/jobs/applicants-panel";
 import { ListNotifications } from "@/components/admin/shared/list-notifications";
+import { BulkSelectionBar } from "@/components/admin/shared/bulk-selection-bar";
 import { DataTable } from "@/components/ui/data-table";
 import { PaginationBar } from "@/components/ui/pagination-bar";
+import { useRowSelection } from "@/hooks/use-row-selection";
 import { useToast } from "@/hooks/use-toast";
 import type {
   AdminJobApplicant,
@@ -99,7 +101,8 @@ export function AdminJobsList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [deleting, setDeleting] = useState<AdminJobDetail | null>(null);
+  const [deleting, setDeleting] = useState<AdminJobDetail[] | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [deletingFetchRun, setDeletingFetchRun] = useState<ApiFetchRun | null>(null);
   const [viewingJob, setViewingJob] = useState<AdminJobDetail | null>(null);
   const [selectedApplicant, setSelectedApplicant] = useState<{
@@ -222,6 +225,16 @@ export function AdminJobsList() {
 
   const visibleJobs = data?.items ?? [];
 
+  const {
+    selectedIds,
+    allOnPageSelected,
+    someOnPageSelected,
+    selectedItems: selectedJobs,
+    toggleSelect,
+    toggleSelectAllOnPage,
+    clearSelection,
+  } = useRowSelection(visibleJobs, [page, pageSize, search, source, fetchRunId, fetchChange, postedFrom, postedTo]);
+
   const applySearch = () => {
     setSearch(searchDraft.trim());
     setPage(1);
@@ -316,19 +329,35 @@ export function AdminJobsList() {
     [applicantsById, loadApplicants],
   );
 
-  const handleDelete = async (job: AdminJobDetail) => {
+  const handleDelete = async (jobs: AdminJobDetail[]) => {
     if (!accessToken) throw new Error("Not signed in.");
-    await deleteAdminJob(accessToken, job.id);
-    setData((prev) =>
-      prev
-        ? {
-            ...prev,
-            items: prev.items.filter((j) => j.id !== job.id),
-            total: Math.max(0, prev.total - 1),
-          }
-        : prev,
+    const results = await Promise.allSettled(
+      jobs.map((job) => deleteAdminJob(accessToken, job.id)),
     );
-    setToast({ kind: "success", message: `Removed “${job.job_title}”.` });
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const succeeded = jobs.length - failed;
+
+    if (succeeded > 0) {
+      setToast({
+        kind: failed > 0 ? "error" : "success",
+        message:
+          failed > 0
+            ? `Removed ${succeeded} of ${jobs.length} jobs. ${failed} failed.`
+            : jobs.length === 1
+              ? `Removed “${jobs[0]?.job_title ?? "job"}”.`
+              : `Removed ${succeeded} jobs.`,
+      });
+    }
+    if (failed > 0 && succeeded === 0) {
+      const firstError = results.find((r) => r.status === "rejected");
+      throw new Error(
+        firstError?.status === "rejected" && firstError.reason instanceof Error
+          ? firstError.reason.message
+          : "Delete failed.",
+      );
+    }
+
+    clearSelection();
     await load();
   };
 
@@ -447,6 +476,17 @@ export function AdminJobsList() {
 
       <ListNotifications toast={toast} error={error} />
 
+      {canDeleteJobs && selectedIds.size > 0 ? (
+        <BulkSelectionBar
+          count={selectedIds.size}
+          entityLabel="job"
+          busy={bulkDeleting}
+          onClear={clearSelection}
+          onDelete={() => setDeleting(selectedJobs)}
+          deleteLabel="Remove selected"
+        />
+      ) : null}
+
       {data ? (
         <PaginationBar
           variant="top"
@@ -470,6 +510,21 @@ export function AdminJobsList() {
       <DataTable loading={loading && !data} loadingMessage="Loading jobs…" minWidth="920px">
         <thead className="border-b border-border/80 bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
+            {canDeleteJobs ? (
+              <th className="w-10 px-3 py-3">
+                <input
+                  type="checkbox"
+                  checked={allOnPageSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someOnPageSelected;
+                  }}
+                  onChange={toggleSelectAllOnPage}
+                  disabled={visibleJobs.length === 0}
+                  className="size-4 rounded border-border accent-primary"
+                  aria-label="Select all jobs on this page"
+                />
+              </th>
+            ) : null}
             <th className="min-w-[12rem] px-4 py-3 font-medium">Job Title</th>
             <th className="px-4 py-3 font-medium">Company</th>
             <th className="px-4 py-3 font-medium">Users (Applicants)</th>
@@ -480,7 +535,7 @@ export function AdminJobsList() {
         <tbody>
           {visibleJobs.length === 0 ? (
             <tr>
-              <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
+              <td colSpan={canDeleteJobs ? 6 : 5} className="px-4 py-12 text-center text-muted-foreground">
                 {emptyJobsMessage({
                   search,
                   source,
@@ -500,10 +555,12 @@ export function AdminJobsList() {
                 applicants={applicantsById[job.id]}
                 canDelete={canDeleteJobs}
                 canViewApplications={canViewApplications}
+                selected={selectedIds.has(job.id)}
+                onToggleSelect={() => toggleSelect(job.id)}
                 onToggle={() => toggleExpand(job)}
                 onRetryApplicants={() => void loadApplicants(job.id)}
                 onViewDetail={() => setViewingJob(job)}
-                onRemove={() => setDeleting(job)}
+                onRemove={() => setDeleting([job])}
                 onSelectApplicant={(applicant) => setSelectedApplicant({ job, applicant })}
               />
             ))
@@ -545,9 +602,16 @@ export function AdminJobsList() {
 
       {deleting ? (
         <AdminJobRemoveConfirm
-          job={deleting}
+          jobs={deleting}
           onClose={() => setDeleting(null)}
-          onConfirm={() => handleDelete(deleting)}
+          onConfirm={async () => {
+            setBulkDeleting(true);
+            try {
+              await handleDelete(deleting);
+            } finally {
+              setBulkDeleting(false);
+            }
+          }}
         />
       ) : null}
 
