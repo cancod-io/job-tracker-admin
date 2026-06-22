@@ -10,7 +10,7 @@ import {
   validateFieldValue,
 } from "@/lib/api-config-validation";
 import { ApiConfigGroupSection } from "@/components/admin/api-config/api-config-group-section";
-import { filterApiConfigSettingsGroups } from "@/components/admin/api-config/api-config-filters";
+import { mergeApiConfigSettingsGroups } from "@/components/admin/api-config/api-config-settings-schema";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { formatDateTime } from "@/lib/format-date";
 import type { ToastMessage } from "@/hooks/use-toast";
@@ -63,7 +63,7 @@ export function AdminApiConfigSettingsPanel({
     try {
       const body = await getApiConfigSettings(accessToken);
       if (requestId !== loadRequestRef.current) return;
-      applySettings(filterApiConfigSettingsGroups(body.groups), body.updated_at);
+      applySettings(mergeApiConfigSettingsGroups(body.groups), body.updated_at);
     } catch (e) {
       if (requestId !== loadRequestRef.current) return;
       setGroups([]);
@@ -157,7 +157,7 @@ export function AdminApiConfigSettingsPanel({
     setSavingGroupKey(group.key);
     try {
       const updated = await patchApiConfigSettings(accessToken, { values: patchValues });
-      applySettings(filterApiConfigSettingsGroups(updated.groups), updated.updated_at);
+      applySettings(mergeApiConfigSettingsGroups(updated.groups), updated.updated_at);
       setToast({ kind: "success", message: `${group.label} settings updated successfully.` });
     } catch (e) {
       setToast({

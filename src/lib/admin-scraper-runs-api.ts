@@ -51,6 +51,7 @@ function buildListQuery(params: ScraperRunsListParams = {}): string {
   if (params.provider) search.set("provider", params.provider);
   if (params.status) search.set("status", params.status);
   if (params.limit != null) search.set("limit", String(params.limit));
+  if (params.offset != null) search.set("offset", String(params.offset));
   const qs = search.toString();
   return qs ? `?${qs}` : "";
 }

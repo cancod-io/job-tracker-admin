@@ -8,6 +8,7 @@ import {
   getIntConstraints,
   isApifyDatePostedField,
 } from "@/lib/api-config-validation";
+import { getApiConfigFieldPlaceholder } from "@/components/admin/api-config/api-config-settings-schema";
 import type { ApiConfigField } from "@/types/api-config-api";
 
 const inputClass =
@@ -37,6 +38,7 @@ export function ApiConfigFieldInput({
   const [secretVisible, setSecretVisible] = useState(false);
   const constraints = getIntConstraints(field.key);
   const secretConfigured = field.is_secret && field.is_set && !cleared;
+  const placeholder = getApiConfigFieldPlaceholder(field.key);
 
   if (field.value_type === "bool") {
     const checked = value === "true";
@@ -156,6 +158,7 @@ export function ApiConfigFieldInput({
           min={constraints?.min}
           max={constraints?.max}
           onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
           className={inputClass}
         />
       ) : (
@@ -165,6 +168,7 @@ export function ApiConfigFieldInput({
           value={value}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
           className={inputClass}
         />
       )}

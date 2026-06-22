@@ -1,5 +1,5 @@
 /** Provider slug sent to POST /api/admin/scraper/runs */
-export const SCRAPER_RUN_PROVIDERS = ["serpapi", "fantastic", "all"] as const;
+export const SCRAPER_RUN_PROVIDERS = ["serpapi", "fantastic", "fantastic_jb", "all"] as const;
 export type ScraperRunProvider = (typeof SCRAPER_RUN_PROVIDERS)[number];
 
 /** Run lifecycle status from the scraper runs API. */
@@ -56,4 +56,5 @@ export type ScraperRunsListParams = {
   provider?: string;
   status?: string;
   limit?: number;
+  offset?: number;
 };
