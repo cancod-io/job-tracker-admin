@@ -14,8 +14,8 @@ export default function AdminApiConfigPage() {
             API Configuration
           </h1>
           <p className="mt-2 max-w-2xl text-muted-foreground">
-            Manage env settings (queries, limits, database URLs) and API keys for SerpAPI,
-            Fantastic Jobs, and Apify.
+            Manage env settings (queries, limits, database URLs) and API keys for SerpAPI and
+            Fantastic Jobs.
           </p>
         </header>
         <div className="rounded-2xl border border-border/80 bg-card/50 p-4 shadow-sm md:p-6">

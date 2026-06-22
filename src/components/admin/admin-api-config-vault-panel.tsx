@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { KeyRound } from "lucide-react";
 import {
   activateApiKey,
@@ -13,6 +13,11 @@ import { ApiConfigAddKeyForm } from "@/components/admin/api-config/api-config-ad
 import { ApiConfigKeysTable } from "@/components/admin/api-config/api-config-keys-table";
 import { ApiConfigSourcesGrid } from "@/components/admin/api-config/api-config-sources-grid";
 import { ApiConfigVaultToolbar } from "@/components/admin/api-config/api-config-vault-toolbar";
+import {
+  filterApiConfigKeys,
+  filterApiConfigSources,
+  isHiddenApiConfigSource,
+} from "@/components/admin/api-config/api-config-filters";
 import {
   applyKeyActivation,
   sortApiKeysStable,
@@ -46,8 +51,21 @@ export function AdminApiConfigVaultPanel({
   const [deleting, setDeleting] = useState<ApiKeyListItem | null>(null);
   const [addFormSource, setAddFormSource] = useState<string | undefined>();
 
-  const sources = config?.sources ?? [];
-  const allKeys = useMemo(() => sortApiKeysStable(config?.keys ?? []), [config?.keys]);
+  const sources = useMemo(
+    () => filterApiConfigSources(config?.sources ?? []),
+    [config?.sources],
+  );
+  const allKeys = useMemo(
+    () => sortApiKeysStable(filterApiConfigKeys(config?.keys ?? [])),
+    [config?.keys],
+  );
+
+  useEffect(() => {
+    if (sourceFilter !== "all" && isHiddenApiConfigSource(sourceFilter)) {
+      setSourceFilter("all");
+      setAddFormSource(undefined);
+    }
+  }, [sourceFilter]);
 
   const filteredKeys = useMemo(() => {
     if (sourceFilter === "all") return allKeys;

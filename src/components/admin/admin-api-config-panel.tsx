@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { KeyRound, Loader2, SlidersHorizontal } from "lucide-react";
 import { getApiConfig } from "@/lib/api-config-api";
 import { withStableKeyOrder } from "@/components/admin/api-config/api-key-utils";
+import { filterApiConfigResponse } from "@/components/admin/api-config/api-config-filters";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
 import { AdminApiConfigSettingsPanel } from "@/components/admin/admin-api-config-settings-panel";
@@ -38,7 +39,7 @@ export function AdminApiConfigPanel() {
     setKeysLoading(true);
     setKeysError(null);
     try {
-      const next = withStableKeyOrder(await getApiConfig(accessToken));
+      const next = withStableKeyOrder(filterApiConfigResponse(await getApiConfig(accessToken)));
       if (requestId !== loadKeysRequestRef.current) return;
       setConfig(next);
     } catch (e) {

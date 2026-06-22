@@ -3,9 +3,6 @@
  * Source ids match GET /api/admin/api-config → sources[].id
  */
 
-/** Apify: apify_api_FZsdfsrF3iXp8Z0jdObaWdpfCrncAG4xEJlG */
-const APIFY_KEY_PATTERN = /^apify_api_[A-Za-z0-9]+$/;
-
 /** SerpAPI: 64-character hex string */
 const SERPAPI_KEY_PATTERN = /^[a-f0-9]{64}$/i;
 
@@ -13,11 +10,6 @@ const SERPAPI_KEY_PATTERN = /^[a-f0-9]{64}$/i;
 const FANTASTIC_JOBS_KEY_PATTERN = /^zpka_[a-f0-9]+_[a-f0-9]+$/i;
 
 const SOURCE_VALIDATORS: Record<string, { pattern: RegExp; hint: string; label: string }> = {
-  apify_indeed: {
-    label: "Apify",
-    pattern: APIFY_KEY_PATTERN,
-    hint: "Must start with apify_api_ followed by letters and numbers (e.g. apify_api_FZsdfsrF3iXp8Z0jdObaWdpfCrncAG4xEJlG).",
-  },
   serpapi: {
     label: "SerpAPI",
     pattern: SERPAPI_KEY_PATTERN,
@@ -32,7 +24,6 @@ const SOURCE_VALIDATORS: Record<string, { pattern: RegExp; hint: string; label: 
 
 /** Example key shown as placeholder / hint text per source. */
 export const API_KEY_FORMAT_EXAMPLES: Record<string, string> = {
-  apify_indeed: "apify_api_…",
   serpapi: "64-character hex key",
   fantastic_jobs: "zpka_…_…",
 };
