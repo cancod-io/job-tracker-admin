@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, SlidersHorizontal } from "lucide-react";
 import { getApiConfigSettings, patchApiConfigSettings } from "@/lib/api-config-api";
 import {
@@ -36,6 +36,14 @@ export function AdminApiConfigSettingsPanel({
   const [clearedKeys, setClearedKeys] = useState<Set<string>>(() => new Set());
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [savingGroupKey, setSavingGroupKey] = useState<string | null>(null);
+  const loadRequestRef = useRef(0);
+
+  const resetFormState = useCallback(() => {
+    setFormValues({});
+    setInitialValues({});
+    setClearedKeys(new Set());
+    setFieldErrors({});
+  }, []);
 
   const applySettings = useCallback((nextGroups: ApiConfigGroup[], nextUpdatedAt: string | null) => {
     const values = buildFormValuesFromConfig(nextGroups);
@@ -48,18 +56,25 @@ export function AdminApiConfigSettingsPanel({
   }, []);
 
   const load = useCallback(async () => {
+    const requestId = ++loadRequestRef.current;
     setLoading(true);
     setError(null);
     try {
       const body = await getApiConfigSettings(accessToken);
+      if (requestId !== loadRequestRef.current) return;
       applySettings(body.groups, body.updated_at);
     } catch (e) {
+      if (requestId !== loadRequestRef.current) return;
       setGroups([]);
+      setUpdatedAt(null);
+      resetFormState();
       setError(e instanceof Error ? e.message : "Failed to load env settings.");
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
-  }, [accessToken, applySettings]);
+  }, [accessToken, applySettings, resetFormState]);
 
   useEffect(() => {
     void load();

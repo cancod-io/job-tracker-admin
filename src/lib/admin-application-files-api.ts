@@ -1,13 +1,16 @@
 /**
  * Client for application attachments on the admin Jobs screen.
  *
- * Endpoints (admin-scoped, proxied by Next.js Route Handlers):
- *   GET    /api/admin/applications/{application_id}/files
- *   POST   /api/admin/applications/{application_id}/files
- *   GET    /api/admin/applications/{application_id}/files/{file_id}
- *   DELETE /api/admin/applications/{application_id}/files/{file_id}
- *   GET    /api/admin/applications/{application_id}/files/{file_id}/download
+ * OpenAPI (admin-applications):
+ *   GET /api/admin/applications/{application_id}/files
+ *   GET /api/admin/applications/{application_id}/files/{file_id}/download
+ *
+ * OpenAPI (application-files — mutate + metadata):
+ *   GET    /api/v1/applications/{application_id}/files/{file_id}
+ *   POST   /api/v1/applications/{application_id}/files
+ *   DELETE /api/v1/applications/{application_id}/files/{file_id}
  */
+import { API_PATHS } from "@/lib/api-paths";
 import { fetchAuthedJson, fetchAuthedResponse } from "@/lib/fetch-authed";
 import type {
   AdminApplicationFile,
@@ -15,10 +18,6 @@ import type {
 } from "@/types/admin-application-file";
 
 const DOWNLOAD_TIMEOUT_MS = 60_000;
-
-function base(applicationId: number): string {
-  return `/api/admin/applications/${applicationId}/files`;
-}
 
 function normalizeFile(raw: AdminApplicationFile): AdminApplicationFile {
   return { ...raw, filename: raw.filename?.trim() || `file-${raw.id}` };
@@ -39,7 +38,10 @@ export async function listAdminApplicationFiles(
   token: string,
   applicationId: number,
 ): Promise<AdminApplicationFile[]> {
-  const data = await fetchAuthedJson<unknown>(token, base(applicationId));
+  const data = await fetchAuthedJson<unknown>(
+    token,
+    API_PATHS.adminApplications.files(applicationId),
+  );
   return parseFilesList(data);
 }
 
@@ -50,7 +52,7 @@ export async function getAdminApplicationFile(
 ): Promise<AdminApplicationFile> {
   const data = await fetchAuthedJson<AdminApplicationFile>(
     token,
-    `${base(applicationId)}/${fileId}`,
+    API_PATHS.applicationFiles.detail(applicationId, fileId),
   );
   return normalizeFile(data);
 }
@@ -62,11 +64,15 @@ export async function uploadAdminApplicationFile(
 ): Promise<AdminApplicationFile> {
   const form = new FormData();
   form.append("file", file, file.name);
-  const data = await fetchAuthedJson<AdminApplicationFile>(token, base(applicationId), {
-    method: "POST",
-    body: form,
-    timeoutMs: 60_000,
-  });
+  const data = await fetchAuthedJson<AdminApplicationFile>(
+    token,
+    API_PATHS.applicationFiles.base(applicationId),
+    {
+      method: "POST",
+      body: form,
+      timeoutMs: 60_000,
+    },
+  );
   return normalizeFile(data);
 }
 
@@ -75,7 +81,9 @@ export async function deleteAdminApplicationFile(
   applicationId: number,
   fileId: number,
 ): Promise<void> {
-  await fetchAuthedJson<void>(token, `${base(applicationId)}/${fileId}`, { method: "DELETE" });
+  await fetchAuthedJson<void>(token, API_PATHS.applicationFiles.detail(applicationId, fileId), {
+    method: "DELETE",
+  });
 }
 
 function filenameFromContentDisposition(header: string | null): string | null {
@@ -104,9 +112,13 @@ export async function fetchAdminApplicationFileBlob(
   applicationId: number,
   file: AdminApplicationFile,
 ): Promise<AdminApplicationFileBlob> {
-  const res = await fetchAuthedResponse(token, `${base(applicationId)}/${file.id}/download`, {
-    timeoutMs: DOWNLOAD_TIMEOUT_MS,
-  });
+  const res = await fetchAuthedResponse(
+    token,
+    API_PATHS.adminApplications.fileDownload(applicationId, file.id),
+    {
+      timeoutMs: DOWNLOAD_TIMEOUT_MS,
+    },
+  );
 
   const contentType =
     res.headers.get("content-type")?.split(";")[0]?.trim() ||

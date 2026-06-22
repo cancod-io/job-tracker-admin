@@ -1,7 +1,6 @@
 import {
   Briefcase,
   Building2,
-  Link2,
   Settings,
   Shield,
   ShieldAlert,

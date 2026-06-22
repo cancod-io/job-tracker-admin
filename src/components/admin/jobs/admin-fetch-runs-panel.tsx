@@ -66,9 +66,6 @@ function RunCard({
   onSelect: () => void;
   onDelete: () => void;
 }) {
-  const isInitial = run.previous_run_id == null;
-  const deltaTotal = run.added_count + run.updated_count + run.removed_count;
-
   return (
     <div
       role="button"
@@ -118,15 +115,7 @@ function RunCard({
               <Trash2 className="size-3.5" aria-hidden />
             </button>
           ) : null}
-        {/* {isInitial ? (
-          <span className="shrink-0 rounded-md border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-800 dark:text-amber-200">
-            Baseline
-          </span>
-        ) : (
-          <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-medium tabular-nums text-muted-foreground">
-            Δ {deltaTotal}
-          </span>
-        )} */}
+
         </div>
       </div>
 

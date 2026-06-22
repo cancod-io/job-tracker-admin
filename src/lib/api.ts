@@ -1,15 +1,18 @@
 /**
- * Browser: same-origin proxy paths are rewritten by Next.js to the real API (see `next.config.ts`),
- * avoiding cross-origin CORS preflight (`OPTIONS`) failures when the admin UI and API are on different hosts.
+ * Resolve TrackCod API paths to fetch URLs.
  *
- * Server (SSR/RSC): uses `NEXT_PUBLIC_API_URL` (or default) directly — no CORS on the server.
+ * Browser: same-origin proxy paths (`/upstream-api/*`, `/upstream-admin-api/*`) rewritten
+ * by Next.js to the backend — avoids cross-origin CORS preflight failures.
+ *
+ * Server (Route Handlers / SSR): calls `API_INTERNAL_URL` (or `NEXT_PUBLIC_API_URL`) directly.
  */
+
 export function getPublicApiUrl(): string {
   const raw = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   return raw.replace(/\/$/, "");
 }
 
-/** Backend base for server-side Route Handlers (Docker-friendly via API_INTERNAL_URL). */
+/** Backend base for server-side Route Handlers and SSR (Docker-friendly via API_INTERNAL_URL). */
 export function getInternalApiBase(): string {
   const raw =
     process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -26,12 +29,7 @@ export function apiUrl(path: string): string {
   const search = q === -1 ? "" : normalized.slice(q);
 
   if (typeof window === "undefined") {
-    return `${getPublicApiUrl()}${normalized}`;
-  }
-
-  // Proxied by Next.js Route Handlers under src/app/api/admin/applications/.
-  if (pathOnly.startsWith("/api/admin/applications/")) {
-    return normalized;
+    return `${getInternalApiBase()}${pathOnly}${search}`;
   }
 
   if (pathOnly.startsWith("/api/v1/")) {
@@ -50,5 +48,5 @@ export function apiUrl(path: string): string {
     return `/upstream-admin-api/${afterAdmin}${search}`;
   }
 
-  return `${getPublicApiUrl()}${normalized}`;
+  return `${getPublicApiUrl()}${pathOnly}${search}`;
 }

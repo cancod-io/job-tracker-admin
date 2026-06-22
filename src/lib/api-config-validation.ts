@@ -58,6 +58,10 @@ export function validateFieldValue(field: ApiConfigField, value: string): string
     return null;
   }
 
+  if (field.value_type === "string" && !field.is_secret && field.is_set && !value.trim()) {
+    return "This field is required.";
+  }
+
   return null;
 }
 

@@ -30,15 +30,6 @@ function isHttpUrl(value: string): boolean {
     return false;
   }
 }
-
-function parseOptionalId(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const n = Number(trimmed);
-  if (!Number.isInteger(n) || n <= 0) return null;
-  return n;
-}
-
 function toFormValues(initial?: Company | null): FormValues {
   return {
     name: initial?.name ?? "",

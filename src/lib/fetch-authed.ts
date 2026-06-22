@@ -7,7 +7,12 @@
  */
 import { apiUrl } from "@/lib/api";
 import { ensureAccessToken, refreshAccessToken } from "@/lib/auth-session";
-import { clearStoredTokens, getStoredAccessToken, signalSessionExpired } from "@/lib/auth-token";
+import {
+  clearStoredTokens,
+  getStoredAccessToken,
+  isAccessTokenExpired,
+  signalSessionExpired,
+} from "@/lib/auth-token";
 import { fetchWithTimeout } from "@/lib/http";
 
 export type ApiErrorBody = {
@@ -43,6 +48,8 @@ async function resolveAccessToken(passedToken: string): Promise<string | null> {
   const stored = getStoredAccessToken();
   const token = passedToken?.trim() || stored;
   if (!token) return null;
+
+  if (!isAccessTokenExpired()) return token;
   return ensureAccessToken();
 }
 

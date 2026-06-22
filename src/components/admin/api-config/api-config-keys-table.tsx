@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, Coins, Eye, KeyRound, Loader2, Trash2 } from "lucide-react";
-import { formatCredits } from "@/components/admin/api-config/constants";
+import { useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, Coins, Eye, KeyRound, Loader2, Trash2 } from "lucide-react";
+import { formatCredits, parseCreditsNumeric } from "@/components/admin/api-config/constants";
 import { DataTable } from "@/components/ui/data-table";
 import { formatDateTime } from "@/lib/format-date";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,24 @@ function CreditsCell({ keyItem }: { keyItem: ApiKeyListItem }) {
   );
 }
 
+type CreditsSort = "asc" | "desc" | null;
+
+function sortKeysByCredits(keys: ApiKeyListItem[], sort: CreditsSort): ApiKeyListItem[] {
+  if (!sort) return keys;
+
+  return [...keys].sort((a, b) => {
+    const aVal = parseCreditsNumeric(a.credits_remaining);
+    const bVal = parseCreditsNumeric(b.credits_remaining);
+
+    if (aVal === null && bVal === null) return 0;
+    if (aVal === null) return 1;
+    if (bVal === null) return -1;
+
+    const diff = aVal - bVal;
+    return sort === "asc" ? diff : -diff;
+  });
+}
+
 export function ApiConfigKeysTable({
   keys,
   loading,
@@ -51,6 +70,13 @@ export function ApiConfigKeysTable({
   onActivate,
   onDelete,
 }: ApiConfigKeysTableProps) {
+  const [creditsSort, setCreditsSort] = useState<CreditsSort>(null);
+
+  const sortedKeys = useMemo(
+    () => sortKeysByCredits(keys, creditsSort),
+    [creditsSort, keys],
+  );
+
   const emptyMessage =
     sourceFilterActive && hasLoaded
       ? "No keys stored for this source yet. Add a key above or activate one from another source."
@@ -66,7 +92,45 @@ export function ApiConfigKeysTable({
               <th className="px-4 py-3 font-medium">Email</th>
               <th className="px-4 py-3 font-medium">Masked key</th>
               <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Credits</th>
+              <th className="px-4 py-3 font-medium">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCreditsSort((current) => {
+                      if (current === null) return "desc";
+                      if (current === "desc") return "asc";
+                      return null;
+                    })
+                  }
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-md transition-colors hover:text-foreground",
+                    creditsSort && "text-foreground",
+                  )}
+                  aria-label={
+                    creditsSort === "desc"
+                      ? "Sort credits high to low"
+                      : creditsSort === "asc"
+                        ? "Sort credits low to high"
+                        : "Sort by credits"
+                  }
+                  aria-sort={
+                    creditsSort === "asc"
+                      ? "ascending"
+                      : creditsSort === "desc"
+                        ? "descending"
+                        : "none"
+                  }
+                >
+                  Credits
+                  {creditsSort === "desc" ? (
+                    <ArrowDown className="size-3.5" aria-hidden />
+                  ) : creditsSort === "asc" ? (
+                    <ArrowUp className="size-3.5" aria-hidden />
+                  ) : (
+                    <ArrowUpDown className="size-3.5 opacity-60" aria-hidden />
+                  )}
+                </button>
+              </th>
               <th className="px-4 py-3 font-medium">Added</th>
               <th className="px-4 py-3 text-right font-medium">Actions</th>
             </tr>
@@ -83,8 +147,9 @@ export function ApiConfigKeysTable({
                 </td>
               </tr>
             ) : (
-              keys.map((key) => {
-                const busy = activatingId === key.id;
+              sortedKeys.map((key) => {
+                const busy = activatingId !== null;
+                const activatingThis = activatingId === key.id;
                 return (
                   <tr
                     key={key.id}
@@ -145,7 +210,7 @@ export function ApiConfigKeysTable({
                             disabled={busy}
                             className="rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
                           >
-                            {busy ? (
+                            {activatingThis ? (
                               <Loader2
                                 className="size-3.5 animate-spin motion-reduce:animate-none"
                                 aria-hidden

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { KeyRound } from "lucide-react";
 import {
   activateApiKey,
@@ -26,7 +26,7 @@ type AdminApiConfigVaultPanelProps = {
   config: ApiConfigResponse | null;
   loading: boolean;
   onRefresh: () => Promise<void>;
-  onConfigUpdate: (config: ApiConfigResponse) => void;
+  onConfigUpdate: Dispatch<SetStateAction<ApiConfigResponse | null>>;
   setToast: (toast: ToastMessage | null) => void;
 };
 
@@ -73,19 +73,34 @@ export function AdminApiConfigVaultPanel({
           : `${sourceLabel} key saved.`,
       });
       setSourceFilter(payload.source);
-      await onRefresh();
+      try {
+        await onRefresh();
+      } catch (refreshError) {
+        setToast({
+          kind: "error",
+          message:
+            refreshError instanceof Error
+              ? `Key saved, but the vault list could not refresh: ${refreshError.message}`
+              : "Key saved, but the vault list could not refresh.",
+        });
+      }
+    } catch (e) {
+      setToast({
+        kind: "error",
+        message: e instanceof Error ? e.message : "Failed to save API key.",
+      });
+      throw e;
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleActivate = async (key: ApiKeyListItem) => {
-    if (!canManage || !config) return;
+    if (!canManage) return;
     setActivatingId(key.id);
     try {
       const activated = await activateApiKey(accessToken, key.id);
-      const next = applyKeyActivation(config, activated);
-      onConfigUpdate(next);
+      onConfigUpdate((prev) => (prev ? applyKeyActivation(prev, activated) : prev));
       setViewing((current) =>
         current?.id === activated.id ? { ...current, ...activated, is_active: true } : current,
       );
@@ -106,7 +121,17 @@ export function AdminApiConfigVaultPanel({
       await deleteApiKey(accessToken, key.id);
       setToast({ kind: "success", message: "API key removed." });
       if (viewing?.id === key.id) setViewing(null);
-      await onRefresh();
+      try {
+        await onRefresh();
+      } catch (refreshError) {
+        setToast({
+          kind: "error",
+          message:
+            refreshError instanceof Error
+              ? `Key deleted, but the vault list could not refresh: ${refreshError.message}`
+              : "Key deleted, but the vault list could not refresh.",
+        });
+      }
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to delete API key.";
       setToast({ kind: "error", message });

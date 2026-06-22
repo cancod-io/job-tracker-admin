@@ -11,10 +11,12 @@ import {
   signalSessionExpired,
   signalTokenRefreshed,
 } from "@/lib/auth-token";
+import { apiUrl } from "@/lib/api";
+import { API_PATHS } from "@/lib/api-paths";
 import { fetchWithTimeout } from "@/lib/http";
 import type { TokenResponse } from "@/types/auth";
 
-const REFRESH_URL = "/api/v1/auth/refresh";
+const REFRESH_URL = () => apiUrl(API_PATHS.auth.refresh);
 
 let refreshInFlight: Promise<string | null> | null = null;
 
@@ -47,7 +49,7 @@ async function requestRefresh(): Promise<TokenResponse | null> {
   const refreshToken = getStoredRefreshToken();
   if (!refreshToken || isRefreshTokenExpired()) return null;
 
-  const res = await fetchWithTimeout(REFRESH_URL, {
+  const res = await fetchWithTimeout(REFRESH_URL(), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),

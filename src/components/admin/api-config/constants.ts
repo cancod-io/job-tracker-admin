@@ -39,3 +39,10 @@ export function formatCredits(value: string | null | undefined): string | null {
   }
   return value;
 }
+
+/** Numeric value for client-side credits sorting. */
+export function parseCreditsNumeric(value: string | null | undefined): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}

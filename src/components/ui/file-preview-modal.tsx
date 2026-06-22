@@ -159,7 +159,6 @@ export function FilePreviewModal({
             </div>
           ) : previewKind === "image" && previewUrl ? (
             <div className="flex h-full w-full items-center justify-center overflow-auto p-3 sm:p-5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={previewUrl} alt={title} className="max-h-full max-w-full object-contain" />
             </div>
           ) : previewKind === "pdf" && previewUrl ? (
