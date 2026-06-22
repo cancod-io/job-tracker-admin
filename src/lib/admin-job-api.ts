@@ -7,6 +7,7 @@
  *   DELETE /api/admin/jobs/{job_id}            — delete (204)
  */
 import { fetchAuthedJson } from "@/lib/fetch-authed";
+import { API_PATHS } from "@/lib/api-paths";
 import { dateKeyToPostedFromUtc, dateKeyToPostedToUtc, isDateKey } from "@/lib/date-utils";
 import type {
   AdminJobApplicant,
@@ -14,7 +15,7 @@ import type {
   AdminJobDetail,
   AdminJobListResponse,
 } from "@/types/admin-job-api";
-const BASE = "/api/admin/jobs";
+const BASE = API_PATHS.adminJobs.base;
 
 export type AdminJobSortBy = "posted_at" | "created_at" | "id";
 export type SortOrder = "asc" | "desc";

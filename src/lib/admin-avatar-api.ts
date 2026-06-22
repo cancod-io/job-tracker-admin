@@ -2,17 +2,12 @@
  * Admin-scoped avatar fetch. Avatars are Bearer-protected, so a plain `<img src>`
  * can't load them — the bytes are fetched here and turned into an object URL.
  *
- *   GET /api/admin/users/{user_id}/avatar          → image bytes (primary)
- *   GET /api/admin/users/{user_id}/avatar/download → image bytes (legacy fallback)
+ * OpenAPI: GET /api/admin/users/{user_id}/avatar
  */
+import { API_PATHS } from "@/lib/api-paths";
 import { fetchAuthedResponse } from "@/lib/fetch-authed";
 
-const AVATAR_TIMEOUT_MS = 30_000;
-
-const AVATAR_PATHS = (userId: number) => [
-  `/api/admin/users/${userId}/avatar`,
-  `/api/admin/users/${userId}/avatar/download`,
-];
+const AVATAR_TIMEOUT_MS = 8_000;
 
 export type AvatarFetchOptions = {
   /** Backend boolean when URL is omitted but an avatar exists. */
@@ -37,19 +32,9 @@ export function hasApplicantAvatar(url: string | null | undefined): boolean {
 }
 
 export async function fetchApplicantAvatarBlob(token: string, userId: number): Promise<Blob> {
-  let lastError: Error | null = null;
-
-  for (const path of AVATAR_PATHS(userId)) {
-    try {
-      const res = await fetchAuthedResponse(token, path, {
-        timeoutMs: AVATAR_TIMEOUT_MS,
-        cache: "no-store",
-      });
-      return res.blob();
-    } catch (e) {
-      lastError = e instanceof Error ? e : new Error("Avatar download failed");
-    }
-  }
-
-  throw lastError ?? new Error("Avatar not found");
+  const res = await fetchAuthedResponse(token, API_PATHS.adminUsers.avatar(userId), {
+    timeoutMs: AVATAR_TIMEOUT_MS,
+    cache: "no-store",
+  });
+  return res.blob();
 }

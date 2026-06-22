@@ -29,7 +29,8 @@ import {
   SESSION_EXPIRED_EVENT,
   TOKEN_REFRESHED_EVENT,
 } from "@/lib/auth-token";
-import { apiUrl } from "@/lib/api";
+import { apiUrl, getPublicApiUrl } from "@/lib/api";
+import { API_PATHS } from "@/lib/api-paths";
 import { fetchWithTimeout } from "@/lib/http";
 import type { AuthUser, RegisterResult, TokenResponse } from "@/types/auth";
 
@@ -54,7 +55,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function fetchMe(token: string): Promise<AuthUser> {
-  const res = await fetchWithTimeout(apiUrl("/api/v1/auth/me"), {
+  const res = await fetchWithTimeout(apiUrl(API_PATHS.auth.me), {
     headers: { Authorization: `Bearer ${token}` },
     credentials: "omit",
   });
@@ -123,9 +124,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus("authenticated");
     } catch (err) {
       if (isTransientNetworkError(err)) {
-        const token = getStoredAccessToken();
-        setAccessToken(token);
-        setStatus("authenticated");
+        setAccessToken(getStoredAccessToken());
+        setUser(null);
+        setStatus("loading");
+        window.setTimeout(() => void refreshSession(), 2_000);
         return;
       }
       clearStoredTokens();
@@ -164,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     let res: Response;
     try {
-      res = await fetchWithTimeout(apiUrl("/api/v1/auth/login"), {
+      res = await fetchWithTimeout(apiUrl(API_PATHS.auth.login), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -172,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") {
         throw new Error(
-          "Could not reach the API (timed out). Set NEXT_PUBLIC_API_URL to a URL your browser can open (e.g. http://localhost:8000).",
+          `Could not reach the API at ${getPublicApiUrl()} (timed out). Ensure the backend is running and NEXT_PUBLIC_API_URL is correct.`,
         );
       }
       throw e;
@@ -199,7 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (payload: RegisterPayload): Promise<RegisterResult> => {
       let res: Response;
       try {
-        res = await fetchWithTimeout(apiUrl("/api/v1/auth/register"), {
+        res = await fetchWithTimeout(apiUrl(API_PATHS.auth.register), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -211,7 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         if (e instanceof Error && e.name === "AbortError") {
           throw new Error(
-            "Could not reach the API (timed out). Set NEXT_PUBLIC_API_URL to a URL your browser can open (e.g. http://localhost:8000).",
+          `Could not reach the API at ${getPublicApiUrl()} (timed out). Ensure the backend is running and NEXT_PUBLIC_API_URL is correct.`,
           );
         }
         throw e;

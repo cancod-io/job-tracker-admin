@@ -52,7 +52,6 @@ export function ApplicantAvatar({
   if (displayUrl) {
     return (
       <span className={base} title={title}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={displayUrl} alt="" className="size-full object-cover" loading="lazy" />
       </span>
     );

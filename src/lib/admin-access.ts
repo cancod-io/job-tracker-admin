@@ -8,8 +8,6 @@ export const ADMIN_ROUTE_PERMISSIONS: Record<string, string> = {
   "/scam-urls": "scam_urls.read",
   "/career-urls": "career_urls.read",
   "/permissions": "permissions.manage",
-  "/scrapers": "scraping.read",
-  "/logs": "scraping.read",
   "/api-config": "api_config.read",
   "/settings/api-config": "api_config.read",
 };

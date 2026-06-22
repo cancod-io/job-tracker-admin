@@ -27,6 +27,7 @@ export type ApiConfigSource = {
   is_set: boolean;
 };
 
+/** Full key is kept in memory after GET /api/admin/api-config for view/copy; list shows `masked_key` only. */
 export type ApiKeyListItem = {
   id: number;
   source: string;
@@ -65,7 +66,6 @@ export type ApiKeyCreateRequest = {
   mailbox: string;
 };
 
-/** GET /api/admin/api-config/keys/{id} */
 export type ApiKeyDetail = ApiKeyListItem;
 
 export type ApiConfigTab = "settings" | "keys";

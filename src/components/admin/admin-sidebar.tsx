@@ -89,21 +89,13 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
 
 
   useEffect(() => {
-
     void refreshPendingApprovalCount();
-
-  }, [refreshPendingApprovalCount, pathname]);
-
-
+  }, [refreshPendingApprovalCount]);
 
   useEffect(() => {
-
     const onPendingChanged = () => void refreshPendingApprovalCount();
-
     window.addEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onPendingChanged);
-
     return () => window.removeEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onPendingChanged);
-
   }, [refreshPendingApprovalCount]);
 
 

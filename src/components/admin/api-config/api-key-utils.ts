@@ -1,5 +1,7 @@
 import type { ApiConfigResponse, ApiKeyListItem } from "@/types/api-config-api";
 
+export { API_KEY_MASK_SUFFIX_LENGTH, maskApiKeyDisplay } from "@/lib/api-key-mask";
+
 /** Keep table order stable (oldest first) — never sort by active status. */
 export function sortApiKeysStable(keys: ApiKeyListItem[]): ApiKeyListItem[] {
   return [...keys].sort((a, b) => {
@@ -24,7 +26,18 @@ export function applyKeyActivation(
     keys: sortApiKeysStable(
       config.keys.map((key) => {
         if (key.source !== activated.source) return key;
-        if (key.id === activated.id) return { ...key, ...activated, is_active: true };
+        if (key.id === activated.id) {
+          return {
+            ...key,
+            ...activated,
+            api_key: activated.api_key ?? key.api_key,
+            masked_key:
+              activated.api_key != null
+                ? activated.masked_key
+                : key.masked_key,
+            is_active: true,
+          };
+        }
         return { ...key, is_active: false };
       }),
     ),

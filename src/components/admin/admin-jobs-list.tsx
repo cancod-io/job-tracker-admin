@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { deleteAdminJob, listAdminJobs, listJobApplicants } from "@/lib/admin-job-api";
 import {
@@ -13,11 +14,7 @@ import { formatDateRange } from "@/lib/date-utils";
 import { getPaginationMeta } from "@/lib/pagination-constants";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
-import { AdminJobDetailModal } from "@/components/admin/admin-job-detail-modal";
-import { AdminJobRemoveConfirm } from "@/components/admin/admin-job-remove-confirm";
-import { AdminApplicantDetailModal } from "@/components/admin/admin-applicant-detail-modal";
 import { AdminFetchChangeBar } from "@/components/admin/jobs/admin-fetch-change-bar";
-import { AdminJobFetchRunDeleteConfirm } from "@/components/admin/jobs/admin-job-fetch-run-delete-confirm";
 import { AdminFetchRunsPanel } from "@/components/admin/jobs/admin-fetch-runs-panel";
 import {
   AdminSourceFilter,
@@ -38,6 +35,38 @@ import type {
   AdminJobListResponse,
 } from "@/types/admin-job-api";
 import type { ApiFetchChangeType, ApiFetchRun } from "@/types/api-fetch-runs";
+
+const AdminJobDetailModal = dynamic(
+  () =>
+    import("@/components/admin/admin-job-detail-modal").then((mod) => ({
+      default: mod.AdminJobDetailModal,
+    })),
+  { ssr: false },
+);
+
+const AdminJobRemoveConfirm = dynamic(
+  () =>
+    import("@/components/admin/admin-job-remove-confirm").then((mod) => ({
+      default: mod.AdminJobRemoveConfirm,
+    })),
+  { ssr: false },
+);
+
+const AdminApplicantDetailModal = dynamic(
+  () =>
+    import("@/components/admin/admin-applicant-detail-modal").then((mod) => ({
+      default: mod.AdminApplicantDetailModal,
+    })),
+  { ssr: false },
+);
+
+const AdminJobFetchRunDeleteConfirm = dynamic(
+  () =>
+    import("@/components/admin/jobs/admin-job-fetch-run-delete-confirm").then((mod) => ({
+      default: mod.AdminJobFetchRunDeleteConfirm,
+    })),
+  { ssr: false },
+);
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -426,8 +455,6 @@ export function AdminJobsList() {
       </div>
     );
   }
-
-  const filtersActive = search.length > 0 || source.length > 0 || inDiffMode;
 
   return (
     <div className="space-y-4">

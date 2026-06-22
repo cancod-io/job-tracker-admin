@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Ban,
   Briefcase,
@@ -8,7 +8,6 @@ import {
   Copy,
   Download,
   Eye,
-  ExternalLink,
   KeyRound,
   Loader2,
   Mail,
@@ -55,11 +54,6 @@ type AdminUserDetailPanelProps = {
   onUpdated: () => void;
 };
 
-function formatLocation(detail: AdminUserDetail): string {
-  const parts = [detail.city, detail.country, detail.zip_code].filter(Boolean);
-  return parts.length > 0 ? parts.join(", ") : "—";
-}
-
 export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDetailPanelProps) {
   const { accessToken, user: currentUser } = useAuth();
   const { can, matrix, loading: permissionsLoading, refetch: refetchPermissions } =
@@ -71,6 +65,7 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
   const [downloadingCvId, setDownloadingCvId] = useState<number | null>(null);
   const [previewCv, setPreviewCv] = useState<AdminUserCv | null>(null);
   const [copied, setCopied] = useState(false);
+  const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     if (!accessToken || userId == null) return;
@@ -95,6 +90,17 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
     }
     void load();
   }, [userId, load]);
+
+  useEffect(() => {
+    setCopied(false);
+  }, [userId, detail?.email]);
+
+  useEffect(
+    () => () => {
+      if (copyResetTimerRef.current) clearTimeout(copyResetTimerRef.current);
+    },
+    [],
+  );
 
   const isSelf = currentUser != null && userId != null && currentUser.id === userId;
   const canApproveReject = can("users.approve");
@@ -191,8 +197,10 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
       await copyTextToClipboard(detail.email);
       setError(null);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copyResetTimerRef.current) clearTimeout(copyResetTimerRef.current);
+      copyResetTimerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
+      setCopied(false);
       setError("Could not copy email to clipboard.");
     }
   };
@@ -256,14 +264,23 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                     type="button"
                     onClick={(e) => void copyEmail(e)}
                     className={cn(
-                      "shrink-0 rounded p-1 transition-colors hover:bg-muted hover:text-foreground",
-                      copied ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground",
+                      "inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors",
+                      copied
+                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
-                    aria-label={copied ? "Email copied" : "Copy email"}
-                    title={copied ? "Copied!" : "Copy email"}
+                    aria-label={copied ? "Email copied to clipboard" : "Copy email to clipboard"}
                   >
-                    <Copy className="size-3.5" aria-hidden />
+                    {copied ? (
+                      <CheckCircle2 className="size-3.5" aria-hidden />
+                    ) : (
+                      <Copy className="size-3.5" aria-hidden />
+                    )}
+                    {copied ? "Copied" : "Copy"}
                   </button>
+                  <span className="sr-only" role="status" aria-live="polite">
+                    {copied ? "Email copied to clipboard." : ""}
+                  </span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
                   User ID: <span className="tabular-nums text-foreground">USR-{detail.id}</span>
@@ -367,22 +384,6 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
               <DetailRow label="Country">{detail.country || "—"}</DetailRow>
               <DetailRow label="City">{detail.city || "—"}</DetailRow>
               <DetailRow label="Zip Code">{detail.zip_code || "—"}</DetailRow>
-              {/* <DetailRow label="Location">{formatLocation(detail)}</DetailRow> */}
-              {/* <DetailRow label="Website">
-                {detail.website ? (
-                  <a
-                    href={detail.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-primary hover:underline"
-                  >
-                    {detail.website}
-                    <ExternalLink className="size-3 opacity-70" aria-hidden />
-                  </a>
-                ) : (
-                  "—"
-                )}
-              </DetailRow> */}
               <DetailRow label="Bio">
                 {detail.bio ? (
                   <p className="whitespace-pre-wrap text-sm leading-relaxed">{detail.bio}</p>

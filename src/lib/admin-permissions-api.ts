@@ -5,6 +5,7 @@
  *   PUT /api/admin/permissions/{role}    — update moderator or user permissions
  */
 import { filterDisplayCatalog, filterDisplayPermissions } from "@/lib/admin-permissions";
+import { API_PATHS } from "@/lib/api-paths";
 import { fetchAuthedJson } from "@/lib/fetch-authed";
 import type {
   AdminPermissionsResponse,
@@ -15,7 +16,7 @@ import type {
 } from "@/types/admin-permissions-api";
 import type { UserRole } from "@/types/auth";
 
-const BASE = "/api/admin/permissions";
+const BASE = API_PATHS.adminPermissions.base;
 
 function str(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
@@ -83,7 +84,7 @@ export async function getAdminPermissions(token: string): Promise<AdminPermissio
  * alike. The full matrix (`getAdminPermissions`) stays admin-only.
  */
 export async function getMyPermissions(token: string): Promise<MyPermissionsResponse> {
-  const raw = await fetchAuthedJson<unknown>(token, `${BASE}/me`);
+  const raw = await fetchAuthedJson<unknown>(token, API_PATHS.adminPermissions.me);
   if (Array.isArray(raw)) {
     return { isAdmin: false, permissions: strArray(raw) };
   }
@@ -102,7 +103,7 @@ export async function updateRolePermissions(
   role: Exclude<UserRole, "admin">,
   body: UpdateRolePermissionsBody,
 ): Promise<void> {
-  await fetchAuthedJson<unknown>(token, `${BASE}/${role}`, {
+  await fetchAuthedJson<unknown>(token, API_PATHS.adminPermissions.role(role), {
     method: "PUT",
     body,
   });

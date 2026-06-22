@@ -7,6 +7,7 @@
  *   DELETE /api/admin/job-fetch-runs/{run_id}  (requires jobs.delete)
  */
 import { fetchAuthedJson } from "@/lib/fetch-authed";
+import { API_PATHS } from "@/lib/api-paths";
 import { dateKeyToPostedFromUtc, dateKeyToPostedToUtc, isDateKey } from "@/lib/date-utils";
 import type { AdminJobDetail, AdminJobListResponse } from "@/types/admin-job-api";
 import type {
@@ -114,7 +115,7 @@ function normalizeV1JobToAdminDetail(raw: V1JobListItem): AdminJobDetail {
 }
 
 export async function listJobSources(token: string): Promise<string[]> {
-  const data = await fetchAuthedJson<JobSourcesResponse>(token, "/api/v1/jobs/sources");
+  const data = await fetchAuthedJson<JobSourcesResponse>(token, API_PATHS.jobs.sources);
   return (data.sources ?? []).map((s) => String(s).trim()).filter(Boolean);
 }
 
@@ -131,7 +132,7 @@ export async function listFetchRuns(
 
   return fetchAuthedJson<ApiFetchRunsListResponse>(
     token,
-    `/api/v1/jobs/fetch-runs?${search.toString()}`,
+    `${API_PATHS.jobs.fetchRuns}?${search.toString()}`,
   );
 }
 
@@ -160,7 +161,7 @@ export async function listJobsForFetchDiff(
   if (q) search.set("q", q);
   appendPostedDateRange(search, params.posted_from, params.posted_to);
 
-  const raw = await fetchAuthedJson<V1JobListResponse>(token, `/api/v1/jobs?${search}`);
+  const raw = await fetchAuthedJson<V1JobListResponse>(token, `${API_PATHS.jobs.base}?${search}`);
 
   const limit = positiveInt(raw.limit, pageSize);
   const rawOffset = nonNegativeInt(raw.offset, offset);
@@ -179,5 +180,5 @@ export async function listJobsForFetchDiff(
 
 /** Delete an ingest fetch run and its diff records. Requires `jobs.delete`. */
 export async function deleteJobFetchRun(token: string, runId: number): Promise<void> {
-  await fetchAuthedJson<void>(token, `/api/admin/job-fetch-runs/${runId}`, { method: "DELETE" });
+  await fetchAuthedJson<void>(token, API_PATHS.adminJobFetchRuns.detail(runId), { method: "DELETE" });
 }

@@ -8,10 +8,6 @@ export const SOURCE_ACCENTS: Record<string, { gradient: string; dot: string }> =
     gradient: "from-violet-500/12 via-card to-card border-violet-500/25",
     dot: "bg-violet-500",
   },
-  apify_indeed: {
-    gradient: "from-cyan-500/12 via-card to-card border-cyan-500/25",
-    dot: "bg-cyan-500",
-  },
   postgresql: {
     gradient: "from-emerald-500/12 via-card to-card border-emerald-500/25",
     dot: "bg-emerald-500",
@@ -38,4 +34,11 @@ export function formatCredits(value: string | null | undefined): string | null {
     return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(num);
   }
   return value;
+}
+
+/** Numeric value for client-side credits sorting. */
+export function parseCreditsNumeric(value: string | null | undefined): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
 }

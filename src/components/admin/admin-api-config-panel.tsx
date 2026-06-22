@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { KeyRound, Loader2, SlidersHorizontal } from "lucide-react";
 import { getApiConfig } from "@/lib/api-config-api";
 import { withStableKeyOrder } from "@/components/admin/api-config/api-key-utils";
+import { filterApiConfigResponse } from "@/components/admin/api-config/api-config-filters";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
 import { AdminApiConfigSettingsPanel } from "@/components/admin/admin-api-config-settings-panel";
@@ -30,18 +31,25 @@ export function AdminApiConfigPanel() {
   const [config, setConfig] = useState<ApiConfigResponse | null>(null);
   const [keysLoading, setKeysLoading] = useState(false);
   const [keysError, setKeysError] = useState<string | null>(null);
+  const loadKeysRequestRef = useRef(0);
 
   const loadKeys = useCallback(async () => {
     if (!accessToken) return;
+    const requestId = ++loadKeysRequestRef.current;
     setKeysLoading(true);
     setKeysError(null);
     try {
-      setConfig(withStableKeyOrder(await getApiConfig(accessToken)));
+      const next = withStableKeyOrder(filterApiConfigResponse(await getApiConfig(accessToken)));
+      if (requestId !== loadKeysRequestRef.current) return;
+      setConfig(next);
     } catch (e) {
+      if (requestId !== loadKeysRequestRef.current) return;
       setConfig(null);
       setKeysError(e instanceof Error ? e.message : "Failed to load API keys.");
     } finally {
-      setKeysLoading(false);
+      if (requestId === loadKeysRequestRef.current) {
+        setKeysLoading(false);
+      }
     }
   }, [accessToken]);
 
@@ -93,7 +101,7 @@ export function AdminApiConfigPanel() {
         Changes apply on the api-service&apos;s next config refresh or scrape run.
       </p>
 
-      <ListNotifications toast={toast} error={keysError} />
+      <ListNotifications toast={toast} error={tab === "keys" ? keysError : null} />
 
       {!canManage ? (
         <AlertBanner variant="warning">

@@ -2,19 +2,20 @@
  * Browser-side client for the API Configuration admin API.
  *
  * Key vault:
- *   GET  /api/admin/api-config
+ *   GET    /api/admin/api-config
  *   GET    /api/admin/api-config/keys
- *   GET    /api/admin/api-config/keys/{id}
  *   POST   /api/admin/api-config/keys
- *   POST /api/admin/api-config/keys/{id}/activate
- *   DELETE /api/admin/api-config/keys/{id}
+ *   POST   /api/admin/api-config/keys/{key_id}/activate
+ *   DELETE /api/admin/api-config/keys/{key_id}
  *
- * Env settings (non-key):
+ * Env settings:
  *   GET   /api/admin/api-config/settings
  *   PATCH /api/admin/api-config/settings
  *   GET   /api/admin/api-config/settings/{group_id}
  */
 import { fetchAuthedJson } from "@/lib/fetch-authed";
+import { API_PATHS } from "@/lib/api-paths";
+import { maskApiKeyDisplay } from "@/lib/api-key-mask";
 import type {
   ApiConfigField,
   ApiConfigGroup,
@@ -24,12 +25,11 @@ import type {
   ApiConfigSource,
   ApiConfigValueType,
   ApiKeyCreateRequest,
-  ApiKeyDetail,
   ApiKeyListItem,
 } from "@/types/api-config-api";
 
-const BASE = "/api/admin/api-config";
-const SETTINGS_BASE = `${BASE}/settings`;
+const BASE = API_PATHS.adminApiConfig.base;
+const SETTINGS_BASE = API_PATHS.adminApiConfig.settings;
 
 function normalizeValueType(value: unknown): ApiConfigValueType {
   if (value === "int" || value === "bool") return value;
@@ -88,14 +88,28 @@ function isRawGroup(value: unknown): value is Partial<ApiConfigGroup> & { label:
   );
 }
 
+function normalizeNumericId(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function normalizeCreditsRemaining(value: unknown): string | null {
+  if (value === null) return null;
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return null;
+}
+
 function normalizeSource(raw: Partial<ApiConfigSource> & { id: string }): ApiConfigSource {
-  const activeKeyId = raw.active_key_id;
   return {
     id: raw.id,
     label: typeof raw.label === "string" ? raw.label : raw.id,
     config_key: typeof raw.config_key === "string" ? raw.config_key : raw.id,
-    active_key_id:
-      typeof activeKeyId === "number" && Number.isFinite(activeKeyId) ? activeKeyId : null,
+    active_key_id: normalizeNumericId(raw.active_key_id),
     is_set: raw.is_set === true,
   };
 }
@@ -111,16 +125,21 @@ function isRawSource(value: unknown): value is Partial<ApiConfigSource> & { id: 
 function normalizeKey(
   raw: Partial<ApiKeyListItem> & { id: number; api_key?: unknown; mailbox?: unknown },
 ): ApiKeyListItem {
-  const credits = raw.credits_remaining;
+  const api_key = typeof raw.api_key === "string" ? raw.api_key : null;
+  const maskedFromBackend = typeof raw.masked_key === "string" ? raw.masked_key.trim() : "";
+  const masked_key = api_key
+    ? maskApiKeyDisplay(api_key)
+    : maskedFromBackend || "••••";
+
   return {
     id: raw.id,
     source: typeof raw.source === "string" ? raw.source : "",
     source_label: typeof raw.source_label === "string" ? raw.source_label : raw.source ?? "",
-    masked_key: typeof raw.masked_key === "string" ? raw.masked_key : "••••",
-    api_key: typeof raw.api_key === "string" ? raw.api_key : null,
+    masked_key,
+    api_key,
     mailbox: typeof raw.mailbox === "string" ? raw.mailbox : null,
     is_active: raw.is_active === true,
-    credits_remaining: typeof credits === "string" || credits === null ? credits : null,
+    credits_remaining: normalizeCreditsRemaining(raw.credits_remaining),
     credits_updated_at:
       typeof raw.credits_updated_at === "string" ? raw.credits_updated_at : null,
     created_at: typeof raw.created_at === "string" ? raw.created_at : new Date(0).toISOString(),
@@ -175,7 +194,7 @@ export async function getApiConfigSettingsGroup(
 ): Promise<ApiConfigGroup> {
   const raw = await fetchAuthedJson<Record<string, unknown>>(
     token,
-    `${SETTINGS_BASE}/${encodeURIComponent(groupId)}`,
+    API_PATHS.adminApiConfig.settingsGroup(groupId),
   );
   return normalizeGroup(raw as Partial<ApiConfigGroup> & { label: string }, 0);
 }
@@ -191,19 +210,12 @@ export async function patchApiConfigSettings(
   return normalizeSettingsResponse(raw);
 }
 
-export async function getApiKey(token: string, keyId: number): Promise<ApiKeyDetail> {
-  const raw = await fetchAuthedJson<
-    Partial<ApiKeyListItem> & { id: number; api_key?: unknown; mailbox?: unknown }
-  >(token, `${BASE}/keys/${keyId}`);
-  return normalizeKey(raw);
-}
-
 export async function listApiKeys(
   token: string,
   params?: { source?: string },
 ): Promise<ApiKeyListItem[]> {
   const search = params?.source ? `?source=${encodeURIComponent(params.source)}` : "";
-  const raw = await fetchAuthedJson<unknown[]>(token, `${BASE}/keys${search}`);
+  const raw = await fetchAuthedJson<unknown[]>(token, `${API_PATHS.adminApiConfig.keys}${search}`);
   if (!Array.isArray(raw)) return [];
   return raw.filter(isRawKey).map(normalizeKey);
 }
@@ -212,22 +224,26 @@ export async function createApiKey(
   token: string,
   payload: ApiKeyCreateRequest,
 ): Promise<ApiKeyListItem> {
-  const raw = await fetchAuthedJson<Partial<ApiKeyListItem> & { id: number }>(token, `${BASE}/keys`, {
-    method: "POST",
-    body: payload,
-  });
+  const raw = await fetchAuthedJson<Partial<ApiKeyListItem> & { id: number }>(
+    token,
+    API_PATHS.adminApiConfig.keys,
+    {
+      method: "POST",
+      body: payload,
+    },
+  );
   return normalizeKey(raw);
 }
 
 export async function activateApiKey(token: string, keyId: number): Promise<ApiKeyListItem> {
   const raw = await fetchAuthedJson<Partial<ApiKeyListItem> & { id: number }>(
     token,
-    `${BASE}/keys/${keyId}/activate`,
+    API_PATHS.adminApiConfig.keyActivate(keyId),
     { method: "POST" },
   );
   return normalizeKey(raw);
 }
 
 export async function deleteApiKey(token: string, keyId: number): Promise<void> {
-  await fetchAuthedJson<void>(token, `${BASE}/keys/${keyId}`, { method: "DELETE" });
+  await fetchAuthedJson<void>(token, API_PATHS.adminApiConfig.keyDelete(keyId), { method: "DELETE" });
 }

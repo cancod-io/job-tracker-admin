@@ -69,7 +69,6 @@ export function AdminUserApprovalQueue() {
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent(ADMIN_PENDING_APPROVAL_CHANGED_EVENT));
       }
-      void loadCounts();
     } catch (e) {
       setItems([]);
       setTotal(0);
@@ -77,11 +76,21 @@ export function AdminUserApprovalQueue() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, filter, page, loadCounts]);
+  }, [accessToken, filter, page]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void loadCounts();
+  }, [loadCounts]);
+
+  useEffect(() => {
+    const onPendingChanged = () => void loadCounts();
+    window.addEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onPendingChanged);
+    return () => window.removeEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onPendingChanged);
+  }, [loadCounts]);
 
   const filteredItems = useMemo(() => {
     const q = searchDraft.trim().toLowerCase();

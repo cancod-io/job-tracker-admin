@@ -57,21 +57,20 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
     setError(null);
 
     try {
-      // Source of truth: the caller's own permissions (readable by every role).
-      const mine = await getMyPermissions(accessToken);
+      const needsMatrix = isAdminRole(user.role);
+
+      const [mine, matrix] = await Promise.all([
+        getMyPermissions(accessToken),
+        needsMatrix
+          ? getAdminPermissions(accessToken).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+
       setMyPermissions(mine.permissions);
       setBackendIsAdmin(mine.isAdmin);
 
-      // The full matrix powers the admin-only Role Permissions editor. Load it only
-      // for admins — moderators/users are forbidden from reading it (403) and never
-      // need it for their own gating.
       if (mine.isAdmin || isAdminRole(user.role)) {
-        try {
-          setMatrix(await getAdminPermissions(accessToken));
-        } catch {
-          // The editor will show "no data"; not fatal to the rest of the console.
-          setMatrix(null);
-        }
+        setMatrix(matrix);
       } else {
         setMatrix(null);
       }

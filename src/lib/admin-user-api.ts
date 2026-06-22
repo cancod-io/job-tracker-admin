@@ -13,6 +13,7 @@
  *   PATCH /api/v1/admin/users/{user_id}/approval        — admin + moderator
  *   POST  /api/v1/admin/users/{user_id}/reset-password
  */
+import { API_PATHS } from "@/lib/api-paths";
 import { fetchAuthedJson, fetchAuthedResponse } from "@/lib/fetch-authed";
 import { resolveSocialFields } from "@/lib/admin-user-social";
 import type {
@@ -25,7 +26,7 @@ import type {
 } from "@/types/admin-user-api";
 import type { UserApprovalStatus, UserRole } from "@/types/auth";
 
-const BASE = "/api/admin/users";
+const BASE = API_PATHS.adminUsers.base;
 
 export type ListAdminUsersParams = {
   page?: number;
@@ -259,7 +260,7 @@ export async function patchUserApproval(
   userId: number,
   approval_status: Exclude<UserApprovalStatus, "pending">,
 ): Promise<void> {
-  await fetchAuthedJson<unknown>(token, `/api/v1/admin/users/${userId}/approval`, {
+  await fetchAuthedJson<unknown>(token, API_PATHS.adminUsers.approval(userId), {
     method: "PATCH",
     body: { approval_status },
   });
@@ -270,14 +271,14 @@ export async function patchUserActiveStatus(
   userId: number,
   is_active: boolean,
 ): Promise<void> {
-  await fetchAuthedJson<unknown>(token, `${BASE}/${userId}/status`, {
+  await fetchAuthedJson<unknown>(token, API_PATHS.adminUsers.status(userId), {
     method: "PATCH",
     body: { is_active },
   });
 }
 
 export async function resetUserPassword(token: string, userId: number): Promise<void> {
-  await fetchAuthedJson<unknown>(token, `/api/v1/admin/users/${userId}/reset-password`, {
+  await fetchAuthedJson<unknown>(token, API_PATHS.adminUsers.resetPassword(userId), {
     method: "POST",
   });
 }
@@ -287,7 +288,7 @@ export async function patchUserRole(
   userId: number,
   role: UserRole,
 ): Promise<void> {
-  await fetchAuthedJson<unknown>(token, `${BASE}/${userId}/role`, {
+  await fetchAuthedJson<unknown>(token, API_PATHS.adminUsers.role(userId), {
     method: "PATCH",
     body: { role },
   });
@@ -306,7 +307,7 @@ export async function fetchUserCvBlob(
 ): Promise<Blob> {
   const res = await fetchAuthedResponse(
     token,
-    `${BASE}/${userId}/cvs/${cvId}/download`,
+    API_PATHS.adminUsers.cvDownload(userId, cvId),
     { timeoutMs: 60_000 },
   );
   return res.blob();

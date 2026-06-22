@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronDown, Eye, Trash2 } from "lucide-react";
-import { ApplicantAvatar } from "@/components/admin/applicant-avatar";
 import { ApplicantsPanel, type ApplicantsState } from "@/components/admin/jobs/applicants-panel";
 import {
   avatarTint,
@@ -185,7 +184,6 @@ export function JobRow({
 function CompanyLogo({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   if (logoUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={logoUrl}
         alt=""
@@ -219,16 +217,22 @@ function AvatarStack({
   return (
     <span className="flex items-center">
       <span className="flex -space-x-2">
-        {shown.map((applicant) => (
-          <ApplicantAvatar
-            key={applicant.application_id}
-            userId={applicant.user_id}
-            name={applicant.full_name || applicant.email}
-            profilePictureUrl={applicant.profile_picture_url}
-            ring
-            title={`${applicant.full_name} · ${formatApplicantStatus(applicant.status)}`}
-          />
-        ))}
+        {shown.map((applicant) => {
+          const name = applicant.full_name || applicant.email;
+          return (
+            <span
+              key={applicant.application_id}
+              className={cn(
+                "flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-card text-[0.7rem] font-semibold",
+                avatarTint(name),
+              )}
+              title={`${name} · ${formatApplicantStatus(applicant.status)}`}
+              aria-hidden
+            >
+              {initials(name)}
+            </span>
+          );
+        })}
       </span>
       {extra > 0 ? (
         <span className="ml-2 text-xs font-medium text-primary">+{extra} more</span>
