@@ -89,4 +89,10 @@ export const API_PATHS = {
     base: "/api/admin/scam-urls",
     detail: (scamUrlId: number) => `/api/admin/scam-urls/${scamUrlId}`,
   },
+
+  adminScraperRuns: {
+    base: "/api/admin/scraper/runs",
+    detail: (runId: string) => `/api/admin/scraper/runs/${encodeURIComponent(runId)}`,
+    stop: (runId: string) => `/api/admin/scraper/runs/${encodeURIComponent(runId)}/stop`,
+  },
 } as const;
