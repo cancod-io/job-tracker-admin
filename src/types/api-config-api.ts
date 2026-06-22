@@ -68,4 +68,4 @@ export type ApiKeyCreateRequest = {
 
 export type ApiKeyDetail = ApiKeyListItem;
 
-export type ApiConfigTab = "settings" | "keys";
+export type ApiConfigTab = "settings" | "keys" | "runs";

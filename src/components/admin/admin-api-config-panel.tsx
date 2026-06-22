@@ -1,14 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { KeyRound, Loader2, SlidersHorizontal } from "lucide-react";
+import { KeyRound, Loader2, SlidersHorizontal, Zap } from "lucide-react";
 import { getApiConfig } from "@/lib/api-config-api";
 import { withStableKeyOrder } from "@/components/admin/api-config/api-key-utils";
-import { filterApiConfigResponse } from "@/components/admin/api-config/api-config-filters";
+import { filterApiConfigResponse, filterApiConfigSources } from "@/components/admin/api-config/api-config-filters";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
 import { AdminApiConfigSettingsPanel } from "@/components/admin/admin-api-config-settings-panel";
 import { AdminApiConfigVaultPanel } from "@/components/admin/admin-api-config-vault-panel";
+import { ApiConfigScraperRunsPanel } from "@/components/admin/api-config/api-config-scraper-runs-panel";
 import { AuthRequiredNotice } from "@/components/admin/shared/auth-required-notice";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { ListNotifications } from "@/components/admin/shared/list-notifications";
@@ -19,6 +20,7 @@ import type { ApiConfigResponse, ApiConfigTab } from "@/types/api-config-api";
 const TABS: { id: ApiConfigTab; label: string; icon: typeof SlidersHorizontal }[] = [
   { id: "settings", label: "Settings", icon: SlidersHorizontal },
   { id: "keys", label: "Keys", icon: KeyRound },
+  { id: "runs", label: "Runs", icon: Zap },
 ];
 
 export function AdminApiConfigPanel() {
@@ -54,8 +56,10 @@ export function AdminApiConfigPanel() {
   }, [accessToken]);
 
   useEffect(() => {
-    if (tab === "keys") void loadKeys();
+    if (tab === "keys" || tab === "runs") void loadKeys();
   }, [tab, loadKeys]);
+
+  const sources = filterApiConfigSources(config?.sources ?? []);
 
   if (!accessToken) {
     return <AuthRequiredNotice resourceLabel="API configuration" />;
@@ -116,22 +120,39 @@ export function AdminApiConfigPanel() {
           canManage={canManage}
           setToast={setToast}
         />
+      ) : tab === "keys" ? (
+        keysLoading && !config ? (
+          <div
+            className="flex min-h-[16rem] flex-col items-center justify-center gap-3 text-muted-foreground"
+            aria-busy="true"
+          >
+            <Loader2 className="size-8 animate-spin motion-reduce:animate-none" aria-hidden />
+            <p className="text-sm">Loading API keys…</p>
+          </div>
+        ) : (
+          <AdminApiConfigVaultPanel
+            accessToken={accessToken}
+            canManage={canManage}
+            config={config}
+            loading={keysLoading}
+            onRefresh={loadKeys}
+            onConfigUpdate={setConfig}
+            setToast={setToast}
+          />
+        )
       ) : keysLoading && !config ? (
         <div
           className="flex min-h-[16rem] flex-col items-center justify-center gap-3 text-muted-foreground"
           aria-busy="true"
         >
           <Loader2 className="size-8 animate-spin motion-reduce:animate-none" aria-hidden />
-          <p className="text-sm">Loading API keys…</p>
+          <p className="text-sm">Loading scraper configuration…</p>
         </div>
       ) : (
-        <AdminApiConfigVaultPanel
+        <ApiConfigScraperRunsPanel
           accessToken={accessToken}
           canManage={canManage}
-          config={config}
-          loading={keysLoading}
-          onRefresh={loadKeys}
-          onConfigUpdate={setConfig}
+          sources={sources}
           setToast={setToast}
         />
       )}
