@@ -7,6 +7,9 @@ type IntConstraint = { min: number; max: number };
 const INT_CONSTRAINTS: Record<string, IntConstraint> = {
   SERPAPI_MAX_RESULTS: { min: 1, max: 100 },
   FANTASTIC_JOBS_LIMIT: { min: 1, max: 500 },
+  FANTASTIC_JB_LIMIT: { min: 1, max: 500 },
+  FANTASTIC_JOBS_DATE_POSTED_DAYS: { min: 1, max: 365 },
+  FANTASTIC_JB_DATE_POSTED_DAYS: { min: 1, max: 365 },
   APIFY_INDEED_MAX_ITEMS: { min: 1, max: 1000 },
   APIFY_INDEED_TIMEOUT_SECS: { min: 30, max: 3600 },
 };

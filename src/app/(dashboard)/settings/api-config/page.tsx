@@ -15,7 +15,7 @@ export default function AdminApiConfigPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-muted-foreground">
             Manage env settings (queries, limits, database URLs) and API keys for SerpAPI and
-            Fantastic Jobs.
+            Fantastic Jobs (ATS and Job Board). Both Fantastic sections share one API key.
           </p>
         </header>
         <div className="rounded-2xl border border-border/80 bg-card/50 p-4 shadow-sm md:p-6">
