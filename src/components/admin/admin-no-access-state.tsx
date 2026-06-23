@@ -25,7 +25,7 @@ export function AdminNoAccessState({
       {user ? (
         <p className="mt-4 text-xs text-muted-foreground">
           Signed in as <span className="font-medium text-foreground">{user.email}</span> (
-          {roleLabel(user.role)}). Ask an administrator to assign permissions to your role.
+          {roleLabel(user.role)}). Ask an administrator to assign permissions to your account.
         </p>
       ) : null}
     </div>

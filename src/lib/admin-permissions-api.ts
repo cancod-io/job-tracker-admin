@@ -1,10 +1,17 @@
 /**
  * Browser-side client for the admin Permissions API.
  *
- *   GET /api/admin/permissions           — catalog + per-role permissions
- *   PUT /api/admin/permissions/{role}    — update moderator or user permissions
+ *   GET /api/admin/permissions                    — catalog + per-role templates (admin only)
+ *   PUT /api/admin/permissions/{role}             — update moderator/user role template
+ *   GET /api/admin/permissions/me                 — signed-in user's effective permissions
+ *   GET /api/admin/permissions/users/{user_id}    — one user's stored grants
+ *   PUT /api/admin/permissions/users/{user_id}    — replace one user's grants
  */
-import { filterDisplayCatalog, filterDisplayPermissions } from "@/lib/admin-permissions";
+import {
+  FALLBACK_PERMISSION_CATALOG,
+  filterDisplayCatalog,
+  filterDisplayPermissions,
+} from "@/lib/admin-permissions";
 import { API_PATHS } from "@/lib/api-paths";
 import { fetchAuthedJson } from "@/lib/fetch-authed";
 import type {
@@ -13,6 +20,8 @@ import type {
   PermissionCatalogItem,
   RolePermissionsEntry,
   UpdateRolePermissionsBody,
+  UpdateUserPermissionsBody,
+  UserPermissionsResponse,
 } from "@/types/admin-permissions-api";
 import type { UserRole } from "@/types/auth";
 
@@ -25,6 +34,11 @@ function str(value: unknown, fallback = ""): string {
 function strArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((v): v is string => typeof v === "string" && v.trim().length > 0);
+}
+
+function normalizeRole(value: unknown): UserRole {
+  if (value === "admin" || value === "moderator" || value === "user") return value;
+  return "user";
 }
 
 function normalizeCatalogItem(raw: unknown): PermissionCatalogItem | null {
@@ -73,29 +87,79 @@ function normalizeResponse(raw: Record<string, unknown>): AdminPermissionsRespon
   return { catalog, roles };
 }
 
+function normalizeMyPermissions(raw: Record<string, unknown>): MyPermissionsResponse {
+  return {
+    role: normalizeRole(raw.role),
+    isAdmin: raw.is_admin === true || raw.isAdmin === true,
+    permissions: strArray(raw.permissions),
+    role_template: strArray(raw.role_template),
+    user_permissions: strArray(raw.user_permissions),
+  };
+}
+
+function normalizeUserPermissions(raw: Record<string, unknown>): UserPermissionsResponse {
+  return {
+    user_id: typeof raw.user_id === "number" ? raw.user_id : Number(raw.user_id) || 0,
+    role: normalizeRole(raw.role),
+    editable: raw.editable !== false,
+    role_template: strArray(raw.role_template),
+    user_permissions: filterDisplayPermissions(strArray(raw.user_permissions)),
+    effective_permissions: filterDisplayPermissions(strArray(raw.effective_permissions)),
+  };
+}
+
 export async function getAdminPermissions(token: string): Promise<AdminPermissionsResponse> {
   const raw = await fetchAuthedJson<Record<string, unknown>>(token, BASE);
   return normalizeResponse(raw);
 }
 
+/** Catalog for permission editors — admin matrix when available, otherwise fallback. */
+export async function getPermissionCatalog(token: string): Promise<PermissionCatalogItem[]> {
+  try {
+    const matrix = await getAdminPermissions(token);
+    if (matrix.catalog.length > 0) return matrix.catalog;
+  } catch {
+    // Non-admin callers cannot read the matrix; use the static fallback.
+  }
+  return filterDisplayCatalog(FALLBACK_PERMISSION_CATALOG);
+}
+
 /**
- * The signed-in user's own effective permissions. Readable by every role, so it
- * drives menu visibility and page/action gating for admins, moderators, and users
- * alike. The full matrix (`getAdminPermissions`) stays admin-only.
+ * The signed-in user's own effective permissions. Readable by every role and drives
+ * menu visibility and page/action gating.
  */
 export async function getMyPermissions(token: string): Promise<MyPermissionsResponse> {
   const raw = await fetchAuthedJson<unknown>(token, API_PATHS.adminPermissions.me);
   if (Array.isArray(raw)) {
-    return { isAdmin: false, permissions: strArray(raw) };
-  }
-  if (typeof raw === "object" && raw !== null) {
-    const r = raw as Record<string, unknown>;
     return {
-      isAdmin: r.is_admin === true || r.isAdmin === true,
-      permissions: strArray(r.permissions),
+      role: "user",
+      isAdmin: false,
+      permissions: strArray(raw),
+      role_template: [],
+      user_permissions: strArray(raw),
     };
   }
-  return { isAdmin: false, permissions: [] };
+  if (typeof raw === "object" && raw !== null) {
+    return normalizeMyPermissions(raw as Record<string, unknown>);
+  }
+  return {
+    role: "user",
+    isAdmin: false,
+    permissions: [],
+    role_template: [],
+    user_permissions: [],
+  };
+}
+
+export async function getUserPermissions(
+  token: string,
+  userId: number,
+): Promise<UserPermissionsResponse> {
+  const raw = await fetchAuthedJson<Record<string, unknown>>(
+    token,
+    API_PATHS.adminPermissions.user(userId),
+  );
+  return normalizeUserPermissions(raw);
 }
 
 export async function updateRolePermissions(
@@ -107,4 +171,20 @@ export async function updateRolePermissions(
     method: "PUT",
     body,
   });
+}
+
+export async function updateUserPermissions(
+  token: string,
+  userId: number,
+  body: UpdateUserPermissionsBody,
+): Promise<UserPermissionsResponse> {
+  const raw = await fetchAuthedJson<Record<string, unknown>>(
+    token,
+    API_PATHS.adminPermissions.user(userId),
+    {
+      method: "PUT",
+      body,
+    },
+  );
+  return normalizeUserPermissions(raw);
 }

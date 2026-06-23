@@ -78,7 +78,7 @@ export function AdminPanelAccessGate({ children }: AdminPanelAccessGateProps) {
           <p className="text-sm text-muted-foreground">
             You are signed in as <span className="font-medium text-foreground">{user.email}</span>{" "}
             with role <span className="font-medium text-foreground">{user.role}</span>. Ask an
-            administrator to grant permissions to your role.
+            administrator to assign permissions to your account.
           </p>
           <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
             <button
