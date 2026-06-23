@@ -28,6 +28,7 @@ export const API_PATHS = {
 
   adminJobs: {
     base: "/api/admin/jobs",
+    sources: "/api/admin/jobs/sources",
     applicants: (jobId: number) => `/api/admin/jobs/${jobId}/applicants`,
     detail: (jobId: number) => `/api/admin/jobs/${jobId}`,
   },

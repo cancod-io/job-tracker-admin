@@ -1,7 +1,7 @@
 /**
  * Job source, fetch-run history, and fetch-diff listing.
  *
- *   GET    /api/v1/jobs/sources
+ *   GET    /api/admin/jobs/sources
  *   GET    /api/v1/jobs/fetch-runs
  *   GET    /api/v1/jobs?source=…&fetch_change=…&fetch_run_id=…  (diff job cards)
  *   DELETE /api/admin/job-fetch-runs/{run_id}  (requires jobs.delete)
@@ -9,15 +9,16 @@
 import { fetchAuthedJson } from "@/lib/fetch-authed";
 import { API_PATHS } from "@/lib/api-paths";
 import { dateKeyToPostedFromUtc, dateKeyToPostedToUtc, isDateKey } from "@/lib/date-utils";
-import type { AdminJobDetail, AdminJobListResponse } from "@/types/admin-job-api";
+import { formatJobSourceLabel } from "@/lib/job-source-utils";
+import type { AdminJobDetail, AdminJobListResponse, JobSourceOption } from "@/types/admin-job-api";
 import type {
   ApiFetchChangeType,
   ApiFetchRunsListResponse,
   FetchRunsListParams,
 } from "@/types/api-fetch-runs";
 
-type JobSourcesResponse = {
-  sources?: string[];
+type JobSourcesApiResponse = {
+  sources?: unknown;
 };
 
 type V1JobListItem = Partial<AdminJobDetail> & {
@@ -85,12 +86,29 @@ function isV1JobItem(value: unknown): value is V1JobListItem {
   );
 }
 
+function normalizeJobSourceOption(raw: unknown): JobSourceOption | null {
+  if (typeof raw === "string") {
+    const id = raw.trim();
+    if (!id) return null;
+    return { id, label: formatJobSourceLabel(id) };
+  }
+  if (typeof raw === "object" && raw !== null) {
+    const r = raw as Record<string, unknown>;
+    const id = str(r.id);
+    if (!id) return null;
+    return { id, label: str(r.label, formatJobSourceLabel(id)) };
+  }
+  return null;
+}
+
 /** Map `GET /api/v1/jobs` rows into the admin jobs table shape. */
 function normalizeV1JobToAdminDetail(raw: V1JobListItem): AdminJobDetail {
   const createdAt = str(raw.created_at, new Date(0).toISOString());
+  const source = str(raw.source);
   return {
     id: raw.id,
-    source: str(raw.source),
+    source,
+    source_label: str(raw.source_label, formatJobSourceLabel(source)),
     job_id: strOrNull(raw.job_id),
     apply_url: str(raw.apply_url, "#"),
     job_title: str(raw.job_title ?? raw.title, "Untitled role"),
@@ -114,9 +132,12 @@ function normalizeV1JobToAdminDetail(raw: V1JobListItem): AdminJobDetail {
   };
 }
 
-export async function listJobSources(token: string): Promise<string[]> {
-  const data = await fetchAuthedJson<JobSourcesResponse>(token, API_PATHS.jobs.sources);
-  return (data.sources ?? []).map((s) => String(s).trim()).filter(Boolean);
+export async function listJobSources(token: string): Promise<JobSourceOption[]> {
+  const data = await fetchAuthedJson<JobSourcesApiResponse>(token, API_PATHS.adminJobs.sources);
+  const rawSources = Array.isArray(data.sources) ? data.sources : [];
+  return rawSources
+    .map(normalizeJobSourceOption)
+    .filter((option): option is JobSourceOption => option != null);
 }
 
 export async function listFetchRuns(

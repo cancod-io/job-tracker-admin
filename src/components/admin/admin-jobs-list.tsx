@@ -9,7 +9,7 @@ import {
   listJobSources,
   listJobsForFetchDiff,
 } from "@/lib/admin-jobs-filter-api";
-import { formatJobSourceLabel } from "@/lib/job-source-utils";
+import type { JobSourceOption } from "@/types/admin-job-api";
 import { formatDateRange } from "@/lib/date-utils";
 import { getPaginationMeta } from "@/lib/pagination-constants";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
@@ -83,6 +83,7 @@ function toCsvCell(value: string): string {
 function emptyJobsMessage(args: {
   search: string;
   source: string;
+  sourceLabel?: string;
   postedFrom: string;
   postedTo: string;
   fetchChange: ApiFetchChangeType | null;
@@ -95,7 +96,7 @@ function emptyJobsMessage(args: {
     return `No jobs posted ${formatDateRange(args.postedFrom, args.postedTo).toLowerCase()}. Try widening the date range.`;
   }
   if (args.source && args.total === 0) {
-    return `No jobs found for ${formatJobSourceLabel(args.source)}.`;
+    return `No jobs found for ${args.sourceLabel ?? args.source}.`;
   }
   if (args.search.length > 0) {
     return "No jobs match the current filters.";
@@ -120,7 +121,7 @@ export function AdminJobsList() {
   const [fetchRunId, setFetchRunId] = useState<number | null>(null);
   const [fetchChange, setFetchChange] = useState<ApiFetchChangeType | null>(null);
 
-  const [sourceOptions, setSourceOptions] = useState<string[]>([]);
+  const [sourceOptions, setSourceOptions] = useState<JobSourceOption[]>([]);
   const [sourcesLoading, setSourcesLoading] = useState(false);
   const [fetchRuns, setFetchRuns] = useState<ApiFetchRun[]>([]);
   const [fetchRunsLoading, setFetchRunsLoading] = useState(false);
@@ -245,6 +246,11 @@ export function AdminJobsList() {
   }, [fetchChange, fetchRunId, fetchRuns]);
 
   const timelineSelectedRunId = fetchRunId ?? activeFetchRun?.id ?? null;
+
+  const selectedSourceLabel = useMemo(
+    () => sourceOptions.find((option) => option.id === source)?.label,
+    [source, sourceOptions],
+  );
 
   const { paginationTotal, currentPage, totalPages } = getPaginationMeta(data, page, pageSize);
 
@@ -467,7 +473,7 @@ export function AdminJobsList() {
 
       {source ? (
         <AdminFetchRunsPanel
-          source={source}
+          sourceLabel={selectedSourceLabel ?? source}
           runs={fetchRuns}
           loading={fetchRunsLoading}
           selectedRunId={timelineSelectedRunId}
@@ -566,6 +572,7 @@ export function AdminJobsList() {
                 {emptyJobsMessage({
                   search,
                   source,
+                  sourceLabel: selectedSourceLabel,
                   postedFrom,
                   postedTo,
                   fetchChange,

@@ -2,13 +2,13 @@
 
 import { Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatJobSourceLabel } from "@/lib/job-source-utils";
+import type { JobSourceOption } from "@/types/admin-job-api";
 
 export const ALL_JOB_SOURCES_VALUE = "";
 
 type AdminSourceFilterProps = {
   value: string;
-  options: string[];
+  options: JobSourceOption[];
   loading?: boolean;
   onChange: (source: string) => void;
 };
@@ -21,7 +21,7 @@ export function AdminSourceFilter({
 }: AdminSourceFilterProps) {
   const pills: { id: string; label: string }[] = [
     { id: ALL_JOB_SOURCES_VALUE, label: "All sources" },
-    ...options.map((opt) => ({ id: opt, label: formatJobSourceLabel(opt) })),
+    ...options.map((opt) => ({ id: opt.id, label: opt.label })),
   ];
 
   return (

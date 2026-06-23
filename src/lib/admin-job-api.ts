@@ -9,6 +9,7 @@
 import { fetchAuthedJson } from "@/lib/fetch-authed";
 import { API_PATHS } from "@/lib/api-paths";
 import { dateKeyToPostedFromUtc, dateKeyToPostedToUtc, isDateKey } from "@/lib/date-utils";
+import { formatJobSourceLabel } from "@/lib/job-source-utils";
 import type {
   AdminJobApplicant,
   AdminJobApplicantListResponse,
@@ -77,9 +78,11 @@ function normalizeApplicant(raw: Partial<AdminJobApplicant>): AdminJobApplicant 
 }
 
 function normalizeJob(raw: Partial<AdminJobDetail> & { id: number }): AdminJobDetail {
+  const source = str(raw.source);
   return {
     id: raw.id,
-    source: str(raw.source),
+    source,
+    source_label: str(raw.source_label, formatJobSourceLabel(source)),
     job_id: strOrNull(raw.job_id),
     apply_url: str(raw.apply_url, "#"),
     job_title: str(raw.job_title, "Untitled role"),

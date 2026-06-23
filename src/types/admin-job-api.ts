@@ -32,6 +32,8 @@ export type AdminJobApplicant = {
 export type AdminJobDetail = {
   id: number;
   source: string;
+  /** Human-readable source name from the API — use for display. */
+  source_label: string;
   job_id: string | null;
   apply_url: string;
   job_title: string;
@@ -50,6 +52,15 @@ export type AdminJobDetail = {
   updated_at: string;
   applicants_total: number;
   applicants_preview: AdminJobApplicant[];
+};
+
+export type JobSourceOption = {
+  id: string;
+  label: string;
+};
+
+export type JobSourcesResponse = {
+  sources: JobSourceOption[];
 };
 
 /** `AdminJobListResponse`. */
