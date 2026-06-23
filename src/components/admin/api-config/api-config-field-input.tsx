@@ -8,11 +8,13 @@ import {
   getIntConstraints,
   isApifyDatePostedField,
 } from "@/lib/api-config-validation";
-import { getApiConfigFieldPlaceholder } from "@/components/admin/api-config/api-config-settings-schema";
+import { getApiConfigFieldPlaceholder, isApiConfigMultilineQueryField } from "@/components/admin/api-config/api-config-settings-schema";
 import type { ApiConfigField } from "@/types/api-config-api";
 
 const inputClass =
   "w-full rounded-lg border border-border/80 bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
+
+const textareaClass = cn(inputClass, "min-h-[5.5rem] resize-y leading-relaxed");
 
 type ApiConfigFieldInputProps = {
   field: ApiConfigField;
@@ -39,6 +41,7 @@ export function ApiConfigFieldInput({
   const constraints = getIntConstraints(field.key);
   const secretConfigured = field.is_secret && field.is_set && !cleared;
   const placeholder = getApiConfigFieldPlaceholder(field.key);
+  const multilineQuery = isApiConfigMultilineQueryField(field);
 
   if (field.value_type === "bool") {
     const checked = value === "true";
@@ -160,6 +163,16 @@ export function ApiConfigFieldInput({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className={inputClass}
+        />
+      ) : multilineQuery ? (
+        <textarea
+          id={`api-config-${field.key}`}
+          value={value}
+          disabled={disabled}
+          rows={4}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={textareaClass}
         />
       ) : (
         <input
