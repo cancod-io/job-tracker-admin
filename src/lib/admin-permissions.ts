@@ -103,7 +103,7 @@ export const FALLBACK_PERMISSION_CATALOG: PermissionCatalogItem[] = [
   { key: "scam_urls.read", category: "Scam URLs", label: "View Block Lists", description: "View blocked domains and URLs." },
   { key: "scam_urls.manage", category: "Scam URLs", label: "Manage Block Lists", description: "Manage blocked domains and URLs." },
   { key: "stats.read", category: "Analytics", label: "View analytics", description: "View dashboard statistics." },
-  { key: "permissions.manage", category: "Permissions", label: "Manage permissions", description: "Edit user and role permission grants." },
+  { key: "permissions.manage", category: "Permissions", label: "Manage permissions", description: "Edit user permission grants." },
   { key: "api_config.read", category: "API Configuration", label: "View API configuration", description: "View env settings and API keys." },
   { key: "api_config.manage", category: "API Configuration", label: "Manage API configuration", description: "Edit env settings and API keys." },
 ];

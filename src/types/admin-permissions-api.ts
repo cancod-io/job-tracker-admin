@@ -65,10 +65,6 @@ export type UserPermissionsResponse = {
   effective_permissions: string[];
 };
 
-export type UpdateRolePermissionsBody = {
-  permissions: string[];
-};
-
 export type UpdateUserPermissionsBody = {
   permissions: string[];
 };

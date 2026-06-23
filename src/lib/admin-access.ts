@@ -7,7 +7,6 @@ export const ADMIN_ROUTE_PERMISSIONS: Record<string, string> = {
   "/companies": "companies.read",
   "/scam-urls": "scam_urls.read",
   "/career-urls": "career_urls.read",
-  "/permissions": "permissions.manage",
   "/api-config": "api_config.read",
   "/settings/api-config": "api_config.read",
 };

@@ -11,7 +11,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   companies: "Companies",
   "scam-urls": "Block Lists",
   "career-urls": "Career URLs",
-  permissions: "Role Permissions",
   settings: "Settings",
   "api-config": "API Configuration",
   login: "Sign in",
