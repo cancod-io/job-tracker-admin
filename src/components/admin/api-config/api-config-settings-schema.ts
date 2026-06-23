@@ -172,3 +172,22 @@ export function mergeApiConfigSettingsGroups(apiGroups: ApiConfigGroup[]): ApiCo
 export function getApiConfigFieldPlaceholder(key: string): string | undefined {
   return API_CONFIG_FIELD_PLACEHOLDERS[key];
 }
+
+const MULTILINE_QUERY_KEY_PATTERNS = [
+  /_TITLE(_ADVANCED)?$/,
+  /_DESCRIPTION$/,
+  /_QUERY$/,
+  /QUERY_/,
+] as const;
+
+/** String settings that hold search/query text and should use a multiline textarea. */
+export function isApiConfigMultilineQueryField(field: {
+  key: string;
+  label: string;
+  value_type: string;
+  is_secret: boolean;
+}): boolean {
+  if (field.value_type !== "string" || field.is_secret) return false;
+  if (/query/i.test(field.label)) return true;
+  return MULTILINE_QUERY_KEY_PATTERNS.some((pattern) => pattern.test(field.key));
+}
