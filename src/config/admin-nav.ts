@@ -2,7 +2,6 @@ import {
   Briefcase,
   Building2,
   Settings,
-  Shield,
   ShieldAlert,
   Users,
   type LucideIcon,
@@ -29,10 +28,4 @@ export const adminNavItems: AdminNavItem[] = [
   },
   { href: "/scam-urls", label: "Block Lists", icon: ShieldAlert, permission: "scam_urls.read" },
   // { href: "/career-urls", label: "Career URLs", icon: Link2, permission: "career_urls.read" },
-  {
-    href: "/permissions",
-    label: "Role Permissions",
-    icon: Shield,
-    permission: "permissions.manage",
-  },
 ];

@@ -1,8 +1,7 @@
 /**
  * Browser-side client for the admin Permissions API.
  *
- *   GET /api/admin/permissions                    — catalog + per-role templates (admin only)
- *   PUT /api/admin/permissions/{role}             — update moderator/user role template
+ *   GET /api/admin/permissions                    — permission catalog (admin only)
  *   GET /api/admin/permissions/me                 — signed-in user's effective permissions
  *   GET /api/admin/permissions/users/{user_id}    — one user's stored grants
  *   PUT /api/admin/permissions/users/{user_id}    — replace one user's grants
@@ -19,7 +18,6 @@ import type {
   MyPermissionsResponse,
   PermissionCatalogItem,
   RolePermissionsEntry,
-  UpdateRolePermissionsBody,
   UpdateUserPermissionsBody,
   UserPermissionsResponse,
 } from "@/types/admin-permissions-api";
@@ -66,7 +64,7 @@ function normalizeRoleEntry(raw: unknown): RolePermissionsEntry | null {
   };
 }
 
-function normalizeResponse(raw: Record<string, unknown>): AdminPermissionsResponse {
+function normalizeCatalogResponse(raw: Record<string, unknown>): AdminPermissionsResponse {
   const catalogRaw = Array.isArray(raw.catalog) ? raw.catalog : [];
   const rolesRaw = Array.isArray(raw.roles) ? raw.roles : [];
 
@@ -108,18 +106,18 @@ function normalizeUserPermissions(raw: Record<string, unknown>): UserPermissions
   };
 }
 
-export async function getAdminPermissions(token: string): Promise<AdminPermissionsResponse> {
+async function fetchPermissionCatalogResponse(token: string): Promise<AdminPermissionsResponse> {
   const raw = await fetchAuthedJson<Record<string, unknown>>(token, BASE);
-  return normalizeResponse(raw);
+  return normalizeCatalogResponse(raw);
 }
 
-/** Catalog for permission editors — admin matrix when available, otherwise fallback. */
+/** Catalog for the user permissions editor — API catalog when available, otherwise fallback. */
 export async function getPermissionCatalog(token: string): Promise<PermissionCatalogItem[]> {
   try {
-    const matrix = await getAdminPermissions(token);
-    if (matrix.catalog.length > 0) return matrix.catalog;
+    const response = await fetchPermissionCatalogResponse(token);
+    if (response.catalog.length > 0) return response.catalog;
   } catch {
-    // Non-admin callers cannot read the matrix; use the static fallback.
+    // Non-admin callers cannot read the catalog endpoint; use the static fallback.
   }
   return filterDisplayCatalog(FALLBACK_PERMISSION_CATALOG);
 }
@@ -160,17 +158,6 @@ export async function getUserPermissions(
     API_PATHS.adminPermissions.user(userId),
   );
   return normalizeUserPermissions(raw);
-}
-
-export async function updateRolePermissions(
-  token: string,
-  role: Exclude<UserRole, "admin">,
-  body: UpdateRolePermissionsBody,
-): Promise<void> {
-  await fetchAuthedJson<unknown>(token, API_PATHS.adminPermissions.role(role), {
-    method: "PUT",
-    body,
-  });
 }
 
 export async function updateUserPermissions(

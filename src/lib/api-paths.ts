@@ -61,7 +61,6 @@ export const API_PATHS = {
   adminPermissions: {
     base: "/api/admin/permissions",
     me: "/api/admin/permissions/me",
-    role: (role: string) => `/api/admin/permissions/${role}`,
     user: (userId: number) => `/api/admin/permissions/users/${userId}`,
   },
 

@@ -9,13 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getAdminPermissions, getMyPermissions } from "@/lib/admin-permissions-api";
-import { isAdminRole, permissionsForRole } from "@/lib/admin-permissions";
+import { getMyPermissions } from "@/lib/admin-permissions-api";
 import { useAuth } from "@/providers/auth-provider";
-import type {
-  AdminPermissionsResponse,
-  PermissionCatalogItem,
-} from "@/types/admin-permissions-api";
 import type { UserRole } from "@/types/auth";
 
 type AdminPermissionsContextValue = {
@@ -26,8 +21,6 @@ type AdminPermissionsContextValue = {
   myRole: UserRole | null;
   myRoleTemplate: string[];
   myUserPermissions: string[];
-  catalog: PermissionCatalogItem[];
-  matrix: AdminPermissionsResponse | null;
   myPermissions: string[];
   can: (key: string) => boolean;
   refetch: () => Promise<void>;
@@ -42,7 +35,6 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
   const [myRoleTemplate, setMyRoleTemplate] = useState<string[]>([]);
   const [myUserPermissions, setMyUserPermissions] = useState<string[]>([]);
   const [backendIsAdmin, setBackendIsAdmin] = useState(false);
-  const [matrix, setMatrix] = useState<AdminPermissionsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +45,6 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
       setMyRoleTemplate([]);
       setMyUserPermissions([]);
       setBackendIsAdmin(false);
-      setMatrix(null);
       setLoading(false);
       return;
     }
@@ -69,20 +60,12 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
       setMyRoleTemplate(mine.role_template);
       setMyUserPermissions(mine.user_permissions);
       setBackendIsAdmin(mine.isAdmin);
-
-      if (mine.isAdmin) {
-        const matrixData = await getAdminPermissions(accessToken).catch(() => null);
-        setMatrix(matrixData);
-      } else {
-        setMatrix(null);
-      }
     } catch (e) {
       setMyPermissions([]);
       setMyRole(null);
       setMyRoleTemplate([]);
       setMyUserPermissions([]);
       setBackendIsAdmin(false);
-      setMatrix(null);
       setError(e instanceof Error ? e.message : "Failed to load your permissions.");
     } finally {
       setLoading(false);
@@ -108,24 +91,11 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
       myRole,
       myRoleTemplate,
       myUserPermissions,
-      catalog: matrix?.catalog ?? [],
-      matrix,
       myPermissions,
       can,
       refetch: load,
     }),
-    [
-      loading,
-      error,
-      isAdmin,
-      myRole,
-      myRoleTemplate,
-      myUserPermissions,
-      matrix,
-      myPermissions,
-      can,
-      load,
-    ],
+    [loading, error, isAdmin, myRole, myRoleTemplate, myUserPermissions, myPermissions, can, load],
   );
 
   return (
@@ -143,13 +113,4 @@ export function useAdminPermissions(): AdminPermissionsContextValue {
 
 export function useAdminPermissionsOptional(): AdminPermissionsContextValue | null {
   return useContext(AdminPermissionsContext);
-}
-
-export function permissionsForTargetRole(
-  matrix: AdminPermissionsResponse | null,
-  role: UserRole | string,
-): string[] {
-  if (!matrix) return [];
-  if (isAdminRole(role)) return matrix.catalog.map((c) => c.key);
-  return permissionsForRole(matrix.roles, role);
 }
