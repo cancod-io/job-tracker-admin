@@ -3,11 +3,10 @@
 import { Activity, Sparkles, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/format-date";
-import { formatJobSourceLabel } from "@/lib/job-source-utils";
 import type { ApiFetchRun } from "@/types/api-fetch-runs";
 
 type AdminFetchRunsPanelProps = {
-  source: string;
+  sourceLabel: string;
   runs: ApiFetchRun[];
   loading: boolean;
   selectedRunId: number | null;
@@ -148,7 +147,7 @@ function RunCard({
 }
 
 export function AdminFetchRunsPanel({
-  source,
+  sourceLabel,
   runs,
   loading,
   selectedRunId,
@@ -158,8 +157,6 @@ export function AdminFetchRunsPanel({
   onClearDiff,
   onDeleteRun,
 }: AdminFetchRunsPanelProps) {
-  const sourceLabel = formatJobSourceLabel(source);
-
   return (
     <section
       className="overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-muted/50 via-card to-card shadow-sm"

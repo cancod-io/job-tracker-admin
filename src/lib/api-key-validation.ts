@@ -6,7 +6,7 @@
 /** SerpAPI: 64-character hex string */
 const SERPAPI_KEY_PATTERN = /^[a-f0-9]{64}$/i;
 
-/** Fantastic Jobs (Active ATS): zpka_49700b7cb45341cb9f0cae674810098e_59723b37 */
+/** Fantastic Jobs API: zpka_49700b7cb45341cb9f0cae674810098e_59723b37 */
 const FANTASTIC_JOBS_KEY_PATTERN = /^zpka_[a-f0-9]+_[a-f0-9]+$/i;
 
 const SOURCE_VALIDATORS: Record<string, { pattern: RegExp; hint: string; label: string }> = {
@@ -16,7 +16,7 @@ const SOURCE_VALIDATORS: Record<string, { pattern: RegExp; hint: string; label: 
     hint: "Must be a 64-character hexadecimal string (e.g. 0287aeaba8f9bb4a8f1b0502289b8fe105d4941ef6e23a54c79678ed52625b0d).",
   },
   fantastic_jobs: {
-    label: "Fantastic Jobs",
+    label: "Fantastic Jobs API",
     pattern: FANTASTIC_JOBS_KEY_PATTERN,
     hint: "Must match zpka_<hex>_<hex> (e.g. zpka_49700b7cb45341cb9f0cae674810098e_59723b37).",
   },

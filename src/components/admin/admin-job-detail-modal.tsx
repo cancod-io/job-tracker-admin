@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { formatDateTime } from "@/lib/format-date";
+import { jobSourceDisplayLabel } from "@/lib/job-source-utils";
 import { cn } from "@/lib/utils";
 import type { AdminJobDetail } from "@/types/admin-job-api";
 
@@ -84,7 +85,7 @@ export function AdminJobDetailModal({ job, onClose }: AdminJobDetailModalProps) 
           <p className="text-sm font-semibold text-foreground">{job.company}</p>
           <p className="text-xs text-muted-foreground">
             Job #{job.id}
-            {job.source ? ` · Source: ${job.source}` : null}
+            {job.source ? ` · Source: ${jobSourceDisplayLabel(job)}` : null}
           </p>
         </div>
         {job.is_new ? (
