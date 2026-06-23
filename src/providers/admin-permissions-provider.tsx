@@ -23,6 +23,9 @@ type AdminPermissionsContextValue = {
   error: string | null;
   /** Backend-confirmed full access — gate "show everything" on this, not the role name. */
   isAdmin: boolean;
+  myRole: UserRole | null;
+  myRoleTemplate: string[];
+  myUserPermissions: string[];
   catalog: PermissionCatalogItem[];
   matrix: AdminPermissionsResponse | null;
   myPermissions: string[];
@@ -34,12 +37,11 @@ const AdminPermissionsContext = createContext<AdminPermissionsContextValue | nul
 
 export function AdminPermissionsProvider({ children }: { children: ReactNode }) {
   const { accessToken, user, status } = useAuth();
-  // The signed-in user's own effective permissions — works for every role and is
-  // the single source of truth for menu visibility and page/action gating.
   const [myPermissions, setMyPermissions] = useState<string[]>([]);
+  const [myRole, setMyRole] = useState<UserRole | null>(null);
+  const [myRoleTemplate, setMyRoleTemplate] = useState<string[]>([]);
+  const [myUserPermissions, setMyUserPermissions] = useState<string[]>([]);
   const [backendIsAdmin, setBackendIsAdmin] = useState(false);
-  // Full catalog + per-role matrix. Only the admin Role Permissions editor needs it,
-  // and only admins are allowed to read it; other roles keep this null.
   const [matrix, setMatrix] = useState<AdminPermissionsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,9 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
   const load = useCallback(async () => {
     if (!accessToken || status !== "authenticated" || !user) {
       setMyPermissions([]);
+      setMyRole(null);
+      setMyRoleTemplate([]);
+      setMyUserPermissions([]);
       setBackendIsAdmin(false);
       setMatrix(null);
       setLoading(false);
@@ -57,26 +62,25 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
     setError(null);
 
     try {
-      const needsMatrix = isAdminRole(user.role);
-
-      const [mine, matrix] = await Promise.all([
-        getMyPermissions(accessToken),
-        needsMatrix
-          ? getAdminPermissions(accessToken).catch(() => null)
-          : Promise.resolve(null),
-      ]);
+      const mine = await getMyPermissions(accessToken);
 
       setMyPermissions(mine.permissions);
+      setMyRole(mine.role);
+      setMyRoleTemplate(mine.role_template);
+      setMyUserPermissions(mine.user_permissions);
       setBackendIsAdmin(mine.isAdmin);
 
-      if (mine.isAdmin || isAdminRole(user.role)) {
-        setMatrix(matrix);
+      if (mine.isAdmin) {
+        const matrixData = await getAdminPermissions(accessToken).catch(() => null);
+        setMatrix(matrixData);
       } else {
         setMatrix(null);
       }
     } catch (e) {
-      // Could not determine the user's permissions — fail closed and surface why.
       setMyPermissions([]);
+      setMyRole(null);
+      setMyRoleTemplate([]);
+      setMyUserPermissions([]);
       setBackendIsAdmin(false);
       setMatrix(null);
       setError(e instanceof Error ? e.message : "Failed to load your permissions.");
@@ -89,8 +93,7 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
     void load();
   }, [load]);
 
-  // Trust the backend flag; fall back to the role name only if the API omits it.
-  const isAdmin = backendIsAdmin || isAdminRole(user?.role);
+  const isAdmin = backendIsAdmin;
 
   const can = useCallback(
     (key: string) => isAdmin || myPermissions.includes(key),
@@ -102,13 +105,27 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
       loading,
       error,
       isAdmin,
+      myRole,
+      myRoleTemplate,
+      myUserPermissions,
       catalog: matrix?.catalog ?? [],
       matrix,
       myPermissions,
       can,
       refetch: load,
     }),
-    [loading, error, isAdmin, matrix, myPermissions, can, load],
+    [
+      loading,
+      error,
+      isAdmin,
+      myRole,
+      myRoleTemplate,
+      myUserPermissions,
+      matrix,
+      myPermissions,
+      can,
+      load,
+    ],
   );
 
   return (

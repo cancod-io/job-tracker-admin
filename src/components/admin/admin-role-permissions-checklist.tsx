@@ -91,6 +91,15 @@ type AdminRolePermissionsChecklistProps = {
   editable?: boolean;
   onSave?: (permissions: string[]) => Promise<void>;
   compact?: boolean;
+  /** Role template editor vs per-user grants. */
+  scope?: "role" | "user";
+  scopeTitle?: string;
+  /** Per-user stored grants (scope=user). */
+  userPermissions?: string[];
+  /** Informational role preset (scope=user). */
+  roleTemplate?: string[];
+  hintText?: string;
+  saveLabel?: string;
 };
 
 export function AdminRolePermissionsChecklist({
@@ -100,6 +109,12 @@ export function AdminRolePermissionsChecklist({
   editable = false,
   onSave,
   compact = false,
+  scope = "role",
+  scopeTitle,
+  userPermissions,
+  roleTemplate,
+  hintText,
+  saveLabel,
 }: AdminRolePermissionsChecklistProps) {
   const [draft, setDraft] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
@@ -116,16 +131,20 @@ export function AdminRolePermissionsChecklist({
   const groups = useMemo(() => groupCatalogByCategory(displayCatalog), [displayCatalog]);
 
   const fullAccess = isAdminRole(targetRole);
-  const roleEditable = editable && !fullAccess && (roleEntry?.editable ?? !fullAccess);
-  const granted = useMemo(
-    () => filterDisplayPermissions(roleEntry?.permissions ?? EMPTY_PERMISSIONS),
-    [roleEntry],
-  );
+  const isUserScope = scope === "user";
+  const roleEditable = editable && !fullAccess && (isUserScope ? true : (roleEntry?.editable ?? !fullAccess));
+  const granted = useMemo(() => {
+    if (isUserScope && userPermissions !== undefined) {
+      return filterDisplayPermissions(userPermissions);
+    }
+    return filterDisplayPermissions(roleEntry?.permissions ?? EMPTY_PERMISSIONS);
+  }, [isUserScope, userPermissions, roleEntry]);
 
   const sourceDraftKey = useMemo(() => {
     if (fullAccess) return `admin:${catalogKeys.join("|")}`;
+    if (isUserScope) return `user:${targetRole}:${granted.join("|")}`;
     return `${targetRole}:${granted.join("|")}`;
-  }, [fullAccess, catalogKeys, granted, targetRole]);
+  }, [fullAccess, catalogKeys, granted, isUserScope, targetRole]);
 
   useEffect(() => {
     setDraft(new Set(fullAccess ? catalogKeys : granted));
@@ -176,7 +195,11 @@ export function AdminRolePermissionsChecklist({
     setSaveSuccess(null);
     try {
       await onSave(filterDisplayPermissions(Array.from(draft)).sort());
-      setSaveSuccess(`Saved ${roleLabel(targetRole)} permissions.`);
+      setSaveSuccess(
+        isUserScope
+          ? "Saved user permissions."
+          : `Saved ${roleLabel(targetRole)} permissions.`,
+      );
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : "Failed to save permissions.");
     } finally {
@@ -211,7 +234,9 @@ export function AdminRolePermissionsChecklist({
               <Shield className="size-5" aria-hidden />
             </span>
             <div>
-              <p className="text-sm font-semibold text-foreground">{roleLabel(targetRole)} access</p>
+              <p className="text-sm font-semibold text-foreground">
+                {scopeTitle ?? `${roleLabel(targetRole)} access`}
+              </p>
               <p className="text-xs text-muted-foreground">
                 {fullAccess
                   ? "Full access — every permission, not editable"
@@ -255,11 +280,22 @@ export function AdminRolePermissionsChecklist({
         </div>
       </div>
 
-      {!fullAccess && roleEditable ? (
+      {!fullAccess && roleEditable && !isUserScope ? (
         <p className="text-xs text-muted-foreground">
-          Changes apply to every user with the{" "}
-          <span className="font-medium text-foreground">{roleLabel(targetRole)}</span> role. To give
-          one person full access, set their role to Admin in their profile.
+          Changes apply to <span className="font-medium text-foreground">new registrations only</span>{" "}
+          with the <span className="font-medium text-foreground">{roleLabel(targetRole)}</span> role.
+          To change an existing user, edit their permissions on the user detail page.
+        </p>
+      ) : null}
+
+      {!fullAccess && hintText ? (
+        <p className="text-xs text-muted-foreground">{hintText}</p>
+      ) : null}
+
+      {!fullAccess && isUserScope && roleTemplate && roleTemplate.length > 0 && !hintText ? (
+        <p className="text-xs text-muted-foreground">
+          Default for <span className="font-medium text-foreground">{roleLabel(targetRole)}</span> role:{" "}
+          {roleTemplate.join(", ")}.
         </p>
       ) : null}
 
@@ -401,7 +437,7 @@ export function AdminRolePermissionsChecklist({
               ) : (
                 <Save className="size-3.5" aria-hidden />
               )}
-              Save {roleLabel(targetRole)}
+              Save {saveLabel ?? roleLabel(targetRole)}
             </button>
           </div>
         </div>

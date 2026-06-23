@@ -7,7 +7,6 @@ import {
   hasAnyNavAccess,
   permissionForPath,
 } from "@/lib/admin-access";
-import { isAdminRole } from "@/lib/admin-permissions";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
 
@@ -18,11 +17,11 @@ export function AdminPermissionRedirect() {
   const pathname = usePathname() ?? "/";
   const router = useRouter();
   const { user } = useAuth();
-  const { can, loading } = useAdminPermissions();
+  const { can, loading, isAdmin } = useAdminPermissions();
 
   useEffect(() => {
     if (!user || loading) return;
-    if (isAdminRole(user.role)) return;
+    if (isAdmin) return;
 
     const required = permissionForPath(pathname);
     const home = pathname === "/" || pathname === "";
@@ -40,7 +39,7 @@ export function AdminPermissionRedirect() {
       if (first) router.replace(first);
       else if (!hasAnyNavAccess(can)) router.replace("/");
     }
-  }, [user, loading, pathname, can, router]);
+  }, [user, loading, isAdmin, pathname, can, router]);
 
   return null;
 }

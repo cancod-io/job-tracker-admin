@@ -18,8 +18,7 @@ import {
 import { SidePanel } from "@/components/ui/side-panel";
 import { ApplicantAvatar } from "@/components/admin/applicant-avatar";
 import { AdminUserCvPreviewModal } from "@/components/admin/admin-user-cv-preview-modal";
-import { AdminRolePermissionsChecklist } from "@/components/admin/admin-role-permissions-checklist";
-import { updateRolePermissions } from "@/lib/admin-permissions-api";
+import { AdminUserPermissionsEditor } from "@/components/admin/admin-user-permissions-editor";
 import { AdminUserRoleSection } from "@/components/admin/admin-user-role-section";
 import { AdminUserSocialLinksSection } from "@/components/admin/admin-user-social-links-section";
 import { DetailRow } from "@/components/admin/shared/detail-row";
@@ -56,8 +55,7 @@ type AdminUserDetailPanelProps = {
 
 export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDetailPanelProps) {
   const { accessToken, user: currentUser } = useAuth();
-  const { can, matrix, loading: permissionsLoading, refetch: refetchPermissions } =
-    useAdminPermissions();
+  const { can } = useAdminPermissions();
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -354,26 +352,12 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
                 </span>
               </DetailRow>
             </dl>
-            {canManagePermissions ? (
+            {canManagePermissions && userId != null ? (
               <div className="mt-4 border-t border-border/50 pt-4">
-                <AdminRolePermissionsChecklist
-                  targetRole={detail.role}
-                  matrix={matrix}
-                  loading={permissionsLoading}
-                  editable={canManagePermissions}
+                <AdminUserPermissionsEditor
+                  userId={userId}
+                  userName={detail.full_name || detail.email}
                   compact
-                  onSave={
-                    detail.role !== "admin" && accessToken
-                      ? async (permissions) => {
-                          await updateRolePermissions(
-                            accessToken,
-                            detail.role as Exclude<UserRole, "admin">,
-                            { permissions },
-                          );
-                          await refetchPermissions();
-                        }
-                      : undefined
-                  }
                 />
               </div>
             ) : null}

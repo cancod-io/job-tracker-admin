@@ -2,9 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ShieldOff } from "lucide-react";
-import { isAdminRole } from "@/lib/admin-permissions";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
-import { useAuth } from "@/providers/auth-provider";
 
 type RequirePermissionProps = {
   permission: string;
@@ -13,11 +11,10 @@ type RequirePermissionProps = {
 };
 
 export function RequirePermission({ permission, title, children }: RequirePermissionProps) {
-  const { user } = useAuth();
-  const { can, loading } = useAdminPermissions();
+  const { can, loading, isAdmin } = useAdminPermissions();
   const allowed = can(permission);
 
-  if (loading && !isAdminRole(user?.role)) {
+  if (loading && !isAdmin) {
     return (
       <div
         className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-muted-foreground"

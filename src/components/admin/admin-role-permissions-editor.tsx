@@ -43,10 +43,10 @@ const ROLE_CARDS: {
 
 export function AdminRolePermissionsEditor() {
   const { accessToken } = useAuth();
-  const { matrix, loading, error, can, refetch } = useAdminPermissions();
+  const { matrix, loading, error, can, refetch, isAdmin } = useAdminPermissions();
   const [activeRole, setActiveRole] = useState<UserRole>("moderator");
 
-  const canManage = can("permissions.manage");
+  const canManage = can("permissions.manage") && isAdmin;
   const viewingAdmin = isAdminRole(activeRole);
 
   const totalCount = matrix ? filterDisplayCatalog(matrix.catalog).length : 0;
@@ -67,7 +67,9 @@ export function AdminRolePermissionsEditor() {
   if (!canManage) {
     return (
       <div className="rounded-2xl border border-amber-500/35 bg-amber-500/10 px-4 py-6 text-sm text-amber-950 dark:text-amber-100">
-        You do not have permission to manage role permissions.
+        {can("permissions.manage")
+          ? "Role templates can only be edited by admin accounts. To change an existing user's access, open their profile on the Users page."
+          : "You do not have permission to manage role templates."}
       </div>
     );
   }
@@ -157,9 +159,9 @@ export function AdminRolePermissionsEditor() {
         <p className="flex items-center gap-2 text-sm text-foreground">
           <Shield className="size-4 shrink-0 text-primary" aria-hidden />
           <span>
-            <strong>Admin</strong> always has full access and cannot be changed via the API. Grant
-            similar access to Moderator or User with <strong>Select all</strong>, or set an
-            individual user&apos;s role to Admin in their profile.
+            <strong>Admin</strong> always has full access. Role templates here apply to{" "}
+            <strong>new registrations only</strong> — edit an existing user&apos;s grants on their
+            user detail page.
           </span>
         </p>
       </div>

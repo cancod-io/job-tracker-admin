@@ -80,6 +80,34 @@ function replaceScamUrlUiText(text: string): string {
 /** Permission keys omitted from the role settings UI. */
 export const HIDDEN_PERMISSION_KEYS = new Set(["users.ban"]);
 
+/** Fallback catalog when GET /api/admin/permissions is unavailable (admin-only endpoint). */
+export const FALLBACK_PERMISSION_CATALOG: PermissionCatalogItem[] = [
+  { key: "users.read", category: "Users", label: "View users", description: "View the user directory and profiles." },
+  { key: "users.approve", category: "Users", label: "Approve users", description: "Approve or reject new registrations." },
+  { key: "users.change_role", category: "Users", label: "Change user role", description: "Change a user's role label." },
+  { key: "users.reset_password", category: "Users", label: "Reset passwords", description: "Reset a user's login password." },
+  { key: "users.delete", category: "Users", label: "Delete users", description: "Remove users from the platform." },
+  { key: "jobs.read", category: "Jobs", label: "View jobs", description: "View scraped jobs and their applicants." },
+  { key: "jobs.edit", category: "Jobs", label: "Edit jobs", description: "Edit job listings." },
+  { key: "jobs.delete", category: "Jobs", label: "Delete jobs", description: "Remove job listings." },
+  { key: "jobs.mark_scam", category: "Jobs", label: "Mark scam jobs", description: "Flag jobs as scam listings." },
+  { key: "applications.read", category: "Applications", label: "View applications", description: "View job applications and files." },
+  { key: "applications.edit", category: "Applications", label: "Edit applications", description: "Update application records." },
+  { key: "applications.delete", category: "Applications", label: "Delete applications", description: "Remove application records." },
+  { key: "companies.read", category: "Companies", label: "View companies", description: "View the companies list." },
+  { key: "companies.manage", category: "Companies", label: "Manage companies", description: "Create, edit, and delete companies." },
+  { key: "scraping.read", category: "Scraping", label: "View scraping", description: "View scraping configuration and runs." },
+  { key: "scraping.manage", category: "Scraping", label: "Manage scraping", description: "Manage scraping methods and runs." },
+  { key: "career_urls.read", category: "Career URLs", label: "View career URLs", description: "View career URL entries." },
+  { key: "career_urls.manage", category: "Career URLs", label: "Manage career URLs", description: "Create, edit, and delete career URLs." },
+  { key: "scam_urls.read", category: "Scam URLs", label: "View Block Lists", description: "View blocked domains and URLs." },
+  { key: "scam_urls.manage", category: "Scam URLs", label: "Manage Block Lists", description: "Manage blocked domains and URLs." },
+  { key: "stats.read", category: "Analytics", label: "View analytics", description: "View dashboard statistics." },
+  { key: "permissions.manage", category: "Permissions", label: "Manage permissions", description: "Edit user and role permission grants." },
+  { key: "api_config.read", category: "API Configuration", label: "View API configuration", description: "View env settings and API keys." },
+  { key: "api_config.manage", category: "API Configuration", label: "Manage API configuration", description: "Edit env settings and API keys." },
+];
+
 export function filterDisplayCatalog(catalog: PermissionCatalogItem[]): PermissionCatalogItem[] {
   return catalog.filter((item) => !HIDDEN_PERMISSION_KEYS.has(item.key));
 }
