@@ -1,6 +1,12 @@
-/** Provider slug sent to POST /api/admin/scraper/runs */
-export const SCRAPER_RUN_PROVIDERS = ["serpapi", "fantastic", "fantastic_jb", "all"] as const;
-export type ScraperRunProvider = (typeof SCRAPER_RUN_PROVIDERS)[number];
+/** Known provider slugs sent to POST /api/admin/scraper/runs (extensible via API config sources). */
+export const SCRAPER_RUN_PROVIDERS = [
+  "serpapi",
+  "fantastic",
+  "fantastic_jb",
+  "theirstack",
+  "all",
+] as const;
+export type ScraperRunProvider = (typeof SCRAPER_RUN_PROVIDERS)[number] | string;
 
 /** Run lifecycle status from the scraper runs API. */
 export const SCRAPER_RUN_STATUSES = [
@@ -37,7 +43,7 @@ export type ScraperRunListResponse = {
 };
 
 export type ScraperRunStartRequest = {
-  provider: ScraperRunProvider;
+  provider: string;
   overrides?: Record<string, unknown>;
 };
 

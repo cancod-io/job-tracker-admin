@@ -1,21 +1,78 @@
-import type { ScraperRunProvider } from "@/types/scraper-runs-api";
+import type { ApiConfigSource } from "@/types/api-config-api";
 
-/** UI rows for per-provider run controls (excludes hidden sources like Apify). */
-export const SCRAPER_RUN_CONTROL_ROWS = [
-  { provider: "serpapi" as const, label: "SerpAPI", fantasticKey: false },
-  { provider: "fantastic" as const, label: "Fantastic Jobs — ATS", fantasticKey: true },
-  { provider: "fantastic_jb" as const, label: "Fantastic Jobs — Job Board", fantasticKey: true },
+/** API key source ids that map to two scraper run providers (ATS + Job Board). */
+const FANTASTIC_SOURCE_IDS = new Set(["fantastic_jobs", "fantastic"]);
+
+const FANTASTIC_SCRAPER_PROVIDERS = [
+  { provider: "fantastic", label: "Fantastic Jobs — ATS" },
+  { provider: "fantastic_jb", label: "Fantastic Jobs — Job Board" },
 ] as const;
 
-export type ScraperRunControlProvider = (typeof SCRAPER_RUN_CONTROL_ROWS)[number]["provider"];
+const PROVIDER_LABEL_OVERRIDES: Record<string, string> = {
+  serpapi: "SerpAPI",
+  theirstack: "TheirStack",
+};
 
-/** Provider filter options for the run log table. */
-export const SCRAPER_RUN_LOG_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: "all", label: "All providers" },
-  { value: "serpapi", label: "SerpAPI" },
-  { value: "fantastic", label: "Fantastic Jobs — ATS" },
-  { value: "fantastic_jb", label: "Fantastic Jobs — Job Board" },
-];
+export type ScraperRunControlRow = {
+  provider: string;
+  label: string;
+  /** API key source id for key checks. */
+  sourceId: string;
+  canRun: boolean;
+};
+
+export type ScraperRunFilterOption = { value: string; label: string };
+
+function isFantasticSource(source: ApiConfigSource): boolean {
+  return FANTASTIC_SOURCE_IDS.has(source.id);
+}
+
+function labelForSource(source: ApiConfigSource): string {
+  return PROVIDER_LABEL_OVERRIDES[source.id] ?? source.label ?? source.id;
+}
+
+/**
+ * Build scraper run control rows from API config sources.
+ * Fantastic (single API key source) expands into ATS + Job Board runs.
+ * Other sources (SerpAPI, TheirStack, …) map 1:1 to a run provider.
+ */
+export function buildScraperRunControlRows(sources: ApiConfigSource[]): ScraperRunControlRow[] {
+  const rows: ScraperRunControlRow[] = [];
+
+  for (const source of sources) {
+    if (isFantasticSource(source)) {
+      for (const entry of FANTASTIC_SCRAPER_PROVIDERS) {
+        rows.push({
+          provider: entry.provider,
+          label: entry.label,
+          sourceId: source.id,
+          canRun: source.is_set,
+        });
+      }
+      continue;
+    }
+
+    rows.push({
+      provider: source.id,
+      label: labelForSource(source),
+      sourceId: source.id,
+      canRun: source.is_set,
+    });
+  }
+
+  return rows;
+}
+
+/** Provider filter options for run log tables, derived from API sources. */
+export function buildScraperRunLogFilterOptions(
+  sources: ApiConfigSource[],
+): ScraperRunFilterOption[] {
+  const providerRows = buildScraperRunControlRows(sources);
+  return [
+    { value: "all", label: "All providers" },
+    ...providerRows.map((row) => ({ value: row.provider, label: row.label })),
+  ];
+}
 
 export function formatScraperProviderLabel(provider: string): string {
   switch (provider) {
@@ -25,10 +82,14 @@ export function formatScraperProviderLabel(provider: string): string {
       return "Fantastic Jobs — ATS";
     case "fantastic_jb":
       return "Fantastic Jobs — Job Board";
+    case "theirstack":
+      return "TheirStack";
     case "all":
-      return "All providers (SerpAPI → ATS → Job Board)";
+      return "All providers";
     default:
-      return provider;
+      return provider
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
   }
 }
 
@@ -41,10 +102,7 @@ export function isTerminalScraperRunStatus(status: string): boolean {
 }
 
 /** Whether a run applies to a single-provider control row. */
-export function scraperRunAppliesToProvider(
-  runProvider: string,
-  rowProvider: ScraperRunProvider,
-): boolean {
+export function scraperRunAppliesToProvider(runProvider: string, rowProvider: string): boolean {
   if (rowProvider === "all") return true;
   return runProvider === rowProvider || runProvider === "all";
 }
@@ -85,5 +143,5 @@ export function formatScraperRunResultToast(run: {
 export function isFantasticApiKeyConfigured(
   sources: { id: string; is_set: boolean }[],
 ): boolean {
-  return sources.some((source) => source.id === "fantastic_jobs" && source.is_set);
+  return sources.some((source) => FANTASTIC_SOURCE_IDS.has(source.id) && source.is_set);
 }

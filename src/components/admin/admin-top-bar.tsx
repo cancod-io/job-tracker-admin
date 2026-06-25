@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LogOut, Menu, UserRound } from "lucide-react";
+import Link from "next/link";
+import { LogOut, Menu, Settings, UserRound } from "lucide-react";
 import { AdminBreadcrumbs } from "@/components/admin/admin-breadcrumbs";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/providers/auth-provider";
@@ -82,6 +83,15 @@ export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
                 <p className="truncate text-sm font-medium text-foreground">{user?.full_name}</p>
                 <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
               </div>
+              <Link
+                href="/settings/profile"
+                role="menuitem"
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
+                onClick={() => setMenuOpen(false)}
+              >
+                <Settings className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                Profile Settings
+              </Link>
               <button
                 type="button"
                 role="menuitem"

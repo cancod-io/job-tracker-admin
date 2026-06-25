@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { KeyRound, Loader2, SlidersHorizontal, Zap } from "lucide-react";
 import { getApiConfig } from "@/lib/api-config-api";
 import { withStableKeyOrder } from "@/components/admin/api-config/api-key-utils";
@@ -26,10 +27,16 @@ const TABS: { id: ApiConfigTab; label: string; icon: typeof SlidersHorizontal }[
 export function AdminApiConfigPanel() {
   const { accessToken } = useAuth();
   const { can } = useAdminPermissions();
+  const searchParams = useSearchParams();
   const canRead = can("api_config.read");
   const canManage = can("api_config.manage");
   const { toast, setToast } = useToast();
-  const [tab, setTab] = useState<ApiConfigTab>("settings");
+  const initialTab = searchParams.get("tab");
+  const [tab, setTab] = useState<ApiConfigTab>(
+    initialTab === "keys" || initialTab === "runs" || initialTab === "settings"
+      ? initialTab
+      : "settings",
+  );
   const [config, setConfig] = useState<ApiConfigResponse | null>(null);
   const [keysLoading, setKeysLoading] = useState(false);
   const [keysError, setKeysError] = useState<string | null>(null);

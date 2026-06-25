@@ -7,11 +7,18 @@ import { cn } from "@/lib/utils";
 
 const SEGMENT_LABELS: Record<string, string> = {
   jobs: "Jobs",
+  analytics: "Analytics",
+  overview: "Overview",
+  applications: "Applications",
+  scraping: "Scraping",
+  workers: "Workers",
+  targets: "Targets",
   users: "Users",
   companies: "Companies",
   "scam-urls": "Block Lists",
   "career-urls": "Career URLs",
   settings: "Settings",
+  profile: "Profile Settings",
   "api-config": "API Configuration",
   login: "Sign in",
   register: "Register",

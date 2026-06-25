@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Briefcase,
   Building2,
   Settings,
@@ -17,6 +18,12 @@ export type AdminNavItem = {
 
 /** Primary sidebar destinations (App Router paths under the admin app). */
 export const adminNavItems: AdminNavItem[] = [
+  {
+    href: "/analytics",
+    label: "Analytics",
+    icon: BarChart3,
+    permission: "stats.read",
+  },
   { href: "/jobs", label: "Jobs", icon: Briefcase, permission: "jobs.read" },
   { href: "/users", label: "Users", icon: Users, permission: "users.read" },
   { href: "/companies", label: "Companies", icon: Building2, permission: "companies.read" },

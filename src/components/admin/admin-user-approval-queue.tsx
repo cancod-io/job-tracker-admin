@@ -5,7 +5,8 @@ import { Loader2, RefreshCw, Search } from "lucide-react";
 import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
 import { ApplicantAvatar } from "@/components/admin/applicant-avatar";
 import { listAdminUsers } from "@/lib/admin-user-api";
-import { ADMIN_PENDING_APPROVAL_CHANGED_EVENT } from "@/lib/admin-sync-events";
+import { ADMIN_PENDING_APPROVAL_CHANGED_EVENT, dispatchAdminPendingApprovalChanged } from "@/lib/admin-sync-events";
+import { REALTIME_USER_UPDATED_EVENT } from "@/lib/realtime-sync-events";
 import { formatDateTime } from "@/lib/format-date";
 import { approvalBadgeClass, approvalLabel } from "@/lib/user-approval";
 import { useAuth } from "@/providers/auth-provider";
@@ -66,9 +67,7 @@ export function AdminUserApprovalQueue() {
       });
       setItems(body.items);
       setTotal(body.total);
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent(ADMIN_PENDING_APPROVAL_CHANGED_EVENT));
-      }
+      dispatchAdminPendingApprovalChanged();
     } catch (e) {
       setItems([]);
       setTotal(0);
@@ -87,10 +86,17 @@ export function AdminUserApprovalQueue() {
   }, [loadCounts]);
 
   useEffect(() => {
-    const onPendingChanged = () => void loadCounts();
-    window.addEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onPendingChanged);
-    return () => window.removeEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onPendingChanged);
-  }, [loadCounts]);
+    const onUsersChanged = () => {
+      void loadCounts();
+      void load();
+    };
+    window.addEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onUsersChanged);
+    window.addEventListener(REALTIME_USER_UPDATED_EVENT, onUsersChanged);
+    return () => {
+      window.removeEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onUsersChanged);
+      window.removeEventListener(REALTIME_USER_UPDATED_EVENT, onUsersChanged);
+    };
+  }, [load, loadCounts]);
 
   const filteredItems = useMemo(() => {
     const q = searchDraft.trim().toLowerCase();

@@ -8,6 +8,10 @@ export const SOURCE_ACCENTS: Record<string, { gradient: string; dot: string }> =
     gradient: "from-violet-500/12 via-card to-card border-violet-500/25",
     dot: "bg-violet-500",
   },
+  theirstack: {
+    gradient: "from-sky-500/12 via-card to-card border-sky-500/25",
+    dot: "bg-sky-500",
+  },
   fantastic_jb: {
     gradient: "from-fuchsia-500/12 via-card to-card border-fuchsia-500/25",
     dot: "bg-fuchsia-500",

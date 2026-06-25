@@ -3,6 +3,7 @@ import { adminNavItems } from "@/config/admin-nav";
 /** Route prefix → minimum permission required to view the page. */
 export const ADMIN_ROUTE_PERMISSIONS: Record<string, string> = {
   "/jobs": "jobs.read",
+  "/analytics": "stats.read",
   "/users": "users.read",
   "/companies": "companies.read",
   "/scam-urls": "scam_urls.read",

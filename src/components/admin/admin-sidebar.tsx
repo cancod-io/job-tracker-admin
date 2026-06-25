@@ -2,7 +2,7 @@
 
 
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import Link from "next/link";
 
@@ -10,16 +10,12 @@ import { usePathname } from "next/navigation";
 
 import { ShieldCheck, X } from "lucide-react";
 
-import { ADMIN_PENDING_APPROVAL_CHANGED_EVENT } from "@/lib/admin-sync-events";
-
 import { getVisibleNavItems } from "@/lib/admin-access";
-
-import { listAdminUsers } from "@/lib/admin-user-api";
 
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 
-import { useAuth } from "@/providers/auth-provider";
-
+import { useAdminRealtimeNotifications } from "@/providers/admin-realtime-notifications-provider";
+import { formatBadgeCount } from "@/lib/admin-realtime-badges";
 import { cn } from "@/lib/utils";
 
 
@@ -34,11 +30,31 @@ type AdminSidebarProps = {
 
 
 
+type NavCountBadgeProps = {
+  count: number;
+  active: boolean;
+  ariaLabel: string;
+};
+
+function NavCountBadge({ count, active, ariaLabel }: NavCountBadgeProps) {
+  return (
+    <span
+      className={cn(
+        "flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-[11px] font-semibold tabular-nums",
+        active
+          ? "bg-primary-foreground/25 text-primary-foreground"
+          : "bg-amber-600 text-white shadow-sm dark:bg-amber-500 dark:text-amber-950",
+      )}
+      aria-label={ariaLabel}
+    >
+      {formatBadgeCount(count)}
+    </span>
+  );
+}
+
 export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
 
   const pathname = usePathname() ?? "/";
-
-  const { accessToken } = useAuth();
 
   const { can, loading: permissionsLoading } = useAdminPermissions();
 
@@ -54,51 +70,7 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
 
 
 
-  const canViewUsers = !permissionsLoading && can("users.read");
-
-  const [pendingApprovalCount, setPendingApprovalCount] = useState<number | null>(null);
-
-
-
-  const refreshPendingApprovalCount = useCallback(async () => {
-
-    if (!accessToken || !canViewUsers) return;
-
-    try {
-
-      const body = await listAdminUsers(accessToken, {
-
-        approval_status: "pending",
-
-        page: 1,
-
-        page_size: 1,
-
-      });
-
-      setPendingApprovalCount(body.total);
-
-    } catch {
-
-      /* leave prior count */
-
-    }
-
-  }, [accessToken, canViewUsers]);
-
-
-
-  useEffect(() => {
-    void refreshPendingApprovalCount();
-  }, [refreshPendingApprovalCount]);
-
-  useEffect(() => {
-    const onPendingChanged = () => void refreshPendingApprovalCount();
-    window.addEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onPendingChanged);
-    return () => window.removeEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onPendingChanged);
-  }, [refreshPendingApprovalCount]);
-
-
+  const { getBadgeCountForHref } = useAdminRealtimeNotifications();
 
   const linkClass = (active: boolean) =>
 
@@ -178,19 +150,12 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
 
             const Icon = item.icon;
 
-            const showPendingBadge =
-
-              item.href === "/users" && pendingApprovalCount != null && pendingApprovalCount > 0;
-
-            const badgeText =
-
-              pendingApprovalCount != null && pendingApprovalCount > 99
-
-                ? "99+"
-
-                : pendingApprovalCount;
-
-
+            const badgeCount = getBadgeCountForHref(item.href);
+            const showBadge = badgeCount > 0;
+            const badgeAriaLabel =
+              item.href === "/users"
+                ? `${badgeCount} waiting for approval`
+                : `${badgeCount} new updates`;
 
             return (
 
@@ -228,30 +193,12 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
 
                   </span>
 
-                  {showPendingBadge ? (
-
-                    <span
-
-                      className={cn(
-
-                        "flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1 text-[11px] font-semibold tabular-nums",
-
-                        active
-
-                          ? "bg-primary-foreground/25 text-primary-foreground"
-
-                          : "bg-amber-600 text-white shadow-sm dark:bg-amber-500 dark:text-amber-950",
-
-                      )}
-
-                      aria-label={`${pendingApprovalCount} waiting for approval`}
-
-                    >
-
-                      {badgeText}
-
-                    </span>
-
+                  {showBadge ? (
+                    <NavCountBadge
+                      count={badgeCount}
+                      active={active}
+                      ariaLabel={badgeAriaLabel}
+                    />
                   ) : null}
 
                 </Link>
