@@ -10,6 +10,8 @@ type DateRangeFilterProps = {
   from: string;
   to: string;
   onChange: (from: string, to: string) => void;
+  /** Defaults to jobs posted-date label when omitted. */
+  ariaLabel?: string;
 };
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -251,7 +253,12 @@ function RangePanel({ from, to, onApply, onClear }: RangePanelProps) {
   );
 }
 
-export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
+export function DateRangeFilter({
+  from,
+  to,
+  onChange,
+  ariaLabel = "Filter jobs by posted date",
+}: DateRangeFilterProps) {
   const hasActive = Boolean(from || to);
 
   return (
@@ -268,7 +275,7 @@ export function DateRangeFilter({ from, to, onChange }: DateRangeFilterProps) {
           )}
           aria-haspopup="dialog"
           aria-expanded={open}
-          aria-label="Filter jobs by posted date"
+          aria-label={ariaLabel}
         >
           <CalendarDays className="size-3.5 shrink-0" aria-hidden />
           <span className="max-w-[14rem] truncate">{formatDateRange(from, to)}</span>

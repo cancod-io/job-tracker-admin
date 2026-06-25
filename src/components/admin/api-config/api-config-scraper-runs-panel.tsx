@@ -15,19 +15,21 @@ import {
 } from "@/lib/admin-scraper-runs-api";
 import { formatDateTime } from "@/lib/format-date";
 import {
+  buildScraperRunControlRows,
+  buildScraperRunLogFilterOptions,
   formatScraperProviderLabel,
   formatScraperRunDuration,
   formatScraperRunResultToast,
   isActiveScraperRunStatus,
   isTerminalScraperRunStatus,
-  SCRAPER_RUN_CONTROL_ROWS,
-  SCRAPER_RUN_LOG_FILTER_OPTIONS,
   scraperRunAppliesToProvider,
 } from "@/lib/scraper-provider-utils";
+import { REALTIME_SCRAPER_RUN_UPDATED_EVENT } from "@/lib/realtime-sync-events";
 import { cn } from "@/lib/utils";
 import type { ToastMessage } from "@/hooks/use-toast";
 import type { ApiConfigSource } from "@/types/api-config-api";
 import type { ScraperRunListResponse, ScraperRunSummary } from "@/types/scraper-runs-api";
+import type { ScraperRunUpdatedPayload } from "@/types/realtime";
 
 const DEFAULT_PAGE_SIZE = 20;
 const STATUS_SNAPSHOT_LIMIT = 10;
@@ -39,17 +41,10 @@ type ApiConfigScraperRunsPanelProps = {
   setToast: (toast: ToastMessage | null) => void;
 };
 
-type BusyAction =
-  | { kind: "start"; provider: (typeof SCRAPER_RUN_CONTROL_ROWS)[number]["provider"] }
-  | { kind: "stop"; runId: string }
-  | null;
-
-function isSourceKeyConfigured(sources: ApiConfigSource[], sourceId: string): boolean {
-  return sources.some((source) => source.id === sourceId && source.is_set);
-}
+type BusyAction = { kind: "start"; provider: string } | { kind: "stop"; runId: string } | null;
 
 function resolveChipStatus(
-  provider: (typeof SCRAPER_RUN_CONTROL_ROWS)[number]["provider"],
+  provider: string,
   runningRuns: ScraperRunSummary[],
   recentRuns: ScraperRunSummary[],
 ): string {
@@ -62,7 +57,7 @@ function resolveChipStatus(
 }
 
 function findActiveRunsForProvider(
-  provider: (typeof SCRAPER_RUN_CONTROL_ROWS)[number]["provider"],
+  provider: string,
   runningRuns: ScraperRunSummary[],
 ): ScraperRunSummary[] {
   return runningRuns.filter((run) => scraperRunAppliesToProvider(run.provider, provider));
@@ -94,13 +89,7 @@ export function ApiConfigScraperRunsPanel({
   const loadRequestRef = useRef(0);
   const hasLoadedRef = useRef(false);
 
-  const keyConfigured = useMemo(
-    () => ({
-      serpapi: isSourceKeyConfigured(sources, "serpapi"),
-      fantastic: isSourceKeyConfigured(sources, "fantastic_jobs"),
-    }),
-    [sources],
-  );
+  const filterOptions = useMemo(() => buildScraperRunLogFilterOptions(sources), [sources]);
 
   const refreshRuns = useCallback(
     async (options?: { manual?: boolean }) => {
@@ -186,9 +175,37 @@ export function ApiConfigScraperRunsPanel({
     void refreshRuns();
   }, [refreshRuns]);
 
-  const handleStart = async (
-    provider: (typeof SCRAPER_RUN_CONTROL_ROWS)[number]["provider"],
-  ) => {
+  useEffect(() => {
+    const onScraperRunUpdated = (event: Event) => {
+      const payload = (event as CustomEvent<ScraperRunUpdatedPayload>).detail;
+      if (!payload) return;
+
+      if (isTerminalScraperRunStatus(payload.status)) {
+        const toastMessage = formatScraperRunResultToast({
+          provider: payload.provider,
+          status: payload.status,
+          added_count: payload.added_count,
+          updated_count: payload.updated_count,
+          unchanged_count: payload.unchanged_count,
+          error_message: payload.error_message,
+        });
+        if (toastMessage) {
+          setToast({
+            kind: payload.status === "success" ? "success" : "error",
+            message: toastMessage,
+          });
+        }
+      }
+
+      void refreshRuns();
+    };
+
+    window.addEventListener(REALTIME_SCRAPER_RUN_UPDATED_EVENT, onScraperRunUpdated);
+    return () =>
+      window.removeEventListener(REALTIME_SCRAPER_RUN_UPDATED_EVENT, onScraperRunUpdated);
+  }, [refreshRuns, setToast]);
+
+  const handleStart = async (provider: string) => {
     if (!canManage) return;
     setBusy({ kind: "start", provider });
     setConflict(null);
@@ -250,15 +267,12 @@ export function ApiConfigScraperRunsPanel({
 
   const controlRows = useMemo(
     () =>
-      SCRAPER_RUN_CONTROL_ROWS.map((row) => ({
-        key: row.provider,
-        label: row.label,
-        provider: row.provider,
-        canRun: row.fantasticKey ? keyConfigured.fantastic : keyConfigured.serpapi,
+      buildScraperRunControlRows(sources).map((row) => ({
+        ...row,
         activeRuns: findActiveRunsForProvider(row.provider, runningRuns),
         status: resolveChipStatus(row.provider, runningRuns, statusSnapshot),
       })),
-    [keyConfigured.fantastic, keyConfigured.serpapi, runningRuns, statusSnapshot],
+    [sources, runningRuns, statusSnapshot],
   );
 
   const logRuns = logData?.items ?? [];
@@ -311,6 +325,12 @@ export function ApiConfigScraperRunsPanel({
         </AlertBanner>
       ) : null}
 
+      {controlRows.length === 0 && !loading ? (
+        <AlertBanner variant="warning">
+          No scraper providers are configured yet. Add API keys on the Keys tab first.
+        </AlertBanner>
+      ) : null}
+
       <div className="overflow-x-auto rounded-xl border border-border/80">
         <table className="w-full min-w-[36rem] text-left text-sm">
           <thead>
@@ -332,7 +352,7 @@ export function ApiConfigScraperRunsPanel({
               const stopDisabled = !canManage || row.activeRuns.length === 0 || busy !== null;
 
               return (
-                <tr key={row.key} className="border-b border-border/60 last:border-b-0">
+                <tr key={row.provider} className="border-b border-border/60 last:border-b-0">
                   <td className="px-4 py-3 font-medium text-foreground">{row.label}</td>
                   <td className="px-4 py-3">
                     <ScraperRunStatusBadge status={row.status} />
@@ -398,7 +418,7 @@ export function ApiConfigScraperRunsPanel({
                 className="rounded-lg border border-border/80 bg-card px-2 py-2 text-sm text-foreground"
                 aria-label="Filter run log by provider"
               >
-                {SCRAPER_RUN_LOG_FILTER_OPTIONS.map((option) => (
+                {filterOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>

@@ -34,6 +34,7 @@ import {
 import { formatFileSize } from "@/lib/admin-file-utils";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { formatDateTime } from "@/lib/format-date";
+import { REALTIME_USER_UPDATED_EVENT } from "@/lib/realtime-sync-events";
 import { applicantBadgeClass, formatApplicantStatus } from "@/lib/applicant-status";
 import {
   approvalBadgeClass,
@@ -45,6 +46,7 @@ import { cn } from "@/lib/utils";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
 import type { AdminUserCv, AdminUserDetail } from "@/types/admin-user-api";
+import type { UserUpdatedPayload } from "@/types/realtime";
 import type { UserApprovalStatus, UserRole } from "@/types/auth";
 
 type AdminUserDetailPanelProps = {
@@ -87,6 +89,16 @@ export function AdminUserDetailPanel({ userId, onClose, onUpdated }: AdminUserDe
       return;
     }
     void load();
+  }, [userId, load]);
+
+  useEffect(() => {
+    if (userId == null) return;
+    const onUserUpdated = (event: Event) => {
+      const payload = (event as CustomEvent<UserUpdatedPayload>).detail;
+      if (payload?.user_id === userId) void load();
+    };
+    window.addEventListener(REALTIME_USER_UPDATED_EVENT, onUserUpdated);
+    return () => window.removeEventListener(REALTIME_USER_UPDATED_EVENT, onUserUpdated);
   }, [userId, load]);
 
   useEffect(() => {

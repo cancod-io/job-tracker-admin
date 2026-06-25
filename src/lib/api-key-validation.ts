@@ -9,6 +9,9 @@ const SERPAPI_KEY_PATTERN = /^[a-f0-9]{64}$/i;
 /** Fantastic Jobs API: zpka_49700b7cb45341cb9f0cae674810098e_59723b37 */
 const FANTASTIC_JOBS_KEY_PATTERN = /^zpka_[a-f0-9]+_[a-f0-9]+$/i;
 
+/** TheirStack API: JWT token (header.payload.signature, base64url) */
+const THEIRSTACK_KEY_PATTERN = /^eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+
 const SOURCE_VALIDATORS: Record<string, { pattern: RegExp; hint: string; label: string }> = {
   serpapi: {
     label: "SerpAPI",
@@ -20,12 +23,24 @@ const SOURCE_VALIDATORS: Record<string, { pattern: RegExp; hint: string; label: 
     pattern: FANTASTIC_JOBS_KEY_PATTERN,
     hint: "Must match zpka_<hex>_<hex> (e.g. zpka_49700b7cb45341cb9f0cae674810098e_59723b37).",
   },
+  fantastic: {
+    label: "Fantastic Jobs API",
+    pattern: FANTASTIC_JOBS_KEY_PATTERN,
+    hint: "Must match zpka_<hex>_<hex> (e.g. zpka_49700b7cb45341cb9f0cae674810098e_59723b37).",
+  },
+  theirstack: {
+    label: "TheirStack API",
+    pattern: THEIRSTACK_KEY_PATTERN,
+    hint: "Must be a JWT token from the TheirStack dashboard (three base64 segments separated by dots, starting with eyJ…).",
+  },
 };
 
 /** Example key shown as placeholder / hint text per source. */
 export const API_KEY_FORMAT_EXAMPLES: Record<string, string> = {
   serpapi: "64-character hex key",
   fantastic_jobs: "zpka_…_…",
+  fantastic: "zpka_…_…",
+  theirstack: "eyJ…eyJ…",
 };
 
 /**

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Settings } from "lucide-react";
 import { AdminApiConfigPanel } from "@/components/admin/admin-api-config-panel";
 import { RequirePermission } from "@/components/admin/require-permission";
@@ -10,7 +11,9 @@ export default function AdminApiConfigPage() {
           <Settings className="size-4 shrink-0 text-primary" aria-hidden />
           <span>Env settings and API key vault — use the tabs below</span>
         </div>
-        <AdminApiConfigPanel />
+        <Suspense fallback={null}>
+          <AdminApiConfigPanel />
+        </Suspense>
       </div>
     </RequirePermission>
   );

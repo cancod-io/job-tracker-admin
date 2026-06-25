@@ -29,6 +29,11 @@ import { DataTable } from "@/components/ui/data-table";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 import { useRowSelection } from "@/hooks/use-row-selection";
 import { useToast } from "@/hooks/use-toast";
+import {
+  formatJobsIngestSummary,
+  REALTIME_JOBS_INGESTED_EVENT,
+} from "@/lib/realtime-sync-events";
+import type { JobsIngestedPayload } from "@/types/realtime";
 import type {
   AdminJobApplicant,
   AdminJobDetail,
@@ -69,6 +74,7 @@ const AdminJobFetchRunDeleteConfirm = dynamic(
 );
 
 const DEFAULT_PAGE_SIZE = 20;
+const JOBS_INGEST_DEBOUNCE_MS = 3_000;
 
 /** The status shown in the job's STATUS column — the primary (first) applicant's stage. */
 function representativeStatus(job: AdminJobDetail): string | null {
@@ -188,6 +194,35 @@ export function AdminJobsList() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    let debounceTimer: number | null = null;
+
+    const onJobsIngested = (event: Event) => {
+      const payload = (event as CustomEvent<JobsIngestedPayload>).detail;
+      if (!payload || (payload.added <= 0 && payload.updated <= 0)) return;
+
+      setToast({
+        kind: "success",
+        message: formatJobsIngestSummary(payload),
+      });
+
+      if (debounceTimer != null) {
+        clearTimeout(debounceTimer);
+      }
+      debounceTimer = window.setTimeout(() => {
+        debounceTimer = null;
+        void load();
+        setFetchRunsRefreshKey((key) => key + 1);
+      }, JOBS_INGEST_DEBOUNCE_MS);
+    };
+
+    window.addEventListener(REALTIME_JOBS_INGESTED_EVENT, onJobsIngested);
+    return () => {
+      window.removeEventListener(REALTIME_JOBS_INGESTED_EVENT, onJobsIngested);
+      if (debounceTimer != null) clearTimeout(debounceTimer);
+    };
+  }, [load, setToast]);
 
   useEffect(() => {
     if (!accessToken) {

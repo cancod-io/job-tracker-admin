@@ -49,3 +49,11 @@ export function dateKeyToPostedFromUtc(key: string): string {
 export function dateKeyToPostedToUtc(key: string): string {
   return `${key}T23:59:59Z`;
 }
+
+/** Exclusive end of analytics period [from, to) — midnight UTC on the day after `key`. */
+export function dateKeyToAnalyticsToExclusiveUtc(key: string): string {
+  const d = parseDateKey(key);
+  if (!d) return `${key}T23:59:59Z`;
+  d.setDate(d.getDate() + 1);
+  return `${toDateKey(d)}T00:00:00Z`;
+}

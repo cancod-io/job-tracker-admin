@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export type ToastMessage = { kind: "success" | "error"; message: string };
+export type ToastMessage = {
+  kind: "success" | "error" | "info";
+  message: string;
+  title?: string;
+};
 
 const DEFAULT_DISMISS_MS = 4500;
 
@@ -15,13 +19,17 @@ export function useToast(dismissMs = DEFAULT_DISMISS_MS) {
     return () => clearTimeout(timer);
   }, [toast, dismissMs]);
 
-  const showSuccess = useCallback((message: string) => {
-    setToast({ kind: "success", message });
+  const showSuccess = useCallback((message: string, title?: string) => {
+    setToast({ kind: "success", message, title });
   }, []);
 
-  const showError = useCallback((message: string) => {
-    setToast({ kind: "error", message });
+  const showError = useCallback((message: string, title?: string) => {
+    setToast({ kind: "error", message, title });
   }, []);
 
-  return { toast, setToast, showSuccess, showError };
+  const showInfo = useCallback((message: string, title?: string) => {
+    setToast({ kind: "info", message, title });
+  }, []);
+
+  return { toast, setToast, showSuccess, showError, showInfo };
 }
