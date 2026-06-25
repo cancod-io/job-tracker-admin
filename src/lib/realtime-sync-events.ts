@@ -6,7 +6,6 @@ import type {
   UserUpdatedPayload,
 } from "@/types/realtime";
 import { dispatchAdminPendingApprovalChanged } from "@/lib/admin-sync-events";
-import { realtimeLog } from "@/lib/realtime-log";
 
 export const REALTIME_JOBS_INGESTED_EVENT = "sjt-realtime-jobs-ingested";
 export const REALTIME_SCRAPER_RUN_UPDATED_EVENT = "sjt-realtime-scraper-run-updated";
@@ -15,7 +14,6 @@ export const REALTIME_USER_UPDATED_EVENT = "sjt-realtime-user-updated";
 
 export function dispatchRealtimeJobsIngested(payload: JobsIngestedPayload): void {
   if (typeof window === "undefined") return;
-  realtimeLog("dispatch → jobs.ingested", payload);
   window.dispatchEvent(
     new CustomEvent<JobsIngestedPayload>(REALTIME_JOBS_INGESTED_EVENT, { detail: payload }),
   );
@@ -23,7 +21,6 @@ export function dispatchRealtimeJobsIngested(payload: JobsIngestedPayload): void
 
 export function dispatchRealtimeScraperRunUpdated(payload: ScraperRunUpdatedPayload): void {
   if (typeof window === "undefined") return;
-  realtimeLog("dispatch → scraper_run.updated", payload);
   window.dispatchEvent(
     new CustomEvent<ScraperRunUpdatedPayload>(REALTIME_SCRAPER_RUN_UPDATED_EVENT, {
       detail: payload,
@@ -33,7 +30,6 @@ export function dispatchRealtimeScraperRunUpdated(payload: ScraperRunUpdatedPayl
 
 export function dispatchRealtimeAnalyticsInvalidate(payload: AnalyticsInvalidatePayload): void {
   if (typeof window === "undefined") return;
-  realtimeLog("dispatch → analytics.invalidate", payload);
   window.dispatchEvent(
     new CustomEvent<AnalyticsInvalidatePayload>(REALTIME_ANALYTICS_INVALIDATE_EVENT, {
       detail: payload,
@@ -43,7 +39,6 @@ export function dispatchRealtimeAnalyticsInvalidate(payload: AnalyticsInvalidate
 
 export function dispatchRealtimeUserUpdated(payload: UserUpdatedPayload): void {
   if (typeof window === "undefined") return;
-  realtimeLog("dispatch → user.updated", payload);
   window.dispatchEvent(
     new CustomEvent<UserUpdatedPayload>(REALTIME_USER_UPDATED_EVENT, { detail: payload }),
   );

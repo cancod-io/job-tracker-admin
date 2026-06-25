@@ -1,5 +1,4 @@
 import { buildRealtimeWsUrl } from "@/lib/realtime-ws-url";
-import { realtimeLog, realtimeWarn, redactRealtimeWsUrl } from "@/lib/realtime-log";
 import type { RealtimeEvent } from "@/types/realtime";
 
 export const WS_CLOSE_AUTH = 4401;
@@ -44,13 +43,11 @@ export class RealtimeClient {
     this.accessToken = accessToken;
     this.handlers = handlers;
     this.clearReconnectTimer();
-    realtimeLog("connecting…");
     this.openSocket();
   }
 
   disconnect(): void {
     this.intentionalClose = true;
-    realtimeLog("disconnect requested");
     this.clearTimers();
     if (this.ws) {
       this.ws.close();
@@ -61,14 +58,10 @@ export class RealtimeClient {
   private openSocket(): void {
     if (this.intentionalClose || this.disabled || !this.handlers || !this.accessToken) return;
 
-    const wsUrl = buildRealtimeWsUrl(this.accessToken);
-    realtimeLog("opening socket", redactRealtimeWsUrl(wsUrl));
-
     let socket: WebSocket;
     try {
-      socket = new WebSocket(wsUrl);
-    } catch (error) {
-      realtimeWarn("failed to create WebSocket", error);
+      socket = new WebSocket(buildRealtimeWsUrl(this.accessToken));
+    } catch {
       this.scheduleReconnect();
       return;
     }
@@ -77,7 +70,6 @@ export class RealtimeClient {
 
     socket.onopen = () => {
       this.reconnectDelay = RECONNECT_INITIAL_MS;
-      realtimeLog("connected");
       this.startPing();
       this.handlers?.onOpen?.();
     };
@@ -87,7 +79,6 @@ export class RealtimeClient {
       try {
         data = JSON.parse(String(evt.data));
       } catch {
-        realtimeWarn("ignored non-JSON message", evt.data);
         return;
       }
 
@@ -95,47 +86,24 @@ export class RealtimeClient {
       const record = data as Record<string, unknown>;
       const msgType = record.type;
 
-      if (msgType === "pong") {
-        realtimeLog("pong");
-        return;
-      }
-
-      if (msgType === "error") {
-        realtimeWarn("server error", record);
-        return;
-      }
+      if (msgType === "pong" || msgType === "error") return;
 
       if (isRealtimeEvent(data)) {
-        realtimeLog(`event ← ${data.type}`, {
-          id: data.id,
-          ts: data.ts,
-          payload: data.payload,
-        });
         this.handlers?.onEvent(data);
-        return;
       }
-
-      realtimeWarn("ignored unknown message", record);
     };
 
     socket.onclose = (evt) => {
       this.stopPing();
       this.ws = null;
-      realtimeWarn("connection closed", {
-        code: evt.code,
-        reason: evt.reason || null,
-        wasClean: evt.wasClean,
-      });
 
       if (this.intentionalClose) return;
 
       if (evt.code === WS_CLOSE_AUTH) {
-        realtimeWarn("auth failed — refreshing session");
         this.handlers?.onAuthError();
         return;
       }
       if (evt.code === WS_CLOSE_DISABLED) {
-        realtimeWarn("realtime disabled on server");
         this.disabled = true;
         this.handlers?.onDisabled();
         return;
@@ -145,7 +113,7 @@ export class RealtimeClient {
     };
 
     socket.onerror = () => {
-      realtimeWarn("socket error");
+      /* close handler drives reconnect */
     };
   }
 
@@ -153,7 +121,6 @@ export class RealtimeClient {
     if (this.intentionalClose || this.disabled || !this.handlers) return;
     this.clearReconnectTimer();
     const delay = this.reconnectDelay;
-    realtimeLog(`reconnecting in ${delay}ms`);
     this.reconnectDelay = Math.min(this.reconnectDelay * 2, RECONNECT_MAX_MS);
     this.reconnectTimer = window.setTimeout(() => {
       this.reconnectTimer = null;
@@ -165,7 +132,6 @@ export class RealtimeClient {
     this.stopPing();
     this.pingTimer = window.setInterval(() => {
       if (this.ws?.readyState !== WebSocket.OPEN) return;
-      realtimeLog("ping →");
       this.ws.send(JSON.stringify({ type: "ping" }));
     }, PING_INTERVAL_MS);
   }
