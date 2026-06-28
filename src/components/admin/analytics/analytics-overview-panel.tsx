@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import {
   Briefcase,
+  CalendarDays,
   CheckCircle2,
   Radar,
   Sparkles,
@@ -15,6 +16,7 @@ import { AnalyticsFunnelChart } from "@/components/admin/analytics/analytics-fun
 import { AnalyticsApplicationsOverTimeChart } from "@/components/admin/analytics/analytics-applications-over-time-chart";
 import { AnalyticsChartTimeseriesSection } from "@/components/admin/analytics/analytics-chart-timeseries-section";
 import { AnalyticsScraperSuccessCard } from "@/components/admin/analytics/analytics-scraper-success-card";
+import { AnalyticsTopApplicantsWidget } from "@/components/admin/analytics/analytics-top-applicants-widget";
 import { AnalyticsUserSummaryGrid } from "@/components/admin/analytics/analytics-user-summary-grid";
 import { AnalyticsKpiCard, AnalyticsKpiGrid } from "@/components/admin/analytics/analytics-kpi-card";
 import { AnalyticsOverviewToolbar } from "@/components/admin/analytics/analytics-overview-toolbar";
@@ -54,6 +56,7 @@ import {
   formatScraperRunDuration,
 } from "@/lib/scraper-provider-utils";
 import { useAuth } from "@/providers/auth-provider";
+import { useTopApplicantsRealtime } from "@/hooks/use-top-applicants-realtime";
 
 const NEW_OLD_COLORS = ["#10B981", "#94A3B8"] as const;
 
@@ -64,6 +67,7 @@ function formatKpiPercent(value: number | null): string {
 
 export function AnalyticsOverviewPanel() {
   const { accessToken } = useAuth();
+  const topApplicantsRealtime = useTopApplicantsRealtime();
   const { apiParams, compareApiParams, dateRange, triggerRefresh } = useAnalyticsFilters();
 
   const overviewQuery = useAnalyticsOverviewQuery(apiParams);
@@ -139,6 +143,15 @@ export function AnalyticsOverviewPanel() {
         trend: trend(overview.total_applications, prev?.total_applications ?? 0),
       },
       {
+        label: "Applications Today",
+        value:
+          topApplicantsRealtime != null
+            ? formatAnalyticsNumber(topApplicantsRealtime.applications_today_total)
+            : "—",
+        icon: CalendarDays,
+        iconClassName: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-300",
+      },
+      {
         label: "Active Users",
         value: formatAnalyticsNumber(overview.active_users),
         icon: Users,
@@ -169,7 +182,7 @@ export function AnalyticsOverviewPanel() {
             : undefined,
       },
     ];
-  }, [overview, compareOverview, compareLabel]);
+  }, [overview, compareOverview, compareLabel, topApplicantsRealtime]);
 
   const sourceDonut = useMemo(
     () => buildSourceDonutSlices(jobs?.by_source ?? []),
@@ -350,6 +363,8 @@ export function AnalyticsOverviewPanel() {
               >
                 <AnalyticsUserSummaryGrid quadrants={userQuadrants} columns={2} compact />
               </AnalyticsSectionCard>
+
+              <AnalyticsTopApplicantsWidget />
 
               <AnalyticsSectionCard
                 title="Recent Scraper Runs"

@@ -1,5 +1,5 @@
 import { buildRealtimeWsUrl } from "@/lib/realtime-ws-url";
-import type { RealtimeEvent } from "@/types/realtime";
+import type { RealtimeEvent, RealtimeOutboundMessage } from "@/types/realtime";
 
 export const WS_CLOSE_AUTH = 4401;
 export const WS_CLOSE_DISABLED = 4403;
@@ -8,6 +8,8 @@ export const PING_INTERVAL_MS = 30_000;
 export const RECONNECT_INITIAL_MS = 1_000;
 export const RECONNECT_MAX_MS = 30_000;
 
+export const REALTIME_WS_OPEN_EVENT = "sjt-realtime-ws-open";
+
 export type RealtimeEventHandlers = {
   onEvent: (event: RealtimeEvent) => void;
   onAuthError: () => void;
@@ -15,16 +17,21 @@ export type RealtimeEventHandlers = {
   onOpen?: () => void;
 };
 
-function isRealtimeEvent(data: unknown): data is RealtimeEvent {
-  if (!data || typeof data !== "object") return false;
+function parseIncomingMessage(data: unknown): RealtimeEvent | null {
+  if (!data || typeof data !== "object") return null;
   const record = data as Record<string, unknown>;
-  return (
-    typeof record.id === "string" &&
-    typeof record.type === "string" &&
-    typeof record.ts === "string" &&
-    record.payload != null &&
-    typeof record.payload === "object"
-  );
+  const type = record.type;
+  if (typeof type !== "string") return null;
+
+  const payload = record.payload;
+  if (payload == null || typeof payload !== "object") return null;
+
+  return {
+    id: typeof record.id === "string" ? record.id : "",
+    type,
+    ts: typeof record.ts === "string" ? record.ts : new Date().toISOString(),
+    payload: payload as Record<string, unknown>,
+  };
 }
 
 export class RealtimeClient {
@@ -55,6 +62,11 @@ export class RealtimeClient {
     }
   }
 
+  send(message: RealtimeOutboundMessage | Record<string, unknown>): void {
+    if (this.ws?.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify(message));
+  }
+
   private openSocket(): void {
     if (this.intentionalClose || this.disabled || !this.handlers || !this.accessToken) return;
 
@@ -72,6 +84,9 @@ export class RealtimeClient {
       this.reconnectDelay = RECONNECT_INITIAL_MS;
       this.startPing();
       this.handlers?.onOpen?.();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(REALTIME_WS_OPEN_EVENT));
+      }
     };
 
     socket.onmessage = (evt) => {
@@ -88,8 +103,9 @@ export class RealtimeClient {
 
       if (msgType === "pong" || msgType === "error") return;
 
-      if (isRealtimeEvent(data)) {
-        this.handlers?.onEvent(data);
+      const event = parseIncomingMessage(data);
+      if (event) {
+        this.handlers?.onEvent(event);
       }
     };
 

@@ -2,6 +2,7 @@
 
 import { ExternalLink, Github, Globe, Linkedin, Twitter, type LucideIcon } from "lucide-react";
 import { hasAnySocialLink } from "@/lib/admin-user-social";
+import { cn } from "@/lib/utils";
 import type { AdminUserSocialFields } from "@/types/admin-user-api";
 
 type SocialField = {
@@ -19,15 +20,19 @@ const FIELDS: SocialField[] = [
 
 type AdminUserSocialLinksSectionProps = {
   social: AdminUserSocialFields;
+  embedded?: boolean;
 };
 
-export function AdminUserSocialLinksSection({ social }: AdminUserSocialLinksSectionProps) {
+export function AdminUserSocialLinksSection({
+  social,
+  embedded = false,
+}: AdminUserSocialLinksSectionProps) {
   if (!hasAnySocialLink(social)) return null;
 
   const populated = FIELDS.filter(({ key }) => Boolean(social[key]?.trim()));
 
   return (
-    <section className="border-b border-border/60 px-5 py-4">
+    <section className={cn(!embedded && "border-b border-border/60 px-5 py-4")}>
       <div className="mb-1">
         <h3 className="text-sm font-semibold text-foreground">Social Links</h3>
         <p className="mt-0.5 text-xs text-muted-foreground">

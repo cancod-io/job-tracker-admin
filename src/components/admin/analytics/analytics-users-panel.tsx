@@ -128,7 +128,7 @@ export function AnalyticsUsersPanel() {
                 </button>
                 {pipelineUserId ? (
                   <Link
-                    href={`/users?userId=${encodeURIComponent(pipelineUserId)}`}
+                    href={`/users/${encodeURIComponent(pipelineUserId)}`}
                     className="text-sm font-medium text-primary underline"
                   >
                     Open user profile
