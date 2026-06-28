@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 /** Server-side upstream for the TrackCod API (used by rewrites + Route Handlers). */
 function upstreamApiOrigin(): string {
   const raw =
-    process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    process.env.API_INTERNAL_URL ?? "http://147.93.180.179:8000";
   return raw.replace(/\/$/, "");
 }
 
