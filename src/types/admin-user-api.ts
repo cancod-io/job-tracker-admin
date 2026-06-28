@@ -11,6 +11,8 @@ export type AdminUserRow = {
   last_login_at: string | null;
   profile_picture_url: string | null;
   has_avatar: boolean;
+  application_count: number;
+  applications_today: number;
 };
 
 export type AdminUserListResponse = {

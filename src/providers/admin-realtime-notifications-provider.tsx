@@ -19,7 +19,6 @@ import {
   realtimeBadgeKeyForPathname,
   type RealtimeNavBadgeKey,
 } from "@/lib/admin-realtime-badges";
-import { ADMIN_PENDING_APPROVAL_CHANGED_EVENT } from "@/lib/admin-sync-events";
 import { listAdminUsers } from "@/lib/admin-user-api";
 import {
   formatJobsIngestSummary,
@@ -91,6 +90,14 @@ export function AdminRealtimeNotificationsProvider({ children }: { children: Rea
     setBadges((prev) => ({ ...prev, [key]: prev[key] + 1 }));
   }, []);
 
+  const adjustUsersPendingCount = useCallback((delta: number) => {
+    setUsersPendingCount((prev) => {
+      const next = Math.max(0, prev + delta);
+      usersPendingCountRef.current = next;
+      return next;
+    });
+  }, []);
+
   const refreshUsersPendingCount = useCallback(async () => {
     if (!accessToken || !canViewUsers) {
       setUsersPendingCount(0);
@@ -119,12 +126,6 @@ export function AdminRealtimeNotificationsProvider({ children }: { children: Rea
     const activeKey = realtimeBadgeKeyForPathname(pathname);
     if (activeKey && activeKey !== "users") clearBadge(activeKey);
   }, [pathname, clearBadge]);
-
-  useEffect(() => {
-    const onPendingChanged = () => void refreshUsersPendingCount();
-    window.addEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onPendingChanged);
-    return () => window.removeEventListener(ADMIN_PENDING_APPROVAL_CHANGED_EVENT, onPendingChanged);
-  }, [refreshUsersPendingCount]);
 
   useEffect(() => {
     const activeKey = realtimeBadgeKeyForPathname(pathname);
@@ -182,22 +183,25 @@ export function AdminRealtimeNotificationsProvider({ children }: { children: Rea
       const payload = (event as CustomEvent<UserUpdatedPayload>).detail;
       if (!payload) return;
 
-      const previousCount = usersPendingCountRef.current;
-      void refreshUsersPendingCount().then(() => {
-        if (!isDocumentVisible() || isOnUsersPage(pathname)) return;
+      if (payload.approval_status === "pending") {
+        adjustUsersPendingCount(1);
+      } else if (
+        payload.approval_status === "approved" ||
+        payload.approval_status === "rejected"
+      ) {
+        adjustUsersPendingCount(-1);
+      }
 
-        const nextCount = usersPendingCountRef.current;
-        const pendingIncreased = nextCount > previousCount;
-        const isPendingRegistration = payload.approval_status === "pending";
+      if (!isDocumentVisible() || isOnUsersPage(pathname)) return;
 
-        if (pendingIncreased || isPendingRegistration) {
-          setToast({
-            kind: "info",
-            title: "Users",
-            message: formatUserUpdatedToast(payload),
-          });
-        }
-      });
+      const isPendingRegistration = payload.approval_status === "pending";
+      if (isPendingRegistration) {
+        setToast({
+          kind: "info",
+          title: "Users",
+          message: formatUserUpdatedToast(payload),
+        });
+      }
     };
 
     window.addEventListener(REALTIME_JOBS_INGESTED_EVENT, onJobsIngested);
@@ -211,7 +215,7 @@ export function AdminRealtimeNotificationsProvider({ children }: { children: Rea
       window.removeEventListener(REALTIME_ANALYTICS_INVALIDATE_EVENT, onAnalyticsInvalidate);
       window.removeEventListener(REALTIME_USER_UPDATED_EVENT, onUserUpdated);
     };
-  }, [pathname, incrementBadge, refreshUsersPendingCount, setToast]);
+  }, [pathname, incrementBadge, adjustUsersPendingCount, setToast]);
 
   const getBadgeCountForHref = useCallback(
     (href: string) => {

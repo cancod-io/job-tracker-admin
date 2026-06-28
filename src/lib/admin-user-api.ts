@@ -135,6 +135,8 @@ function normalizeUserRow(raw: unknown): AdminUserRow | null {
     last_login_at: strOrNull(r.last_login_at ?? r.last_login),
     profile_picture_url: avatar.profile_picture_url,
     has_avatar: avatar.has_avatar,
+    application_count: nonNegativeInt(r.application_count, 0),
+    applications_today: nonNegativeInt(r.applications_today, 0),
   };
 }
 

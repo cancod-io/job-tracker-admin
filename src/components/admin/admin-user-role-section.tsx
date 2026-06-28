@@ -52,6 +52,7 @@ type AdminUserRoleSectionProps = {
   isSelf: boolean;
   saving: boolean;
   onSave: (role: UserRole) => Promise<void>;
+  embedded?: boolean;
 };
 
 export function AdminUserRoleSection({
@@ -60,6 +61,7 @@ export function AdminUserRoleSection({
   isSelf,
   saving,
   onSave,
+  embedded = false,
 }: AdminUserRoleSectionProps) {
   const showEditor = canEdit && !isSelf;
   const resolvedRole: UserRole = isUserRole(currentRole) ? currentRole : "user";
@@ -89,7 +91,7 @@ export function AdminUserRoleSection({
   };
 
   return (
-    <section className="border-b border-border/60 px-5 py-4">
+    <section className={cn(!embedded && "border-b border-border/60 px-5 py-4", embedded && "p-5")}>
       <div className="mb-3 flex items-center gap-2">
         <Shield className="size-4 text-primary" aria-hidden />
         <h3 className="text-sm font-semibold text-foreground">Account & Role</h3>
