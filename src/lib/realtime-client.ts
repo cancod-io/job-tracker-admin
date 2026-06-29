@@ -1,4 +1,5 @@
 import { buildRealtimeWsUrl } from "@/lib/realtime-ws-url";
+import type { RealtimeConnectionStatus, RealtimeStatusMeta } from "@/types/realtime-connection";
 import type { RealtimeEvent, RealtimeOutboundMessage } from "@/types/realtime";
 
 export const WS_CLOSE_AUTH = 4401;
@@ -15,6 +16,7 @@ export type RealtimeEventHandlers = {
   onAuthError: () => void;
   onDisabled: () => void;
   onOpen?: () => void;
+  onStatusChange?: (status: RealtimeConnectionStatus, meta?: RealtimeStatusMeta) => void;
 };
 
 function parseIncomingMessage(data: unknown): RealtimeEvent | null {
@@ -60,6 +62,20 @@ export class RealtimeClient {
       this.ws.close();
       this.ws = null;
     }
+    this.emitStatus("disconnected");
+  }
+
+  reconnect(): void {
+    if (!this.accessToken || !this.handlers) return;
+    this.intentionalClose = false;
+    this.disabled = false;
+    this.reconnectDelay = RECONNECT_INITIAL_MS;
+    this.clearTimers();
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    this.openSocket();
   }
 
   send(message: RealtimeOutboundMessage | Record<string, unknown>): void {
@@ -67,8 +83,14 @@ export class RealtimeClient {
     this.ws.send(JSON.stringify(message));
   }
 
+  private emitStatus(status: RealtimeConnectionStatus, meta?: RealtimeStatusMeta): void {
+    this.handlers?.onStatusChange?.(status, meta);
+  }
+
   private openSocket(): void {
     if (this.intentionalClose || this.disabled || !this.handlers || !this.accessToken) return;
+
+    this.emitStatus("connecting");
 
     let socket: WebSocket;
     try {
@@ -83,6 +105,7 @@ export class RealtimeClient {
     socket.onopen = () => {
       this.reconnectDelay = RECONNECT_INITIAL_MS;
       this.startPing();
+      this.emitStatus("connected");
       this.handlers?.onOpen?.();
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent(REALTIME_WS_OPEN_EVENT));
@@ -116,16 +139,27 @@ export class RealtimeClient {
       if (this.intentionalClose) return;
 
       if (evt.code === WS_CLOSE_AUTH) {
+        this.emitStatus("disconnected", {
+          closeCode: evt.code,
+          closeReason: evt.reason || "Authentication required",
+        });
         this.handlers?.onAuthError();
         return;
       }
       if (evt.code === WS_CLOSE_DISABLED) {
         this.disabled = true;
+        this.emitStatus("disabled", {
+          closeCode: evt.code,
+          closeReason: evt.reason || "Realtime disabled",
+        });
         this.handlers?.onDisabled();
         return;
       }
 
-      this.scheduleReconnect();
+      this.scheduleReconnect({
+        closeCode: evt.code,
+        closeReason: evt.reason || undefined,
+      });
     };
 
     socket.onerror = () => {
@@ -133,11 +167,12 @@ export class RealtimeClient {
     };
   }
 
-  private scheduleReconnect(): void {
+  private scheduleReconnect(meta?: RealtimeStatusMeta): void {
     if (this.intentionalClose || this.disabled || !this.handlers) return;
     this.clearReconnectTimer();
     const delay = this.reconnectDelay;
     this.reconnectDelay = Math.min(this.reconnectDelay * 2, RECONNECT_MAX_MS);
+    this.emitStatus("reconnecting", { ...meta, retryInMs: delay });
     this.reconnectTimer = window.setTimeout(() => {
       this.reconnectTimer = null;
       this.openSocket();
