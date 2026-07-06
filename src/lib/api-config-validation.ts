@@ -30,6 +30,14 @@ export function fieldToFormValue(field: ApiConfigField): string {
   return field.value ?? "";
 }
 
+/** Optional string settings (e.g. TBS/description filters) may be cleared to empty. */
+export function allowsEmptyApiConfigStringValue(field: ApiConfigField): boolean {
+  if (field.value_type !== "string" || field.is_secret) return false;
+  if (field.description?.toLowerCase().includes("optional")) return true;
+  if (/filter/i.test(field.label) || /filter/i.test(field.key)) return true;
+  return false;
+}
+
 export function validateFieldValue(field: ApiConfigField, value: string): string | null {
   if (isApifyDatePostedField(field.key)) {
     if (
@@ -61,7 +69,13 @@ export function validateFieldValue(field: ApiConfigField, value: string): string
     return null;
   }
 
-  if (field.value_type === "string" && !field.is_secret && field.is_set && !value.trim()) {
+  if (
+    field.value_type === "string" &&
+    !field.is_secret &&
+    field.is_set &&
+    !value.trim() &&
+    !allowsEmptyApiConfigStringValue(field)
+  ) {
     return "This field is required.";
   }
 
@@ -105,7 +119,13 @@ export function buildPatchValues(
 
     const initial = initialValues[key] ?? "";
     if (current !== initial) {
-      values[key] = field.value_type === "int" ? String(Number(current.trim())) : current;
+      if (field.value_type === "int") {
+        values[key] = String(Number(current.trim()));
+      } else if (allowsEmptyApiConfigStringValue(field) && !current.trim()) {
+        values[key] = null;
+      } else {
+        values[key] = current;
+      }
     }
   }
 
