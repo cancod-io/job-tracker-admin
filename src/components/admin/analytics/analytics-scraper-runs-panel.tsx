@@ -199,8 +199,8 @@ export function AnalyticsScraperRunsPanel({ embedded = false }: AnalyticsScraper
                 <th className="px-4 py-3 font-medium">Started</th>
                 <th className="px-4 py-3 font-medium">Duration</th>
                 <th className="px-4 py-3 font-medium">Added</th>
-                <th className="px-4 py-3 font-medium">Updated</th>
-                <th className="px-4 py-3 font-medium">Unchanged</th>
+                <th className="px-4 py-3 font-medium">Blocked</th>
+                <th className="px-4 py-3 font-medium">Received</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Error</th>
               </tr>
@@ -221,8 +221,8 @@ export function AnalyticsScraperRunsPanel({ embedded = false }: AnalyticsScraper
                     {formatScraperRunDuration(run.duration_ms)}
                   </td>
                   <td className="px-4 py-3 tabular-nums text-sm">{run.added_count}</td>
-                  <td className="px-4 py-3 tabular-nums text-sm">{run.updated_count}</td>
-                  <td className="px-4 py-3 tabular-nums text-sm">{run.unchanged_count}</td>
+                  <td className="px-4 py-3 tabular-nums text-sm">{run.blocked_count ?? 0}</td>
+                  <td className="px-4 py-3 tabular-nums text-sm">{run.received_count ?? "—"}</td>
                   <td className="px-4 py-3">
                     <ScraperRunStatusBadge status={run.status} />
                   </td>

@@ -137,7 +137,13 @@ export function ApiConfigScraperRunsPanel({
             isActiveScraperRunStatus(prev) &&
             isTerminalScraperRunStatus(run.status)
           ) {
-            const toastMessage = formatScraperRunResultToast(run);
+            const toastMessage = formatScraperRunResultToast({
+              provider: run.provider,
+              status: run.status,
+              added_count: run.added_count,
+              blocked_count: run.blocked_count,
+              error_message: run.error_message,
+            });
             if (toastMessage) {
               setToast({
                 kind: run.status === "success" ? "success" : "error",
@@ -185,8 +191,7 @@ export function ApiConfigScraperRunsPanel({
           provider: payload.provider,
           status: payload.status,
           added_count: payload.added_count,
-          updated_count: payload.updated_count,
-          unchanged_count: payload.unchanged_count,
+          blocked_count: payload.blocked_count,
           error_message: payload.error_message,
         });
         if (toastMessage) {
@@ -446,8 +451,8 @@ export function ApiConfigScraperRunsPanel({
                   <th className="px-4 py-3 font-medium">Started</th>
                   <th className="px-4 py-3 font-medium">Duration</th>
                   <th className="px-4 py-3 font-medium">Added</th>
-                  <th className="px-4 py-3 font-medium">Updated</th>
-                  <th className="px-4 py-3 font-medium">Unchanged</th>
+                  <th className="px-4 py-3 font-medium">Blocked</th>
+                  <th className="px-4 py-3 font-medium">Received</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Error</th>
                 </tr>
@@ -475,8 +480,8 @@ export function ApiConfigScraperRunsPanel({
                         {formatScraperRunDuration(run.duration_ms)}
                       </td>
                       <td className="px-4 py-3 tabular-nums text-sm">{run.added_count}</td>
-                      <td className="px-4 py-3 tabular-nums text-sm">{run.updated_count}</td>
-                      <td className="px-4 py-3 tabular-nums text-sm">{run.unchanged_count}</td>
+                      <td className="px-4 py-3 tabular-nums text-sm">{run.blocked_count ?? 0}</td>
+                      <td className="px-4 py-3 tabular-nums text-sm">{run.received_count ?? "—"}</td>
                       <td className="px-4 py-3">
                         <ScraperRunStatusBadge status={run.status} />
                       </td>

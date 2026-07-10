@@ -73,9 +73,11 @@ function normalizeRun(raw: Partial<ScraperRunSummary> & { run_id: string }): Scr
         ? raw.duration_ms
         : null,
     added_count: normalizeCounter(raw.added_count),
-    updated_count: normalizeCounter(raw.updated_count),
-    unchanged_count: normalizeCounter(raw.unchanged_count),
-    removed_count: normalizeCounter(raw.removed_count),
+    received_count: normalizeCounter(raw.received_count),
+    blocked_count: normalizeCounter(raw.blocked_count),
+    updated_count: 0,
+    unchanged_count: 0,
+    removed_count: 0,
     fetch_run_id:
       typeof raw.fetch_run_id === "number" && Number.isFinite(raw.fetch_run_id)
         ? raw.fetch_run_id

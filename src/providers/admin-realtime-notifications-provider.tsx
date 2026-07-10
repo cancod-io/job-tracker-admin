@@ -132,7 +132,7 @@ export function AdminRealtimeNotificationsProvider({ children }: { children: Rea
 
     const onJobsIngested = (event: Event) => {
       const payload = (event as CustomEvent<JobsIngestedPayload>).detail;
-      if (!payload || (payload.added <= 0 && payload.updated <= 0)) return;
+      if (!payload || payload.added <= 0) return;
       if (activeKey === "jobs" || !isDocumentVisible()) return;
 
       incrementBadge("jobs");
@@ -152,8 +152,7 @@ export function AdminRealtimeNotificationsProvider({ children }: { children: Rea
         provider: payload.provider,
         status: payload.status,
         added_count: payload.added_count,
-        updated_count: payload.updated_count,
-        unchanged_count: payload.unchanged_count,
+        blocked_count: payload.blocked_count,
         error_message: payload.error_message,
       });
       if (!toastMessage) return;

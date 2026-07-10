@@ -26,9 +26,15 @@ export type ScraperRunSummary = {
   finished_at: string | null;
   duration_ms: number | null;
   added_count: number;
-  updated_count: number;
-  unchanged_count: number;
-  removed_count: number;
+  /** Mapped rows before filters — optional from scraper. */
+  received_count?: number;
+  blocked_count?: number;
+  /** @deprecated always 0 — added-only model */
+  updated_count?: number;
+  /** @deprecated always 0 — added-only model */
+  unchanged_count?: number;
+  /** @deprecated always 0 — added-only model */
+  removed_count?: number;
   fetch_run_id: number | null;
   error_message: string | null;
   triggered_by_id: number | null;

@@ -14,7 +14,6 @@ import { formatDateRange } from "@/lib/date-utils";
 import { getPaginationMeta } from "@/lib/pagination-constants";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
-import { AdminFetchChangeBar } from "@/components/admin/jobs/admin-fetch-change-bar";
 import { AdminFetchRunsPanel } from "@/components/admin/jobs/admin-fetch-runs-panel";
 import {
   AdminSourceFilter,
@@ -40,6 +39,7 @@ import type {
   AdminJobListResponse,
 } from "@/types/admin-job-api";
 import type { ApiFetchChangeType, ApiFetchRun } from "@/types/api-fetch-runs";
+import { fetchRunEmptyMessage } from "@/types/api-fetch-runs";
 
 const AdminJobDetailModal = dynamic(
   () =>
@@ -93,10 +93,14 @@ function emptyJobsMessage(args: {
   postedFrom: string;
   postedTo: string;
   fetchChange: ApiFetchChangeType | null;
+  activeFetchRunAddedCount: number | null;
   total: number;
 }): string {
   if (args.fetchChange && args.total === 0) {
-    return `No ${args.fetchChange} jobs in this fetch run. Try another change type or run.`;
+    if (args.activeFetchRunAddedCount === 0) {
+      return "No new jobs — all apply URLs already exist.";
+    }
+    return fetchRunEmptyMessage({ added_count: args.activeFetchRunAddedCount ?? 0 });
   }
   if ((args.postedFrom || args.postedTo) && args.total === 0) {
     return `No jobs posted ${formatDateRange(args.postedFrom, args.postedTo).toLowerCase()}. Try widening the date range.`;
@@ -200,7 +204,7 @@ export function AdminJobsList() {
 
     const onJobsIngested = (event: Event) => {
       const payload = (event as CustomEvent<JobsIngestedPayload>).detail;
-      if (!payload || (payload.added <= 0 && payload.updated <= 0)) return;
+      if (!payload || payload.added <= 0) return;
 
       setToast({
         kind: "success",
@@ -332,11 +336,6 @@ export function AdminJobsList() {
   const handleClearDiff = () => {
     setFetchRunId(null);
     setFetchChange(null);
-    setPage(1);
-  };
-
-  const handleFetchChange = (next: ApiFetchChangeType) => {
-    setFetchChange(next);
     setPage(1);
   };
 
@@ -520,14 +519,6 @@ export function AdminJobsList() {
         />
       ) : null}
 
-      {activeFetchRun && fetchChange ? (
-        <AdminFetchChangeBar
-          run={activeFetchRun}
-          activeChange={fetchChange}
-          onChange={handleFetchChange}
-        />
-      ) : null}
-
       <JobsToolbar
         searchDraft={searchDraft}
         onSearchDraftChange={setSearchDraft}
@@ -611,6 +602,7 @@ export function AdminJobsList() {
                   postedFrom,
                   postedTo,
                   fetchChange,
+                  activeFetchRunAddedCount: activeFetchRun?.added_count ?? null,
                   total: paginationTotal,
                 })}
               </td>
