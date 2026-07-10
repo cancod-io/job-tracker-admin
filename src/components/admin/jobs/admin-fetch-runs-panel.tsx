@@ -3,7 +3,10 @@
 import { Activity, Sparkles, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/format-date";
-import type { ApiFetchRun } from "@/types/api-fetch-runs";
+import {
+  formatFetchRunCountSummary,
+  type ApiFetchRun,
+} from "@/types/api-fetch-runs";
 
 type AdminFetchRunsPanelProps = {
   sourceLabel: string;
@@ -16,41 +19,6 @@ type AdminFetchRunsPanelProps = {
   onClearDiff: () => void;
   onDeleteRun: (run: ApiFetchRun) => void;
 };
-
-const SEGMENT_CLASS = {
-  added: "bg-emerald-500",
-  updated: "bg-sky-500",
-  unchanged: "bg-muted-foreground/40",
-  removed: "bg-rose-500",
-} as const;
-
-function DiffCompositionBar({ run }: { run: ApiFetchRun }) {
-  const total =
-    run.added_count + run.updated_count + run.unchanged_count + run.removed_count || 1;
-
-  const segments = [
-    { key: "added" as const, count: run.added_count },
-    { key: "updated" as const, count: run.updated_count },
-    { key: "unchanged" as const, count: run.unchanged_count },
-    { key: "removed" as const, count: run.removed_count },
-  ].filter((s) => s.count > 0);
-
-  return (
-    <div
-      className="flex h-1.5 w-full overflow-hidden rounded-full bg-muted/80"
-      aria-hidden
-      title="Added · Updated · Unchanged · Removed"
-    >
-      {segments.map((seg) => (
-        <div
-          key={seg.key}
-          className={cn("h-full transition-all", SEGMENT_CLASS[seg.key])}
-          style={{ width: `${(seg.count / total) * 100}%` }}
-        />
-      ))}
-    </div>
-  );
-}
 
 function RunCard({
   run,
@@ -114,30 +82,28 @@ function RunCard({
               <Trash2 className="size-3.5" aria-hidden />
             </button>
           ) : null}
-
         </div>
       </div>
 
-      <DiffCompositionBar run={run} />
+      <div
+        className={cn(
+          "h-1.5 w-full overflow-hidden rounded-full",
+          run.added_count > 0 ? "bg-emerald-500/20" : "bg-muted/80",
+        )}
+        aria-hidden
+      >
+        {run.added_count > 0 ? (
+          <div className="h-full w-full rounded-full bg-emerald-500" />
+        ) : null}
+      </div>
 
-      <dl className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px]">
-        <div className="flex items-center justify-between gap-1">
-          <dt className="text-emerald-700 dark:text-emerald-300">Added</dt>
-          <dd className="font-semibold tabular-nums text-foreground">{run.added_count}</dd>
-        </div>
-        <div className="flex items-center justify-between gap-1">
-          <dt className="text-sky-700 dark:text-sky-300">Updated</dt>
-          <dd className="font-semibold tabular-nums text-foreground">{run.updated_count}</dd>
-        </div>
-        <div className="flex items-center justify-between gap-1">
-          <dt className="text-muted-foreground">Same</dt>
-          <dd className="font-semibold tabular-nums text-foreground">{run.unchanged_count}</dd>
-        </div>
-        <div className="flex items-center justify-between gap-1">
-          <dt className="text-rose-700 dark:text-rose-300">Removed</dt>
-          <dd className="font-semibold tabular-nums text-foreground">{run.removed_count}</dd>
-        </div>
-      </dl>
+      <p className="text-xs font-medium text-foreground">{formatFetchRunCountSummary(run)}</p>
+
+      {run.added_count === 0 ? (
+        <p className="text-[10px] text-muted-foreground">
+          No new jobs — all apply URLs already exist.
+        </p>
+      ) : null}
 
       <p className="text-[10px] tabular-nums text-muted-foreground">
         {run.total_jobs.toLocaleString()} jobs in catalog
@@ -168,9 +134,9 @@ export function AdminFetchRunsPanel({
             <Activity className="size-4" aria-hidden />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Ingest diff explorer</h3>
+            <h3 className="text-sm font-semibold text-foreground">Ingest explorer</h3>
             <p className="text-xs text-muted-foreground">
-              {sourceLabel} — select a run to filter listings by what changed
+              {sourceLabel} — select a run to view newly added jobs
             </p>
           </div>
         </div>
@@ -181,7 +147,7 @@ export function AdminFetchRunsPanel({
             className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
           >
             <X className="size-3.5" aria-hidden />
-            Clear diff filter
+            Clear run filter
           </button>
         ) : null}
       </div>

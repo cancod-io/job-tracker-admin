@@ -72,7 +72,7 @@ export function dispatchRealtimeTopApplicantsUpdated(payload: TopApplicantsPaylo
 export function isJobsIngestedPayload(
   payload: Record<string, unknown>,
 ): payload is JobsIngestedPayload {
-  return typeof payload.added === "number" && typeof payload.updated === "number";
+  return typeof payload.added === "number";
 }
 
 export function isScraperRunUpdatedPayload(
@@ -132,10 +132,10 @@ export function formatUserUpdatedToast(payload: UserUpdatedPayload): string {
 }
 
 export function formatJobsIngestSummary(payload: JobsIngestedPayload): string {
-  const parts: string[] = [];
-  if (payload.added > 0) parts.push(`${payload.added} new`);
-  if (payload.updated > 0) parts.push(`${payload.updated} updated`);
-  return parts.length > 0 ? parts.join(", ") : "Job listings updated";
+  if (payload.added > 0) {
+    return `${payload.added} new job${payload.added === 1 ? "" : "s"} added`;
+  }
+  return "No new jobs added";
 }
 
 export function routeRealtimeEvent(event: RealtimeEvent): void {

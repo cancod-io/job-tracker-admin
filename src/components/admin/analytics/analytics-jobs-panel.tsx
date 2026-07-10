@@ -28,25 +28,14 @@ import {
 import type { AnalyticsFetchRunsTimeseries, AnalyticsTimeseries } from "@/types/admin-analytics-api";
 import { formatDateTime } from "@/lib/format-date";
 
-function buildFetchRunsStackedPoints(fetchTs: AnalyticsFetchRunsTimeseries | null) {
+function buildFetchRunsAddedPoints(fetchTs: AnalyticsFetchRunsTimeseries | null) {
   if (!fetchTs?.series.length) return [];
-  const byDate = new Map<
-    string,
-    { added: number; updated: number; unchanged: number; removed: number }
-  >();
+  const byDate = new Map<string, { added: number }>();
   for (const series of fetchTs.series) {
     for (const point of series.points) {
-      const existing = byDate.get(point.date) ?? {
-        added: 0,
-        updated: 0,
-        unchanged: 0,
-        removed: 0,
-      };
+      const existing = byDate.get(point.date) ?? { added: 0 };
       byDate.set(point.date, {
         added: existing.added + point.added,
-        updated: existing.updated + point.updated,
-        unchanged: existing.unchanged + point.unchanged,
-        removed: existing.removed + point.removed,
       });
     }
   }
@@ -90,7 +79,7 @@ export function AnalyticsJobsPanel() {
     <div className="space-y-6">
       <AnalyticsPageHeader
         title="Jobs Analytics"
-        subtitle="Inventory breakdown, creation trends, and fetch-run diff movement."
+        subtitle="Inventory breakdown, creation trends, and jobs added per ingest run."
         onRefresh={triggerRefresh}
         refreshing={refreshing}
       />
@@ -141,16 +130,16 @@ export function AnalyticsJobsPanel() {
             </div>
 
             <AnalyticsChartTimeseriesSection
-              title="Diff Movement (Fetch Runs)"
+              title="Jobs Added (Fetch Runs)"
               queryKey={["fetch-runs", "timeseries"]}
               fetcher={(token, params) => getAnalyticsFetchRunsTimeseries(token, params)}
-              emptyMessage="No fetch-run diff data for this view."
+              emptyMessage="No fetch-run data for this view."
               render={({ data, view }) => {
-                const stackedPoints = buildFetchRunsStackedPoints(data);
-                if (stackedPoints.length === 0) {
+                const addedPoints = buildFetchRunsAddedPoints(data);
+                if (addedPoints.length === 0) {
                   return (
                     <p className="py-8 text-center text-sm text-muted-foreground">
-                      No fetch-run diff data for this view.
+                      No fetch-run data for this view.
                     </p>
                   );
                 }
@@ -159,9 +148,9 @@ export function AnalyticsJobsPanel() {
                     <AnalyticsTimeseriesMeta
                       view={view}
                       granularity={data.granularity}
-                      pointCount={stackedPoints.length}
+                      pointCount={addedPoints.length}
                     />
-                    <AnalyticsStackedBarChart points={stackedPoints} />
+                    <AnalyticsStackedBarChart points={addedPoints} />
                   </div>
                 );
               }}
@@ -176,8 +165,6 @@ export function AnalyticsJobsPanel() {
                         <th className="py-2 pr-3 font-medium">Source</th>
                         <th className="py-2 pr-3 font-medium">Last run</th>
                         <th className="py-2 pr-3 text-right font-medium">Added</th>
-                        <th className="py-2 pr-3 text-right font-medium">Updated</th>
-                        <th className="py-2 pr-3 text-right font-medium">Removed</th>
                         <th className="py-2 font-medium">Digest</th>
                       </tr>
                     </thead>
@@ -190,12 +177,6 @@ export function AnalyticsJobsPanel() {
                           </td>
                           <td className="py-2.5 pr-3 text-right tabular-nums">
                             {formatAnalyticsNumber(row.total_added)}
-                          </td>
-                          <td className="py-2.5 pr-3 text-right tabular-nums">
-                            {formatAnalyticsNumber(row.total_updated)}
-                          </td>
-                          <td className="py-2.5 pr-3 text-right tabular-nums">
-                            {formatAnalyticsNumber(row.total_removed)}
                           </td>
                           <td className="py-2.5 text-muted-foreground">
                             {row.notification_sent_at ? "Sent" : "Pending"}

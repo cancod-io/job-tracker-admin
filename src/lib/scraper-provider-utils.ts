@@ -121,13 +121,23 @@ export function formatScraperRunResultToast(run: {
   provider: string;
   status: string;
   added_count: number;
-  updated_count: number;
-  unchanged_count: number;
+  blocked_count?: number;
   error_message: string | null;
 }): string | null {
   const label = formatScraperProviderLabel(run.provider);
   if (run.status === "success") {
-    return `${label} finished — ${run.added_count} added, ${run.updated_count} updated, ${run.unchanged_count} unchanged.`;
+    if (run.added_count === 0) {
+      const blockedNote =
+        run.blocked_count != null && run.blocked_count > 0
+          ? ` (${run.blocked_count} blocked)`
+          : "";
+      return `${label} finished — no new jobs; all apply URLs already exist${blockedNote}.`;
+    }
+    const blockedNote =
+      run.blocked_count != null && run.blocked_count > 0
+        ? ` · ${run.blocked_count} blocked`
+        : "";
+    return `${label} finished — ${run.added_count} new job${run.added_count === 1 ? "" : "s"} added${blockedNote}.`;
   }
   if (run.status === "failed") {
     return run.error_message
