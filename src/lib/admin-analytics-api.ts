@@ -10,6 +10,7 @@ import {
 } from "@/lib/analytics-utils";
 import { fetchAuthedJson } from "@/lib/fetch-authed";
 import { API_PATHS } from "@/lib/api-paths";
+import { isHiddenScraperProvider } from "@/lib/scraper-provider-utils";
 import type {
   AnalyticsAlertsResponse,
   AnalyticsAlert,
@@ -444,6 +445,7 @@ function normalizeScrapingTimeseries(raw: Record<string, unknown>): AnalyticsScr
     const provider = str(row.provider);
     if (provider) {
       const { label } = providerDisplayLabel(row, provider);
+      if (isHiddenScraperProvider(provider, label)) continue;
       providerLabels.set(provider, label);
     }
   }
@@ -478,11 +480,19 @@ function normalizeScrapingTimeseries(raw: Record<string, unknown>): AnalyticsScr
           blocked_count: num(item.blocked_count),
         };
       })
-      .filter((point) => point.date && point.provider),
+      .filter(
+        (point) =>
+          point.date &&
+          point.provider &&
+          !isHiddenScraperProvider(point.provider, point.label || point.provider_label),
+      ),
     by_provider: byProviderRaw
       .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
       .map((item) => normalizeScrapingProviderRow(item))
-      .filter((provider) => provider.provider),
+      .filter(
+        (provider) =>
+          provider.provider && !isHiddenScraperProvider(provider.provider, provider.label),
+      ),
   };
 }
 
@@ -498,7 +508,9 @@ function normalizeScrapingSummary(raw: Record<string, unknown>): AnalyticsScrapi
     by_provider: byProviderRaw
       .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
       .map((item) => normalizeScrapingProviderRow(item))
-      .filter((p) => p.provider),
+      .filter(
+        (p) => p.provider && !isHiddenScraperProvider(p.provider, p.label),
+      ),
   };
 }
 
@@ -526,7 +538,8 @@ function normalizeScraperLogs(raw: Record<string, unknown>): AnalyticsScraperLog
         error_message: str(item.error_message) || null,
         started_at: str(item.started_at),
         finished_at: str(item.finished_at) || null,
-      })),
+      }))
+      .filter((item) => !isHiddenScraperProvider(item.name, item.name)),
     total: num(raw.total),
     limit: num(raw.limit, 20),
     offset: num(raw.offset),
