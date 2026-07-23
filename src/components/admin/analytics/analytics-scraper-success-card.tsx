@@ -10,6 +10,7 @@ import type { AnalyticsChartView } from "@/lib/analytics-chart-view";
 import {
   formatScraperProviderLabel,
   formatScraperRunDuration,
+  isHiddenScraperProvider,
 } from "@/lib/scraper-provider-utils";
 import type {
   AnalyticsScrapingSummary,
@@ -42,7 +43,9 @@ export function AnalyticsScraperSuccessCard({
   fallbackRate = null,
 }: AnalyticsScraperSuccessCardProps) {
   const providerSeries = buildScrapingProviderRateSeries(timeseries);
-  const providers = summary?.by_provider ?? timeseries?.by_provider ?? [];
+  const providers = (summary?.by_provider ?? timeseries?.by_provider ?? []).filter(
+    (provider) => !isHiddenScraperProvider(provider.provider, provider.label),
+  );
   const overallRate = summary?.success_rate ?? fallbackRate;
   const chartPointCount = providerSeries[0]?.points.length ?? 0;
   const chartGranularity = timeseries?.granularity ?? "day";

@@ -9,6 +9,7 @@ import {
   signalSessionExpired,
 } from "@/lib/auth-token";
 import { fetchWithTimeout } from "@/lib/http";
+import { isHiddenScraperProvider } from "@/lib/scraper-provider-utils";
 import type {
   ScraperRunListResponse,
   ScraperRunStartRequest,
@@ -102,7 +103,10 @@ function isRawRun(value: unknown): value is Partial<ScraperRunSummary> & { run_i
 
 function normalizeListResponse(raw: Partial<ScraperRunListResponse>): ScraperRunListResponse {
   const items = Array.isArray(raw.items)
-    ? (raw.items as unknown[]).filter(isRawRun).map(normalizeRun)
+    ? (raw.items as unknown[])
+        .filter(isRawRun)
+        .map(normalizeRun)
+        .filter((run) => !isHiddenScraperProvider(run.provider))
     : [];
   return {
     items,

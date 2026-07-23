@@ -1,8 +1,6 @@
 /** Known provider slugs sent to POST /api/admin/scraper/runs (extensible via API config sources). */
 export const SCRAPER_RUN_PROVIDERS = [
   "serpapi",
-  "fantastic",
-  "fantastic_jb",
   "theirstack",
   "all",
 ] as const;

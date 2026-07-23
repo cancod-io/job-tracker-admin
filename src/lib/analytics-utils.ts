@@ -5,7 +5,7 @@ import {
   toDateKey,
 } from "@/lib/date-utils";
 import { formatJobSourceLabel } from "@/lib/job-source-utils";
-import { formatScraperProviderLabel } from "@/lib/scraper-provider-utils";
+import { formatScraperProviderLabel, isHiddenScraperProvider } from "@/lib/scraper-provider-utils";
 import { roleLabel } from "@/lib/user-approval";
 import type {
   AnalyticsApplicationsTimeseries,
@@ -318,8 +318,6 @@ export const SCRAPER_SUCCESS_LINE_DASHES: (number[] | undefined)[] = [
 
 const SCRAPER_PROVIDER_CHART_COLORS: Record<string, string> = {
   serpapi: "#0EA5E9",
-  fantastic: "#10B981",
-  fantastic_jb: "#8B5CF6",
   theirstack: "#F59E0B",
 };
 
@@ -340,6 +338,7 @@ function scrapingProviderOrder(timeseries: AnalyticsScrapingTimeseries): string[
 
   for (const provider of [...fromSummary, ...fromSeries]) {
     if (!provider || seen.has(provider)) continue;
+    if (isHiddenScraperProvider(provider)) continue;
     seen.add(provider);
     order.push(provider);
   }
