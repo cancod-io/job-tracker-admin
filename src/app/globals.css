@@ -4,6 +4,8 @@
 
 /**
  * Design system (shared with public app): minimal palette, strong contrast, Inter.
+ * Inter is self-hosted via ``next/font/local`` (see ``layout.tsx``) so Docker
+ * builds do not need to reach Google Fonts.
  */
 @layer base {
   :root {
