@@ -92,6 +92,8 @@ async function readPublicError(res: Response, fallback: string): Promise<Error> 
   return createLoginAuthError({ message, code, fields: [] });
 }
 
+const WEBAUTHN_REQUIRED_ORIGIN = "https://147.93.180.179:8443";
+
 function browserCancelMessage(err: unknown): string | null {
   if (!(err instanceof Error)) return null;
   const name = err.name;
@@ -105,7 +107,13 @@ function browserCancelMessage(err: unknown): string | null {
     return "This browser or device does not support passkeys.";
   }
   if (name === "SecurityError") {
-    return "Passkeys require HTTPS on the configured origin (https://147.93.180.179:8443).";
+    const current =
+      typeof window !== "undefined" ? window.location.origin : "(unknown)";
+    return (
+      `Passkey blocked by the browser (SecurityError). Current page: ${current}. ` +
+      `Open the admin app exactly at ${WEBAUTHN_REQUIRED_ORIGIN} — localhost / HTTP / wrong host will fail ` +
+      `(RP ID is 147.93.180.179).`
+    );
   }
   return null;
 }
