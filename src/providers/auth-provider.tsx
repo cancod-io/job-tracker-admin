@@ -32,6 +32,11 @@ import {
 import { apiUrl, getPublicApiUrl } from "@/lib/api";
 import { API_PATHS } from "@/lib/api-paths";
 import { fetchWithTimeout } from "@/lib/http";
+import {
+  completeWebAuthnLogin,
+  isPasskeyRequiredCode,
+  messageForWebAuthnCode,
+} from "@/lib/webauthn-api";
 import type { AuthUser, RegisterResult, TokenResponse } from "@/types/auth";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
@@ -48,6 +53,8 @@ type AuthContextValue = {
   accessToken: string | null;
   register: (payload: RegisterPayload) => Promise<RegisterResult>;
   login: (email: string, password: string) => Promise<void>;
+  /** Complete admin passkey assertion for the given email (public ceremony). */
+  loginWithPasskey: (email: string) => Promise<void>;
   logout: () => void;
   refreshSession: () => Promise<void>;
 };
@@ -181,7 +188,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (!res.ok) {
       const err = (await res.json().catch(() => ({}))) as Parameters<typeof resolveLoginError>[0];
-      throw createLoginAuthError(resolveLoginError(err));
+      const resolved = resolveLoginError(err);
+      if (isPasskeyRequiredCode(resolved.code)) {
+        throw createLoginAuthError({
+          message: messageForWebAuthnCode(resolved.code, resolved.message),
+          code: resolved.code,
+          fields: [],
+        });
+      }
+      throw createLoginAuthError(resolved);
     }
     const data = (await res.json()) as TokenResponse;
     applyTokenResponse(data);
@@ -196,6 +211,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(me);
     setStatus("authenticated");
   }, []);
+
+  const applyAuthenticatedSession = useCallback(async (data: TokenResponse) => {
+    applyTokenResponse(data);
+    const me = await fetchMe(data.access_token);
+    try {
+      assertUserApproved(me);
+    } catch (e) {
+      clearStoredTokens();
+      throw e;
+    }
+    setAccessToken(data.access_token);
+    setUser(me);
+    setStatus("authenticated");
+  }, []);
+
+  const loginWithPasskey = useCallback(
+    async (email: string) => {
+      const trimmed = email.trim();
+      if (!trimmed) {
+        throw createLoginAuthError({
+          message: "Enter your email to sign in with a passkey.",
+          code: "LOGIN_FIELDS_MISSING",
+          fields: ["email"],
+        });
+      }
+      try {
+        const data = await completeWebAuthnLogin(trimmed);
+        await applyAuthenticatedSession(data);
+      } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") {
+          throw new Error(
+            `Could not reach the API at ${getPublicApiUrl()} (timed out). Ensure the backend is running and NEXT_PUBLIC_API_URL is correct.`,
+          );
+        }
+        throw e;
+      }
+    },
+    [applyAuthenticatedSession],
+  );
 
   const register = useCallback(
     async (payload: RegisterPayload): Promise<RegisterResult> => {
@@ -246,10 +300,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       accessToken,
       register,
       login,
+      loginWithPasskey,
       logout,
       refreshSession,
     }),
-    [status, user, accessToken, register, login, logout, refreshSession],
+    [status, user, accessToken, register, login, loginWithPasskey, logout, refreshSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

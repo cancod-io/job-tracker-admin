@@ -77,8 +77,15 @@ function replaceScamUrlUiText(text: string): string {
     .replace(/\bscam-url\b/gi, "Block List");
 }
 
-/** Permission keys omitted from the role settings UI. */
-export const HIDDEN_PERMISSION_KEYS = new Set(["users.ban"]);
+/**
+ * Permission keys omitted from the role / user permissions UI.
+ * Credentials stay admin-role gated in the app (RequireAdmin); not grantable via toggles.
+ */
+export const HIDDEN_PERMISSION_KEYS = new Set([
+  "users.ban",
+  "credentials.read",
+  "credentials.manage",
+]);
 
 /** Fallback catalog when GET /api/admin/permissions is unavailable (admin-only endpoint). */
 export const FALLBACK_PERMISSION_CATALOG: PermissionCatalogItem[] = [

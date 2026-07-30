@@ -12,6 +12,15 @@ export const API_PATHS = {
     login: "/api/v1/auth/login",
     refresh: "/api/v1/auth/refresh",
     me: "/api/v1/auth/me",
+    webauthn: {
+      registerOptions: "/api/v1/auth/webauthn/register/options",
+      registerVerify: "/api/v1/auth/webauthn/register/verify",
+      credentials: "/api/v1/auth/webauthn/credentials",
+      credentialDelete: (credentialId: number) =>
+        `/api/v1/auth/webauthn/credentials/${credentialId}`,
+      loginOptions: "/api/v1/auth/webauthn/login/options",
+      loginVerify: "/api/v1/auth/webauthn/login/verify",
+    },
   },
 
   adminUsers: {
@@ -89,6 +98,11 @@ export const API_PATHS = {
   adminScamUrls: {
     base: "/api/admin/scam-urls",
     detail: (scamUrlId: number) => `/api/admin/scam-urls/${scamUrlId}`,
+  },
+
+  adminCredentials: {
+    base: "/api/admin/credentials",
+    detail: (credentialId: number) => `/api/admin/credentials/${credentialId}`,
   },
 
   adminScraperRuns: {
