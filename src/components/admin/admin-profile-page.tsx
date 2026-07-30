@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UserRound } from "lucide-react";
 import { ChangePasswordSection } from "@/components/admin/profile/change-password-section";
+import { PasskeysSection } from "@/components/admin/profile/passkeys-section";
 import { PersonalInfoSection } from "@/components/admin/profile/personal-info-section";
 import { ProfileSectionNav } from "@/components/admin/profile/profile-section-nav";
 import { SocialLinksSection } from "@/components/admin/profile/social-links-section";
-import { TwoFactorSection } from "@/components/admin/profile/two-factor-section";
 import {
   buildProfilePatch,
   EMPTY_PROFILE_FORM,
@@ -236,7 +236,7 @@ export function AdminProfilePage() {
 
           <ChangePasswordSection onSuccess={showSuccess} onError={showError} />
 
-          <TwoFactorSection />
+          <PasskeysSection onSuccess={showSuccess} onError={showError} />
 
           <SocialLinksSection
             state={formState}

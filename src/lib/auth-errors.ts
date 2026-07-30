@@ -22,6 +22,12 @@ export const LOGIN_ERROR_CODES = {
   INCORRECT_PASSWORD: "INCORRECT_PASSWORD",
   PENDING_APPROVAL: "PENDING_APPROVAL",
   ACCOUNT_REJECTED: "ACCOUNT_REJECTED",
+  PASSKEY_REQUIRED: "PASSKEY_REQUIRED",
+  PASSKEY_NOT_AVAILABLE: "PASSKEY_NOT_AVAILABLE",
+  WEBAUTHN_NOT_CONFIGURED: "WEBAUTHN_NOT_CONFIGURED",
+  WEBAUTHN_CHALLENGE_INVALID: "WEBAUTHN_CHALLENGE_INVALID",
+  WEBAUTHN_REGISTRATION_FAILED: "WEBAUTHN_REGISTRATION_FAILED",
+  WEBAUTHN_ASSERTION_FAILED: "WEBAUTHN_ASSERTION_FAILED",
 } as const;
 
 export type ResolvedLoginError = {
@@ -82,7 +88,14 @@ export function resolveLoginError(
   const details = parseLoginErrorDetails(data.error?.details);
   const message = apiErrorMessage(data) ?? (typeof data.detail === "string" ? data.detail : fallback);
   const formLevel =
-    code === LOGIN_ERROR_CODES.PENDING_APPROVAL || code === LOGIN_ERROR_CODES.ACCOUNT_REJECTED;
+    code === LOGIN_ERROR_CODES.PENDING_APPROVAL ||
+    code === LOGIN_ERROR_CODES.ACCOUNT_REJECTED ||
+    code === LOGIN_ERROR_CODES.PASSKEY_REQUIRED ||
+    code === LOGIN_ERROR_CODES.PASSKEY_NOT_AVAILABLE ||
+    code === LOGIN_ERROR_CODES.WEBAUTHN_NOT_CONFIGURED ||
+    code === LOGIN_ERROR_CODES.WEBAUTHN_CHALLENGE_INVALID ||
+    code === LOGIN_ERROR_CODES.WEBAUTHN_REGISTRATION_FAILED ||
+    code === LOGIN_ERROR_CODES.WEBAUTHN_ASSERTION_FAILED;
   const fields = formLevel ? [] : fieldsFromCodeAndDetails(code, details);
   return { message, code, fields };
 }

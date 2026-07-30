@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 export type ProfileSectionId =
   | "personal-info"
   | "change-password"
-  | "two-factor"
+  | "passkeys"
   | "social-links";
 
 type SectionItem = {
@@ -19,7 +19,7 @@ type SectionItem = {
 export const PROFILE_SECTIONS: SectionItem[] = [
   { id: "personal-info", label: "Personal Information", icon: UserRound },
   { id: "change-password", label: "Change Password", icon: KeyRound },
-  { id: "two-factor", label: "Two-Factor Authentication", icon: ShieldCheck },
+  { id: "passkeys", label: "Passkeys", icon: ShieldCheck },
   { id: "social-links", label: "Social Links", icon: Link2 },
 ];
 

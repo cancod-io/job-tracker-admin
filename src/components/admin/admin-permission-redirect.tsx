@@ -5,8 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   getFirstAllowedRoute,
   hasAnyNavAccess,
+  isAdminOnlyPath,
   permissionForPath,
 } from "@/lib/admin-access";
+import { isAdminRole } from "@/lib/admin-permissions";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
 
@@ -18,6 +20,7 @@ export function AdminPermissionRedirect() {
   const router = useRouter();
   const { user } = useAuth();
   const { can, loading, isAdmin } = useAdminPermissions();
+  const navOpts = { isAdmin };
 
   useEffect(() => {
     if (!user || loading) return;
@@ -27,17 +30,24 @@ export function AdminPermissionRedirect() {
     const home = pathname === "/" || pathname === "";
 
     if (home) {
-      const first = getFirstAllowedRoute(can);
+      const first = getFirstAllowedRoute(can, navOpts);
       if (first && first !== "/") {
         router.replace(first);
       }
       return;
     }
 
-    if (required && !can(required)) {
-      const first = getFirstAllowedRoute(can);
+    if (isAdminOnlyPath(pathname) && !isAdminRole(user.role)) {
+      const first = getFirstAllowedRoute(can, navOpts);
       if (first) router.replace(first);
-      else if (!hasAnyNavAccess(can)) router.replace("/");
+      else if (!hasAnyNavAccess(can, navOpts)) router.replace("/");
+      return;
+    }
+
+    if (required && !can(required)) {
+      const first = getFirstAllowedRoute(can, navOpts);
+      if (first) router.replace(first);
+      else if (!hasAnyNavAccess(can, navOpts)) router.replace("/");
     }
   }, [user, loading, isAdmin, pathname, can, router]);
 
