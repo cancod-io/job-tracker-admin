@@ -150,7 +150,7 @@ export async function completeWebAuthnLogin(email: string): Promise<TokenRespons
   let assertion: AuthenticationResponseJSON;
   try {
     assertion = await startAuthentication({
-      optionsJSON: options as PublicKeyCredentialRequestOptionsJSON,
+      optionsJSON: options as unknown as PublicKeyCredentialRequestOptionsJSON,
     });
   } catch (err) {
     const cancelled = browserCancelMessage(err);
@@ -226,7 +226,7 @@ export async function enrollWebAuthnPasskey(
   let attestation: RegistrationResponseJSON;
   try {
     attestation = await startRegistration({
-      optionsJSON: options as PublicKeyCredentialCreationOptionsJSON,
+      optionsJSON: options as unknown as PublicKeyCredentialCreationOptionsJSON,
     });
   } catch (err) {
     const cancelled = browserCancelMessage(err);
