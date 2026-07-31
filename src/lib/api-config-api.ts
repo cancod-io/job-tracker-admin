@@ -36,6 +36,12 @@ function normalizeValueType(value: unknown): ApiConfigValueType {
   return "string";
 }
 
+function normalizeAllowedValues(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  const values = value.filter((item): item is string => typeof item === "string" && item.trim() !== "");
+  return values.length > 0 ? values : null;
+}
+
 function normalizeField(raw: Partial<ApiConfigField> & { key: string }): ApiConfigField {
   return {
     key: raw.key,
@@ -45,6 +51,9 @@ function normalizeField(raw: Partial<ApiConfigField> & { key: string }): ApiConf
     is_secret: raw.is_secret === true,
     value: typeof raw.value === "string" ? raw.value : null,
     is_set: raw.is_set === true,
+    allowed_values: normalizeAllowedValues(
+      (raw as Partial<ApiConfigField> & { allowed_values?: unknown }).allowed_values,
+    ),
   };
 }
 

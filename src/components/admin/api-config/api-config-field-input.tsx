@@ -8,7 +8,14 @@ import {
   getIntConstraints,
   isApifyDatePostedField,
 } from "@/lib/api-config-validation";
-import { getApiConfigFieldPlaceholder, isApiConfigMultilineQueryField } from "@/components/admin/api-config/api-config-settings-schema";
+import {
+  SERPAPI_QUERY_ACTIVE_OPTIONS,
+  getApiConfigFieldPlaceholder,
+  getSerpapiQueryActiveLabel,
+  isApiConfigChoiceField,
+  isApiConfigMultilineQueryField,
+  isSerpapiQueryActiveField,
+} from "@/components/admin/api-config/api-config-settings-schema";
 import type { ApiConfigField } from "@/types/api-config-api";
 
 const inputClass =
@@ -27,6 +34,13 @@ type ApiConfigFieldInputProps = {
   onUndoClearSecret: () => void;
 };
 
+function choiceOptionLabel(fieldKey: string, optionValue: string): string {
+  if (isSerpapiQueryActiveField(fieldKey)) {
+    return getSerpapiQueryActiveLabel(optionValue);
+  }
+  return optionValue;
+}
+
 export function ApiConfigFieldInput({
   field,
   value,
@@ -42,6 +56,13 @@ export function ApiConfigFieldInput({
   const secretConfigured = field.is_secret && field.is_set && !cleared;
   const placeholder = getApiConfigFieldPlaceholder(field.key);
   const multilineQuery = isApiConfigMultilineQueryField(field);
+  const choiceField = isApiConfigChoiceField(field);
+  const choiceOptions =
+    field.allowed_values && field.allowed_values.length > 0
+      ? field.allowed_values
+      : isSerpapiQueryActiveField(field.key)
+        ? SERPAPI_QUERY_ACTIVE_OPTIONS.map((opt) => opt.value)
+        : [];
 
   if (field.value_type === "bool") {
     const checked = value === "true";
@@ -62,6 +83,49 @@ export function ApiConfigFieldInput({
         ) : null}
         {error ? <p className="text-xs text-destructive">{error}</p> : null}
       </div>
+    );
+  }
+
+  if (choiceField && choiceOptions.length > 0) {
+    return (
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium text-foreground">{field.label}</legend>
+        {field.description ? (
+          <p className="text-xs text-muted-foreground">{field.description}</p>
+        ) : null}
+        <div className="flex flex-wrap gap-3" role="radiogroup" aria-label={field.label}>
+          {choiceOptions.map((option) => {
+            const optionId = `api-config-${field.key}-${option}`;
+            const selected = value === option;
+            return (
+              <label
+                key={option}
+                htmlFor={optionId}
+                className={cn(
+                  "inline-flex min-w-[9.5rem] cursor-pointer items-center gap-2 rounded-xl border bg-card px-3 py-2.5 text-sm transition-colors",
+                  selected
+                    ? "border-primary bg-primary/5 text-foreground"
+                    : "border-border/80 text-foreground hover:bg-muted/40",
+                  disabled && "cursor-not-allowed opacity-60",
+                )}
+              >
+                <input
+                  id={optionId}
+                  type="radio"
+                  name={`api-config-${field.key}`}
+                  value={option}
+                  checked={selected}
+                  disabled={disabled}
+                  onChange={() => onChange(option)}
+                  className="size-4 accent-primary"
+                />
+                <span className="font-medium">{choiceOptionLabel(field.key, option)}</span>
+              </label>
+            );
+          })}
+        </div>
+        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      </fieldset>
     );
   }
 

@@ -1,3 +1,7 @@
+import {
+  SERPAPI_QUERY_ACTIVE_VALUES,
+  isSerpapiQueryActiveField,
+} from "@/lib/serpapi-query-settings";
 import type { ApiConfigField } from "@/types/api-config-api";
 
 export const APIFY_INDEED_DATE_POSTED_OPTIONS = ["1", "3", "7", "14"] as const;
@@ -12,6 +16,16 @@ const INT_CONSTRAINTS: Record<string, IntConstraint> = {
 
 export function isApifyDatePostedField(key: string): boolean {
   return key === "APIFY_INDEED_DATE_POSTED";
+}
+
+function resolveAllowedValues(field: ApiConfigField): string[] | null {
+  if (field.allowed_values && field.allowed_values.length > 0) {
+    return field.allowed_values;
+  }
+  if (isSerpapiQueryActiveField(field.key)) {
+    return [...SERPAPI_QUERY_ACTIVE_VALUES];
+  }
+  return null;
 }
 
 export function getIntConstraints(key: string): IntConstraint | null {
@@ -42,6 +56,15 @@ export function validateFieldValue(field: ApiConfigField, value: string): string
       )
     ) {
       return "Select 1, 3, 7, or 14 days.";
+    }
+    return null;
+  }
+
+  const allowedValues = resolveAllowedValues(field);
+  if (allowedValues) {
+    if (!value.trim()) return "Select an option.";
+    if (!allowedValues.includes(value)) {
+      return `Select one of: ${allowedValues.join(", ")}.`;
     }
     return null;
   }

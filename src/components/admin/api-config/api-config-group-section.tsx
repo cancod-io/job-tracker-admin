@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, Save } from "lucide-react";
-import { isApiConfigMultilineQueryField } from "@/components/admin/api-config/api-config-settings-schema";
+import {
+  isApiConfigChoiceField,
+  isApiConfigMultilineQueryField,
+} from "@/components/admin/api-config/api-config-settings-schema";
 import { sourceAccent } from "@/components/admin/api-config/constants";
 import { ApiConfigFieldInput } from "@/components/admin/api-config/api-config-field-input";
 import { cn } from "@/lib/utils";
@@ -85,7 +88,9 @@ export function ApiConfigGroupSection({
               <div
                 key={field.key}
                 className={
-                  field.value_type === "bool" || isApiConfigMultilineQueryField(field)
+                  field.value_type === "bool" ||
+                  isApiConfigChoiceField(field) ||
+                  isApiConfigMultilineQueryField(field)
                     ? "md:col-span-2"
                     : undefined
                 }
