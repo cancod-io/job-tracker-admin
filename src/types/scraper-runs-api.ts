@@ -1,7 +1,6 @@
 /** Known provider slugs sent to POST /api/admin/scraper/runs (extensible via API config sources). */
 export const SCRAPER_RUN_PROVIDERS = [
   "serpapi",
-  "theirstack",
   "all",
 ] as const;
 export type ScraperRunProvider = (typeof SCRAPER_RUN_PROVIDERS)[number] | string;

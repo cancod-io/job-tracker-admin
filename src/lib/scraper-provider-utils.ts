@@ -2,7 +2,6 @@ import type { ApiConfigSource } from "@/types/api-config-api";
 
 const PROVIDER_LABEL_OVERRIDES: Record<string, string> = {
   serpapi: "SerpAPI",
-  theirstack: "TheirStack",
 };
 
 /** Source / provider ids retired from the admin UI. */
@@ -10,6 +9,9 @@ const HIDDEN_SCRAPER_PROVIDER_IDS = new Set([
   "fantastic",
   "fantastic_jb",
   "fantastic_jobs",
+  "theirstack",
+  "postgres",
+  "postgresql",
 ]);
 
 export type ScraperRunControlRow = {
@@ -26,20 +28,28 @@ function labelForSource(source: ApiConfigSource): string {
   return PROVIDER_LABEL_OVERRIDES[source.id] ?? source.label ?? source.id;
 }
 
-/** True for retired Fantastic Jobs providers (and label matches). */
+/** True for retired providers (and matching labels). */
 export function isHiddenScraperProvider(id: string, label?: string | null): boolean {
   const trimmed = id.trim().toLowerCase();
   if (HIDDEN_SCRAPER_PROVIDER_IDS.has(trimmed) || HIDDEN_SCRAPER_PROVIDER_IDS.has(id)) {
     return true;
   }
-  if (trimmed.startsWith("fantastic")) return true;
-  if (label && /fantastic/i.test(label)) return true;
+  if (trimmed.startsWith("fantastic") || trimmed.startsWith("theirstack")) return true;
+  if (trimmed === "postgres" || trimmed === "postgresql" || trimmed.startsWith("postgres")) {
+    return true;
+  }
+  if (
+    label &&
+    (/fantastic/i.test(label) || /their.?stack/i.test(label) || /postgres/i.test(label))
+  ) {
+    return true;
+  }
   return false;
 }
 
 /**
  * Build scraper run control rows from API config sources.
- * Each source maps 1:1 to a run provider (SerpAPI, TheirStack, …).
+ * Each source maps 1:1 to a run provider (SerpAPI, …).
  */
 export function buildScraperRunControlRows(sources: ApiConfigSource[]): ScraperRunControlRow[] {
   const rows: ScraperRunControlRow[] = [];
@@ -73,8 +83,6 @@ export function formatScraperProviderLabel(provider: string): string {
   switch (provider) {
     case "serpapi":
       return "SerpAPI";
-    case "theirstack":
-      return "TheirStack";
     case "all":
       return "All providers";
     default:

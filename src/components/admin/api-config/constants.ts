@@ -4,18 +4,6 @@ export const SOURCE_ACCENTS: Record<string, { gradient: string; dot: string }> =
     gradient: "from-orange-500/12 via-card to-card border-orange-500/25",
     dot: "bg-orange-500",
   },
-  theirstack: {
-    gradient: "from-sky-500/12 via-card to-card border-sky-500/25",
-    dot: "bg-sky-500",
-  },
-  postgresql: {
-    gradient: "from-emerald-500/12 via-card to-card border-emerald-500/25",
-    dot: "bg-emerald-500",
-  },
-  postgres: {
-    gradient: "from-emerald-500/12 via-card to-card border-emerald-500/25",
-    dot: "bg-emerald-500",
-  },
 };
 
 export const DEFAULT_SOURCE_ACCENT = {

@@ -138,11 +138,11 @@ function LoginFormInner() {
     <div className="w-full max-w-md space-y-8">
       <div className="text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Admin sign in</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        {/* <p className="mt-1 text-sm text-muted-foreground">
           Password or passkey — open this app at{" "}
           <span className="font-medium text-foreground">https://147.93.180.179:8443</span> for
           passkeys.
-        </p>
+        </p> */}
       </div>
 
       <form

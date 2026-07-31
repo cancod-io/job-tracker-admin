@@ -10,6 +10,8 @@ export type ApiConfigField = {
   is_secret: boolean;
   value: string | null;
   is_set: boolean;
+  /** When set, the UI renders a single-choice control (e.g. SERPAPI_QUERY_ACTIVE). */
+  allowed_values?: string[] | null;
 };
 
 export type ApiConfigGroup = {

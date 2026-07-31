@@ -191,7 +191,7 @@ export function AdminApiConfigSettingsPanel({
           <div>
             <h2 className="text-base font-semibold text-foreground">Env settings</h2>
             <p className="text-xs text-muted-foreground">
-              Query strings, limits, and database URLs — API keys are managed on the Keys tab.
+              Query strings and scraper limits — API keys are managed on the Keys tab.
             </p>
           </div>
         </div>

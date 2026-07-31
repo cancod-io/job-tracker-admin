@@ -318,7 +318,6 @@ export const SCRAPER_SUCCESS_LINE_DASHES: (number[] | undefined)[] = [
 
 const SCRAPER_PROVIDER_CHART_COLORS: Record<string, string> = {
   serpapi: "#0EA5E9",
-  theirstack: "#F59E0B",
 };
 
 const SCRAPER_PROVIDER_CHART_FALLBACK = [
