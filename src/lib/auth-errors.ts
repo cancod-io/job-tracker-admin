@@ -1,4 +1,6 @@
-/** Stable API error codes from backend `AppError`. */
+/**
+ * Auth error codes and parsing for admin login (password, passkey, face).
+ */
 
 export type LoginField = "email" | "password";
 
@@ -14,6 +16,7 @@ export type ApiAuthErrorShape = {
 export type LoginErrorDetails = {
   field?: LoginField;
   fields?: LoginField[];
+  face_session_id?: string;
 };
 
 export const LOGIN_ERROR_CODES = {
@@ -28,17 +31,26 @@ export const LOGIN_ERROR_CODES = {
   WEBAUTHN_CHALLENGE_INVALID: "WEBAUTHN_CHALLENGE_INVALID",
   WEBAUTHN_REGISTRATION_FAILED: "WEBAUTHN_REGISTRATION_FAILED",
   WEBAUTHN_ASSERTION_FAILED: "WEBAUTHN_ASSERTION_FAILED",
+  FACE_REQUIRED: "FACE_REQUIRED",
+  FACE_NOT_MATCHED: "FACE_NOT_MATCHED",
+  FACE_SESSION_INVALID: "FACE_SESSION_INVALID",
+  FACE_DESCRIPTOR_INVALID: "FACE_DESCRIPTOR_INVALID",
+  FACE_DISABLED: "FACE_DISABLED",
+  IP_NOT_ALLOWED: "IP_NOT_ALLOWED",
 } as const;
 
 export type ResolvedLoginError = {
   message: string;
   code: string | null;
   fields: LoginField[];
+  /** Present when code is FACE_REQUIRED — continue with face verify. */
+  faceSessionId: string | null;
 };
 
 export type LoginAuthError = Error & {
   code?: string | null;
   fields?: LoginField[];
+  faceSessionId?: string | null;
 };
 
 export function apiErrorMessage(data: ApiAuthErrorShape): string | null {
@@ -58,7 +70,11 @@ function parseLoginErrorDetails(details: unknown): LoginErrorDetails {
   const fields = Array.isArray(d.fields)
     ? d.fields.filter((f): f is LoginField => f === "email" || f === "password")
     : undefined;
-  return { field, fields };
+  const face_session_id =
+    typeof d.face_session_id === "string" && d.face_session_id.trim()
+      ? d.face_session_id.trim()
+      : undefined;
+  return { field, fields, face_session_id };
 }
 
 function fieldsFromCodeAndDetails(code: string | null, details: LoginErrorDetails): LoginField[] {
@@ -80,30 +96,80 @@ function fieldsFromCodeAndDetails(code: string | null, details: LoginErrorDetail
   }
 }
 
+const FORM_LEVEL_CODES = new Set<string>([
+  LOGIN_ERROR_CODES.PENDING_APPROVAL,
+  LOGIN_ERROR_CODES.ACCOUNT_REJECTED,
+  LOGIN_ERROR_CODES.PASSKEY_REQUIRED,
+  LOGIN_ERROR_CODES.PASSKEY_NOT_AVAILABLE,
+  LOGIN_ERROR_CODES.WEBAUTHN_NOT_CONFIGURED,
+  LOGIN_ERROR_CODES.WEBAUTHN_CHALLENGE_INVALID,
+  LOGIN_ERROR_CODES.WEBAUTHN_REGISTRATION_FAILED,
+  LOGIN_ERROR_CODES.WEBAUTHN_ASSERTION_FAILED,
+  LOGIN_ERROR_CODES.FACE_REQUIRED,
+  LOGIN_ERROR_CODES.FACE_NOT_MATCHED,
+  LOGIN_ERROR_CODES.FACE_SESSION_INVALID,
+  LOGIN_ERROR_CODES.FACE_DESCRIPTOR_INVALID,
+  LOGIN_ERROR_CODES.FACE_DISABLED,
+  LOGIN_ERROR_CODES.IP_NOT_ALLOWED,
+]);
+
+const FACE_MESSAGES: Record<string, string> = {
+  [LOGIN_ERROR_CODES.FACE_REQUIRED]:
+    "Face verification is required for this admin account.",
+  [LOGIN_ERROR_CODES.FACE_NOT_MATCHED]:
+    "Face did not match. Position your face in the frame and try again.",
+  [LOGIN_ERROR_CODES.FACE_SESSION_INVALID]:
+    "Face verification session expired. Please sign in again.",
+  [LOGIN_ERROR_CODES.FACE_DESCRIPTOR_INVALID]:
+    "Invalid face descriptor. Please try capturing again.",
+  [LOGIN_ERROR_CODES.FACE_DISABLED]:
+    "Face recognition is disabled on the server.",
+  [LOGIN_ERROR_CODES.IP_NOT_ALLOWED]:
+    "Sign-in is not allowed from this IP address.",
+};
+
+export function messageForFaceCode(code: string | null | undefined, fallback: string): string {
+  if (!code) return fallback;
+  return FACE_MESSAGES[code] ?? fallback;
+}
+
+export function isFaceRequiredCode(code: string | null | undefined): boolean {
+  return code === LOGIN_ERROR_CODES.FACE_REQUIRED;
+}
+
 export function resolveLoginError(
   data: ApiAuthErrorShape,
   fallback = "Sign-in failed",
 ): ResolvedLoginError {
   const code = apiErrorCode(data);
   const details = parseLoginErrorDetails(data.error?.details);
-  const message = apiErrorMessage(data) ?? (typeof data.detail === "string" ? data.detail : fallback);
-  const formLevel =
-    code === LOGIN_ERROR_CODES.PENDING_APPROVAL ||
-    code === LOGIN_ERROR_CODES.ACCOUNT_REJECTED ||
-    code === LOGIN_ERROR_CODES.PASSKEY_REQUIRED ||
-    code === LOGIN_ERROR_CODES.PASSKEY_NOT_AVAILABLE ||
-    code === LOGIN_ERROR_CODES.WEBAUTHN_NOT_CONFIGURED ||
-    code === LOGIN_ERROR_CODES.WEBAUTHN_CHALLENGE_INVALID ||
-    code === LOGIN_ERROR_CODES.WEBAUTHN_REGISTRATION_FAILED ||
-    code === LOGIN_ERROR_CODES.WEBAUTHN_ASSERTION_FAILED;
+  const rawMessage =
+    apiErrorMessage(data) ?? (typeof data.detail === "string" ? data.detail : fallback);
+  const message = messageForFaceCode(code, rawMessage);
+  const formLevel = code != null && FORM_LEVEL_CODES.has(code);
   const fields = formLevel ? [] : fieldsFromCodeAndDetails(code, details);
-  return { message, code, fields };
+  const faceSessionId =
+    code === LOGIN_ERROR_CODES.FACE_REQUIRED
+      ? (details.face_session_id ?? null)
+      : (details.face_session_id ?? null);
+  return {
+    message,
+    code,
+    fields,
+    faceSessionId:
+      code === LOGIN_ERROR_CODES.FACE_REQUIRED ? faceSessionId : null,
+  };
 }
 
-export function createLoginAuthError(resolved: ResolvedLoginError): LoginAuthError {
+export function createLoginAuthError(
+  resolved: Omit<ResolvedLoginError, "faceSessionId"> & {
+    faceSessionId?: string | null;
+  },
+): LoginAuthError {
   const err = new Error(resolved.message) as LoginAuthError;
   err.code = resolved.code;
   err.fields = resolved.fields;
+  err.faceSessionId = resolved.faceSessionId ?? null;
   return err;
 }
 

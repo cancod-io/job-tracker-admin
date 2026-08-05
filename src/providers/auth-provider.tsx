@@ -31,6 +31,7 @@ import {
 } from "@/lib/auth-token";
 import { apiUrl, getPublicApiUrl } from "@/lib/api";
 import { API_PATHS } from "@/lib/api-paths";
+import { verifyFaceLogin } from "@/lib/face-auth-api";
 import { fetchWithTimeout } from "@/lib/http";
 import {
   completeWebAuthnLogin,
@@ -38,6 +39,7 @@ import {
   messageForWebAuthnCode,
 } from "@/lib/webauthn-api";
 import type { AuthUser, RegisterResult, TokenResponse } from "@/types/auth";
+import type { FaceDescriptor } from "@/types/face-auth";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -55,6 +57,8 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>;
   /** Complete admin passkey assertion for the given email (public ceremony). */
   loginWithPasskey: (email: string) => Promise<void>;
+  /** Complete face soft-MFA after FACE_REQUIRED (public). */
+  loginWithFace: (faceSessionId: string, descriptor: FaceDescriptor) => Promise<void>;
   logout: () => void;
   refreshSession: () => Promise<void>;
 };
@@ -170,6 +174,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, [status, accessToken]);
 
+  const applyAuthenticatedSession = useCallback(async (data: TokenResponse) => {
+    applyTokenResponse(data);
+    const me = await fetchMe(data.access_token);
+    try {
+      assertUserApproved(me);
+    } catch (e) {
+      clearStoredTokens();
+      throw e;
+    }
+    setAccessToken(data.access_token);
+    setUser(me);
+    setStatus("authenticated");
+  }, []);
+
   const login = useCallback(async (email: string, password: string) => {
     let res: Response;
     try {
@@ -194,37 +212,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           message: messageForWebAuthnCode(resolved.code, resolved.message),
           code: resolved.code,
           fields: [],
+          faceSessionId: null,
         });
       }
+      // FACE_REQUIRED includes faceSessionId from details — do not apply tokens.
       throw createLoginAuthError(resolved);
     }
     const data = (await res.json()) as TokenResponse;
-    applyTokenResponse(data);
-    const me = await fetchMe(data.access_token);
-    try {
-      assertUserApproved(me);
-    } catch (e) {
-      clearStoredTokens();
-      throw e;
-    }
-    setAccessToken(data.access_token);
-    setUser(me);
-    setStatus("authenticated");
-  }, []);
-
-  const applyAuthenticatedSession = useCallback(async (data: TokenResponse) => {
-    applyTokenResponse(data);
-    const me = await fetchMe(data.access_token);
-    try {
-      assertUserApproved(me);
-    } catch (e) {
-      clearStoredTokens();
-      throw e;
-    }
-    setAccessToken(data.access_token);
-    setUser(me);
-    setStatus("authenticated");
-  }, []);
+    await applyAuthenticatedSession(data);
+  }, [applyAuthenticatedSession]);
 
   const loginWithPasskey = useCallback(
     async (email: string) => {
@@ -234,10 +230,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           message: "Enter your email to sign in with a passkey.",
           code: "LOGIN_FIELDS_MISSING",
           fields: ["email"],
+          faceSessionId: null,
         });
       }
       try {
         const data = await completeWebAuthnLogin(trimmed);
+        await applyAuthenticatedSession(data);
+      } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") {
+          throw new Error(
+            `Could not reach the API at ${getPublicApiUrl()} (timed out). Ensure the backend is running and NEXT_PUBLIC_API_URL is correct.`,
+          );
+        }
+        // FACE_REQUIRED from passkey verify is rethrown with faceSessionId; no tokens yet.
+        throw e;
+      }
+    },
+    [applyAuthenticatedSession],
+  );
+
+  const loginWithFace = useCallback(
+    async (faceSessionId: string, descriptor: FaceDescriptor) => {
+      const sessionId = faceSessionId.trim();
+      if (!sessionId) {
+        throw createLoginAuthError({
+          message: "Face verification session is missing. Please sign in again.",
+          code: "FACE_SESSION_INVALID",
+          fields: [],
+          faceSessionId: null,
+        });
+      }
+      try {
+        const data = await verifyFaceLogin(sessionId, descriptor);
         await applyAuthenticatedSession(data);
       } catch (e) {
         if (e instanceof Error && e.name === "AbortError") {
@@ -267,7 +291,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (e) {
         if (e instanceof Error && e.name === "AbortError") {
           throw new Error(
-          `Could not reach the API at ${getPublicApiUrl()} (timed out). Ensure the backend is running and NEXT_PUBLIC_API_URL is correct.`,
+            `Could not reach the API at ${getPublicApiUrl()} (timed out). Ensure the backend is running and NEXT_PUBLIC_API_URL is correct.`,
           );
         }
         throw e;
@@ -301,10 +325,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       login,
       loginWithPasskey,
+      loginWithFace,
       logout,
       refreshSession,
     }),
-    [status, user, accessToken, register, login, loginWithPasskey, logout, refreshSession],
+    [
+      status,
+      user,
+      accessToken,
+      register,
+      login,
+      loginWithPasskey,
+      loginWithFace,
+      logout,
+      refreshSession,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -21,6 +21,11 @@ export const API_PATHS = {
       loginOptions: "/api/v1/auth/webauthn/login/options",
       loginVerify: "/api/v1/auth/webauthn/login/verify",
     },
+    face: {
+      me: "/api/v1/auth/face/me",
+      enroll: "/api/v1/auth/face/enroll",
+      loginVerify: "/api/v1/auth/face/login/verify",
+    },
   },
 
   adminUsers: {

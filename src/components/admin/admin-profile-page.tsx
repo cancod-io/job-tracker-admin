@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UserRound } from "lucide-react";
 import { ChangePasswordSection } from "@/components/admin/profile/change-password-section";
+import { FaceRecognitionSection } from "@/components/admin/profile/face-recognition-section";
 import { PasskeysSection } from "@/components/admin/profile/passkeys-section";
 import { PersonalInfoSection } from "@/components/admin/profile/personal-info-section";
 import { ProfileSectionNav } from "@/components/admin/profile/profile-section-nav";
@@ -237,6 +238,8 @@ export function AdminProfilePage() {
           <ChangePasswordSection onSuccess={showSuccess} onError={showError} />
 
           <PasskeysSection onSuccess={showSuccess} onError={showError} />
+
+          <FaceRecognitionSection onSuccess={showSuccess} onError={showError} />
 
           <SocialLinksSection
             state={formState}
