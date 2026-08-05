@@ -4,13 +4,16 @@ import { Suspense, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Fingerprint, Loader2 } from "lucide-react";
+import { FaceCapturePanel } from "@/components/auth/face-capture-panel";
 import {
+  isFaceRequiredCode,
   isLoginAuthError,
   LOGIN_ERROR_CODES,
   type LoginField,
 } from "@/lib/auth-errors";
 import { isPasskeyRequiredCode } from "@/lib/webauthn-api";
 import { useAuth } from "@/providers/auth-provider";
+import type { FaceDescriptor } from "@/types/face-auth";
 import { cn } from "@/lib/utils";
 
 type InvalidFields = Partial<Record<LoginField, true>>;
@@ -20,7 +23,7 @@ function emptyInvalidFields(): InvalidFields {
 }
 
 function LoginFormInner() {
-  const { status, login, loginWithPasskey } = useAuth();
+  const { status, login, loginWithPasskey, loginWithFace } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next") ?? "/analytics";
@@ -32,6 +35,8 @@ function LoginFormInner() {
   const [invalidFields, setInvalidFields] = useState<InvalidFields>(emptyInvalidFields);
   const [submitting, setSubmitting] = useState(false);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [faceSessionId, setFaceSessionId] = useState<string | null>(null);
+  const [faceBusy, setFaceBusy] = useState(false);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -43,7 +48,18 @@ function LoginFormInner() {
     router.replace(nextPath.startsWith("/") ? nextPath : `/${nextPath}`);
   }
 
-  function applyCaughtError(err: unknown) {
+  function beginFaceStep(sessionId: string, message?: string) {
+    setFaceSessionId(sessionId);
+    setErrorCode(LOGIN_ERROR_CODES.FACE_REQUIRED);
+    setError(message ?? "Face verification is required for this admin account.");
+    setInvalidFields(emptyInvalidFields());
+  }
+
+  function applyCaughtError(err: unknown): boolean {
+    if (isLoginAuthError(err) && isFaceRequiredCode(err.code) && err.faceSessionId) {
+      beginFaceStep(err.faceSessionId, err.message);
+      return true;
+    }
     if (isLoginAuthError(err)) {
       const code = err.code ?? null;
       setErrorCode(code);
@@ -54,10 +70,11 @@ function LoginFormInner() {
         for (const field of fields) next[field] = true;
         setInvalidFields(next);
       }
-      return;
+      return false;
     }
     setErrorCode(null);
     setError(err instanceof Error ? err.message : "Sign-in failed");
+    return false;
   }
 
   async function runPasskeyLogin(forEmail: string) {
@@ -80,6 +97,7 @@ function LoginFormInner() {
     setError(null);
     setErrorCode(null);
     setInvalidFields(emptyInvalidFields());
+    setFaceSessionId(null);
     if (!email.trim() || !password) {
       setError("Email or password is missing");
       setErrorCode(LOGIN_ERROR_CODES.LOGIN_FIELDS_MISSING);
@@ -111,10 +129,38 @@ function LoginFormInner() {
       setInvalidFields({ email: true });
       return;
     }
+    setFaceSessionId(null);
     await runPasskeyLogin(email.trim());
   }
 
-  const busy = submitting || passkeyBusy;
+  async function onFaceCaptured(descriptor: FaceDescriptor) {
+    if (!faceSessionId) {
+      setError("Face verification session is missing. Please sign in again.");
+      setErrorCode(LOGIN_ERROR_CODES.FACE_SESSION_INVALID);
+      setFaceSessionId(null);
+      return;
+    }
+    setFaceBusy(true);
+    setError(null);
+    try {
+      await loginWithFace(faceSessionId, descriptor);
+      setFaceSessionId(null);
+      redirectAfterAuth();
+    } catch (err) {
+      if (isLoginAuthError(err) && err.code === LOGIN_ERROR_CODES.FACE_SESSION_INVALID) {
+        setFaceSessionId(null);
+      }
+      applyCaughtError(err);
+      // Re-throw so FaceCapturePanel keeps showing the error locally too when needed.
+      // Panel already sets its own message from thrown errors during capture;
+      // verify errors are shown via applyCaughtError above.
+    } finally {
+      setFaceBusy(false);
+    }
+  }
+
+  const busy = submitting || passkeyBusy || faceBusy;
+  const showFaceStep = Boolean(faceSessionId);
 
   if (status === "loading") {
     return (
@@ -134,15 +180,43 @@ function LoginFormInner() {
     );
   }
 
+  if (showFaceStep) {
+    return (
+      <div className="w-full max-w-md space-y-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Verify your face</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Complete face verification to finish signing in.
+          </p>
+        </div>
+        {error && errorCode !== LOGIN_ERROR_CODES.FACE_REQUIRED ? (
+          <p
+            className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            role="alert"
+          >
+            {error}
+          </p>
+        ) : null}
+        <FaceCapturePanel
+          title="Face check"
+          description="Look at the camera, then capture when your face is centered."
+          confirmLabel={faceBusy ? "Verifying…" : "Verify face"}
+          disabled={faceBusy}
+          onCaptured={onFaceCaptured}
+          onCancel={() => {
+            setFaceSessionId(null);
+            setError(null);
+            setErrorCode(null);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-md space-y-8">
       <div className="text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Admin sign in</h1>
-        {/* <p className="mt-1 text-sm text-muted-foreground">
-          Password or passkey — open this app at{" "}
-          <span className="font-medium text-foreground">https://147.93.180.179:8443</span> for
-          passkeys.
-        </p> */}
       </div>
 
       <form
@@ -210,7 +284,8 @@ function LoginFormInner() {
               "rounded-lg border px-3 py-2 text-sm",
               errorCode === "PENDING_APPROVAL" ||
                 errorCode === "ACCOUNT_REJECTED" ||
-                isPasskeyRequiredCode(errorCode)
+                isPasskeyRequiredCode(errorCode) ||
+                isFaceRequiredCode(errorCode)
                 ? "border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100"
                 : "border-destructive/30 bg-destructive/10 text-destructive",
             )}

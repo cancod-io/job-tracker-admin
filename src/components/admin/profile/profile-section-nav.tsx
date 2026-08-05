@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { KeyRound, Link2, ShieldCheck, UserRound, type LucideIcon } from "lucide-react";
+import { KeyRound, Link2, ScanFace, ShieldCheck, UserRound, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type ProfileSectionId =
   | "personal-info"
   | "change-password"
   | "passkeys"
+  | "face-recognition"
   | "social-links";
 
 type SectionItem = {
@@ -20,6 +21,7 @@ export const PROFILE_SECTIONS: SectionItem[] = [
   { id: "personal-info", label: "Personal Information", icon: UserRound },
   { id: "change-password", label: "Change Password", icon: KeyRound },
   { id: "passkeys", label: "Passkeys", icon: ShieldCheck },
+  { id: "face-recognition", label: "Face recognition", icon: ScanFace },
   { id: "social-links", label: "Social Links", icon: Link2 },
 ];
 

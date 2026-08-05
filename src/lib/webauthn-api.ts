@@ -15,9 +15,8 @@ import {
 import { apiUrl } from "@/lib/api";
 import { API_PATHS } from "@/lib/api-paths";
 import {
-  apiErrorCode,
-  apiErrorMessage,
   createLoginAuthError,
+  resolveLoginError,
   type ApiAuthErrorShape,
 } from "@/lib/auth-errors";
 import { fetchAuthedJson } from "@/lib/fetch-authed";
@@ -87,9 +86,13 @@ function isRawCredential(value: unknown): value is Partial<WebAuthnCredential> &
 
 async function readPublicError(res: Response, fallback: string): Promise<Error> {
   const body = (await res.json().catch(() => ({}))) as ApiAuthErrorShape;
-  const code = apiErrorCode(body);
-  const message = messageForWebAuthnCode(code, apiErrorMessage(body) ?? fallback);
-  return createLoginAuthError({ message, code, fields: [] });
+  const resolved = resolveLoginError(body, fallback);
+  // Prefer WebAuthn-specific copy when the code is a WebAuthn/passkey code.
+  const webauthnMessage = messageForWebAuthnCode(resolved.code, resolved.message);
+  return createLoginAuthError({
+    ...resolved,
+    message: webauthnMessage,
+  });
 }
 
 const WEBAUTHN_REQUIRED_ORIGIN = "https://147.93.180.179:8443";
