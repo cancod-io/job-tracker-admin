@@ -52,6 +52,8 @@ export function ApplicantAvatar({
   if (displayUrl) {
     return (
       <span className={base} title={title}>
+        {/* Blob/object URL from authenticated avatar fetch — next/image cannot use these. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={displayUrl} alt="" className="size-full object-cover" loading="lazy" />
       </span>
     );

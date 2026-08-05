@@ -92,7 +92,16 @@ export function ApiConfigKeysTable({
               <th className="px-4 py-3 font-medium">Email</th>
               <th className="px-4 py-3 font-medium">Masked key</th>
               <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">
+              <th
+                className="px-4 py-3 font-medium"
+                aria-sort={
+                  creditsSort === "asc"
+                    ? "ascending"
+                    : creditsSort === "desc"
+                      ? "descending"
+                      : "none"
+                }
+              >
                 <button
                   type="button"
                   onClick={() =>
@@ -112,13 +121,6 @@ export function ApiConfigKeysTable({
                       : creditsSort === "asc"
                         ? "Sort credits low to high"
                         : "Sort by credits"
-                  }
-                  aria-sort={
-                    creditsSort === "asc"
-                      ? "ascending"
-                      : creditsSort === "desc"
-                        ? "descending"
-                        : "none"
                   }
                 >
                   Credits

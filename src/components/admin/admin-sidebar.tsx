@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown, ShieldCheck, X } from "lucide-react";
@@ -223,19 +224,21 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
         <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/80 px-4">
           <Link href="/" className="group flex min-w-0 items-center gap-2.5" onClick={onMobileClose}>
             <span className="relative flex min-w-0 items-center">
-              <img
+              <Image
                 src="/light-logo.png"
                 alt="TrackCod"
                 width={220}
                 height={56}
-                className="w-auto object-contain object-left dark:hidden"
+                priority
+                className="h-auto w-auto max-h-10 object-contain object-left dark:hidden"
               />
-              <img
+              <Image
                 src="/dark-logo.png"
                 alt="TrackCod"
                 width={220}
                 height={56}
-                className="hidden w-auto object-contain object-left dark:block"
+                priority
+                className="hidden h-auto w-auto max-h-10 object-contain object-left dark:block"
               />
             </span>
           </Link>

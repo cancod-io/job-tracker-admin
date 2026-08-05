@@ -1,8 +1,8 @@
 /**
  * Resolve TrackCod API paths to fetch URLs.
  *
- * Browser: same-origin proxy paths (`/upstream-api/*`, `/upstream-admin-api/*`) rewritten
- * by Next.js to the backend — avoids cross-origin CORS preflight failures.
+ * Browser: same-origin `/upstream-api/*` and `/upstream-admin-api/*` handled by
+ * Next Route Handlers that proxy to `API_INTERNAL_URL` at request time (Docker-friendly).
  *
  * Server (Route Handlers / SSR): calls `API_INTERNAL_URL` (or `NEXT_PUBLIC_API_URL`) directly.
  */

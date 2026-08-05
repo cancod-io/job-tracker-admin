@@ -184,6 +184,8 @@ export function JobRow({
 function CompanyLogo({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   if (logoUrl) {
     return (
+      // External ATS host logos (many domains) — keep raw img.
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={logoUrl}
         alt=""
