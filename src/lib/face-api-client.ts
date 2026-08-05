@@ -1,6 +1,7 @@
 /**
  * Browser helpers for @vladmandic/face-api (128-d face descriptors).
  * Models load from jsDelivr CDN; only call from the browser.
+ * Loaded via dynamic import so Next does not pull face-api into the server bundle.
  */
 import type { FaceDescriptor } from "@/types/face-auth";
 import { FACE_DESCRIPTOR_LENGTH } from "@/types/face-auth";
@@ -8,7 +9,19 @@ import { FACE_DESCRIPTOR_LENGTH } from "@/types/face-auth";
 const MODEL_URL =
   "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model";
 
-type FaceApiModule = typeof import("@vladmandic/face-api");
+/** Minimal surface we use from @vladmandic/face-api (avoids `typeof import()` lint). */
+type FaceApiModule = {
+  nets: {
+    tinyFaceDetector: { loadFromUri: (uri: string) => Promise<unknown> };
+    faceLandmark68Net: { loadFromUri: (uri: string) => Promise<unknown> };
+    faceRecognitionNet: { loadFromUri: (uri: string) => Promise<unknown> };
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  TinyFaceDetectorOptions: new (opts?: { inputSize?: number; scoreThreshold?: number }) => any;
+  // Chainable face-api tasks are thenables; keep loose for typing.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  detectSingleFace: (input: HTMLVideoElement, options?: unknown) => any;
+};
 
 let faceapiPromise: Promise<FaceApiModule> | null = null;
 let modelsLoaded = false;
@@ -16,7 +29,10 @@ let modelsLoadPromise: Promise<void> | null = null;
 
 async function getFaceApi(): Promise<FaceApiModule> {
   if (!faceapiPromise) {
-    faceapiPromise = import("@vladmandic/face-api");
+    faceapiPromise = import(
+      /* webpackChunkName: "face-api" */
+      "@vladmandic/face-api"
+    ).then((mod) => mod as unknown as FaceApiModule);
   }
   return faceapiPromise;
 }
@@ -69,7 +85,10 @@ export async function captureFaceDescriptor(
   }
 
   const detection = await faceapi
-    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+    .detectSingleFace(
+      video,
+      new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }),
+    )
     .withFaceLandmarks()
     .withFaceDescriptor();
 
@@ -110,9 +129,7 @@ export async function openUserCamera(): Promise<MediaStream> {
         throw new Error("Camera is in use by another application.");
       }
       if (err.name === "SecurityError") {
-        throw new Error(
-          "Camera requires a secure context (HTTPS or localhost).",
-        );
+        throw new Error("Camera requires a secure context (HTTPS or localhost).");
       }
     }
     throw err instanceof Error ? err : new Error("Could not open the camera.");

@@ -4,19 +4,26 @@ services:
       context: .
       target: runner
       args:
+        # Client-visible defaults (baked at build). Browser API calls use same-origin /upstream-*.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://147.93.180.179:8000}
         NEXT_PUBLIC_SCRAPER_API_URL: ${NEXT_PUBLIC_SCRAPER_API_URL:-http://147.93.180.179:3002}
         NEXT_PUBLIC_USER_APP_URL: ${NEXT_PUBLIC_USER_APP_URL:-http://147.93.180.179:3000}
-        API_INTERNAL_URL: ${API_INTERNAL_URL:-http://147.93.180.179:8000}
     restart: unless-stopped
     ports:
       - "3001:3001"
+    # Reach API on the Docker host (Linux). Override with API_INTERNAL_URL if needed.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
+      PORT: "3001"
+      HOSTNAME: "0.0.0.0"
+      # Runtime upstream for /upstream-api and /upstream-admin-api Route Handlers.
+      # Prefer host.docker.internal (API on host :8000). Do NOT use 172.17.0.1 unless you
+      # confirmed the API listens on the docker0 bridge address.
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://host.docker.internal:8000}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://147.93.180.179:8000}
-      # Server-side bases used by Next.js rewrites / SSR.
-      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://147.93.180.179:8000}
       NEXT_PUBLIC_SCRAPER_API_URL: ${NEXT_PUBLIC_SCRAPER_API_URL:-http://147.93.180.179:3002}
-      SCRAPER_INTERNAL_URL: ${SCRAPER_INTERNAL_URL:-http://147.93.180.179:3002}
+      SCRAPER_INTERNAL_URL: ${SCRAPER_INTERNAL_URL:-http://host.docker.internal:3002}
       NEXT_PUBLIC_USER_APP_URL: ${NEXT_PUBLIC_USER_APP_URL:-http://147.93.180.179:3000}

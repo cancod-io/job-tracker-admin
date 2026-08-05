@@ -1,10 +1,10 @@
 "use client";
 
 import { Suspense, useEffect, useState, type FormEvent } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Fingerprint, Loader2 } from "lucide-react";
-import { FaceCapturePanel } from "@/components/auth/face-capture-panel";
 import {
   isFaceRequiredCode,
   isLoginAuthError,
@@ -15,6 +15,20 @@ import { isPasskeyRequiredCode } from "@/lib/webauthn-api";
 import { useAuth } from "@/providers/auth-provider";
 import type { FaceDescriptor } from "@/types/face-auth";
 import { cn } from "@/lib/utils";
+
+const FaceCapturePanel = dynamic(
+  () =>
+    import("@/components/auth/face-capture-panel").then((m) => m.FaceCapturePanel),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center gap-2 rounded-2xl border border-border/80 bg-card p-8 text-sm text-muted-foreground">
+        <Loader2 className="size-5 animate-spin motion-reduce:animate-none" aria-hidden />
+        Loading camera…
+      </div>
+    ),
+  },
+);
 
 type InvalidFields = Partial<Record<LoginField, true>>;
 

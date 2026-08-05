@@ -16,10 +16,12 @@ CMD ["npm", "run", "dev"]
 FROM node:22-alpine AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
+# Public URLs are baked into the client bundle at build time.
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_SCRAPER_API_URL
 ARG NEXT_PUBLIC_USER_APP_URL
-ARG API_INTERNAL_URL
+# API_INTERNAL_URL is runtime-only (Route Handlers read process.env) — keep optional here for local builds.
+ARG API_INTERNAL_URL=
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
     NEXT_PUBLIC_SCRAPER_API_URL=${NEXT_PUBLIC_SCRAPER_API_URL} \
     NEXT_PUBLIC_USER_APP_URL=${NEXT_PUBLIC_USER_APP_URL} \
@@ -34,10 +36,14 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs \
  && adduser --system --uid 1001 nextjs
+
+# Standalone output: copy only what Next needs to run.
 COPY --from=build /app/public ./public
-COPY --from=build --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/package.json ./package.json
+COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
+
 USER nextjs
 EXPOSE 3001
-CMD ["npm", "start"]
+ENV PORT=3001
+ENV HOSTNAME=0.0.0.0
+CMD ["node", "server.js"]

@@ -23,7 +23,9 @@ export function chartViewToApiParams(
   baseParams: AnalyticsQueryParams,
   view: AnalyticsChartView,
 ): AnalyticsQueryParams {
-  const { granularity: _granularity, ...rest } = baseParams;
+  // Drop caller's granularity; chart view owns it.
+  const { from, to, source, limit, offset, provider, status } = baseParams;
+  const rest: AnalyticsQueryParams = { from, to, source, limit, offset, provider, status };
 
   if (view === "today") {
     const today = toDateKey(new Date());

@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { AlertTriangle, Loader2, ScanFace, Trash2 } from "lucide-react";
-import { FaceCapturePanel } from "@/components/auth/face-capture-panel";
 import { ProfileSectionCard } from "@/components/admin/profile/profile-section-card";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { ConfirmDialogFooter } from "@/components/ui/confirm-dialog-footer";
@@ -18,6 +18,20 @@ import { isLoginAuthError, LOGIN_ERROR_CODES } from "@/lib/auth-errors";
 import { useAuth } from "@/providers/auth-provider";
 import type { FaceDescriptor } from "@/types/face-auth";
 import type { FaceStatusResponse } from "@/types/face-auth";
+
+const FaceCapturePanel = dynamic(
+  () =>
+    import("@/components/auth/face-capture-panel").then((m) => m.FaceCapturePanel),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+        <Loader2 className="size-5 animate-spin motion-reduce:animate-none" aria-hidden />
+        Loading camera…
+      </div>
+    ),
+  },
+);
 
 type FaceRecognitionSectionProps = {
   onSuccess?: (message: string) => void;

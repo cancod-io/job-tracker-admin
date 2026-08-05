@@ -20,12 +20,12 @@ export function AdminPermissionRedirect() {
   const router = useRouter();
   const { user } = useAuth();
   const { can, loading, isAdmin } = useAdminPermissions();
-  const navOpts = { isAdmin };
 
   useEffect(() => {
     if (!user || loading) return;
     if (isAdmin) return;
 
+    const navOpts = { isAdmin };
     const required = permissionForPath(pathname);
     const home = pathname === "/" || pathname === "";
 

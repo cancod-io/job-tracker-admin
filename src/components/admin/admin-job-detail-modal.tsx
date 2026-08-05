@@ -75,6 +75,8 @@ export function AdminJobDetailModal({ job, onClose }: AdminJobDetailModalProps) 
     >
       <div className="flex items-start gap-3">
         {job.company_logo_url ? (
+          // External ATS logos — next/image remotePatterns would need every ATS host.
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={job.company_logo_url}
             alt=""
