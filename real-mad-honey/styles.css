@@ -259,12 +259,13 @@ h3 {
   z-index: 0;
 }
 
-.hero__media img {
+.hero__media img,
+.hero__photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 35%;
-  transform: scale(1.02);
+  object-position: center 45%;
+  transform: scale(1.04);
   animation: ken 18s ease-in-out infinite alternate;
 }
 
@@ -272,8 +273,17 @@ h3 {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(18, 26, 20, 0.25) 0%, rgba(18, 26, 20, 0.15) 35%, rgba(18, 26, 20, 0.78) 100%),
-    radial-gradient(80% 50% at 70% 20%, transparent 0%, rgba(18, 26, 20, 0.35) 100%);
+    linear-gradient(180deg, rgba(14, 20, 16, 0.4) 0%, rgba(14, 20, 16, 0.18) 35%, rgba(14, 20, 16, 0.86) 100%),
+    radial-gradient(70% 55% at 70% 30%, transparent 0%, rgba(14, 20, 16, 0.35) 100%);
+}
+
+@keyframes ken {
+  from {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.1) translate3d(-1%, 1%, 0);
+  }
 }
 
 .hero__content {
@@ -347,13 +357,14 @@ h3 {
   }
 }
 
-@keyframes ken {
-  from {
-    transform: scale(1.02) translate3d(0, 0, 0);
-  }
-  to {
-    transform: scale(1.08) translate3d(-1.5%, 1%, 0);
-  }
+/* ken keyframes defined with hero__photo scale */
+
+.recognition__figure img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.92) contrast(1.02);
 }
 
 /* Sections */
@@ -383,11 +394,16 @@ h3 {
   overflow: hidden;
 }
 
-.recognition__figure img {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  filter: saturate(0.92) contrast(1.02);
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .recognition__copy p {
