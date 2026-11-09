@@ -1,11 +1,11 @@
 /** Mirrors OpenAPI schemas for `/api/admin/credentials` (secure vault — all users). */
 
-export type CredentialType = "pc_login" | "company_email" | "api_key" | "other";
+export type CredentialType = "pc_login" | "company_email" | "two_fa_key" | "other";
 
 /**
  * List/detail response.
- * Username and notes may be returned in plaintext; secret is optional (present on detail
- * for reveal in the edit form). Never render secret in the list table.
+ * Admin list responses include decrypted username, notes, and secret so the vault
+ * can show / copy / edit without an extra round trip.
  */
 export type SecureCredential = {
   id: number;

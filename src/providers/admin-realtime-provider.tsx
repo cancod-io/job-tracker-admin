@@ -30,13 +30,8 @@ type RealtimeConnectionContextValue = {
 
 const RealtimeConnectionContext = createContext<RealtimeConnectionContextValue | null>(null);
 
-function sendRealtimeDataRequests(client: RealtimeClient, can: (key: string) => boolean): void {
-  if (can("users.read")) {
-    client.send({ type: "users.application_stats.request" });
-  }
-  if (can("stats.read")) {
-    client.send({ type: "analytics.top_applicants.request" });
-  }
+function sendRealtimeDataRequests(_client: RealtimeClient, _can: (key: string) => boolean): void {
+  return;
 }
 
 export function useRealtimeConnection(): RealtimeConnectionContextValue {

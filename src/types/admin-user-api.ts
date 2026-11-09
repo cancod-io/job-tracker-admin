@@ -11,8 +11,6 @@ export type AdminUserRow = {
   last_login_at: string | null;
   profile_picture_url: string | null;
   has_avatar: boolean;
-  application_count: number;
-  applications_today: number;
 };
 
 export type AdminUserListResponse = {
@@ -33,15 +31,6 @@ export type AdminUserSocialFields = {
   twitter_url: string | null;
   github_url: string | null;
   portfolio_url: string | null;
-};
-
-export type AdminUserJobApplication = {
-  application_id: number;
-  job_id: number;
-  job_title: string;
-  company: string;
-  status: string;
-  applied_at: string | null;
 };
 
 export type AdminUserCv = {
@@ -78,6 +67,5 @@ export type AdminUserDetail = {
   two_factor_enabled: boolean;
   social: AdminUserSocialFields;
   social_links: AdminUserSocialLink[];
-  job_applications: AdminUserJobApplication[];
   cvs: AdminUserCv[];
 };

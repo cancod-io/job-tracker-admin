@@ -2,14 +2,7 @@ import { adminNavGroups, adminNavItems, type AdminNavGroup, type AdminNavItem } 
 
 /** Route prefix → minimum permission required to view the page. */
 export const ADMIN_ROUTE_PERMISSIONS: Record<string, string> = {
-  "/jobs": "jobs.read",
-  "/analytics": "stats.read",
   "/users": "users.read",
-  "/companies": "companies.read",
-  "/scam-urls": "scam_urls.read",
-  "/career-urls": "career_urls.read",
-  "/api-config": "api_config.read",
-  "/settings/api-config": "api_config.read",
   /** Catalog key exists; page still enforces admin role via RequireAdmin. */
   "/settings/secure-credentials": "credentials.read",
 };
@@ -19,7 +12,7 @@ export const ADMIN_ONLY_ROUTES = ["/settings/secure-credentials"] as const;
 
 export function permissionForPath(pathname: string): string | null {
   const path = pathname.split("?")[0] ?? "/";
-  if (path === "/" || path === "") return "jobs.read";
+  if (path === "/" || path === "") return "users.read";
 
   const entries = Object.entries(ADMIN_ROUTE_PERMISSIONS).sort(
     (a, b) => b[0].length - a[0].length,

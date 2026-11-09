@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { fetchUserCvBlob } from "@/lib/admin-user-api";
-import { formatFileSize, prepareBlobFilePreview } from "@/lib/admin-file-utils";
+import { formatFileSize } from "@/lib/admin-file-utils";
+import { prepareBlobFilePreview } from "@/lib/admin-file-preview";
 import { useAuth } from "@/providers/auth-provider";
 import { FilePreviewModal, type FilePreviewKind } from "@/components/ui/file-preview-modal";
 import type { AdminUserCv } from "@/types/admin-user-api";

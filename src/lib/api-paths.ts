@@ -110,6 +110,14 @@ export const API_PATHS = {
     detail: (credentialId: number) => `/api/admin/credentials/${credentialId}`,
   },
 
+  adminNotifications: {
+    base: "/api/admin/notifications",
+    unreadCount: "/api/admin/notifications/unread-count",
+    read: (notificationId: number) =>
+      `/api/admin/notifications/${notificationId}/read`,
+    readAll: "/api/admin/notifications/read-all",
+  },
+
   adminScraperRuns: {
     base: "/api/admin/scraper/runs",
     detail: (runId: string) => `/api/admin/scraper/runs/${encodeURIComponent(runId)}`,

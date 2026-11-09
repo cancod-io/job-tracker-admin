@@ -1,10 +1,5 @@
-import { AdminJobsList } from "@/components/admin/admin-jobs-list";
-import { RequirePermission } from "@/components/admin/require-permission";
+import { redirect } from "next/navigation";
 
-export default function AdminOverviewPage() {
-  return (
-    <RequirePermission permission="jobs.read" title="Application Dashboard">
-      <AdminJobsList />
-    </RequirePermission>
-  );
+export default function AdminHomePage() {
+  redirect("/users");
 }

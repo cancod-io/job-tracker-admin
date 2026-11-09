@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { CREDENTIAL_TYPE_OPTIONS } from "@/components/admin/secure-credentials/constants";
+import {
+  CREDENTIAL_TYPE_OPTIONS,
+  secretFieldCopy,
+} from "@/components/admin/secure-credentials/constants";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { Modal } from "@/components/ui/modal";
 import type {
@@ -12,11 +15,19 @@ import type {
   SecureCredentialUpdateRequest,
 } from "@/types/secure-credentials";
 
+export type CredentialOwnerOption = {
+  id: number;
+  label: string;
+};
+
 type Mode = "create" | "edit";
 
 type SecureCredentialsFormDialogProps = {
   mode: Mode;
   initial?: SecureCredential | null;
+  ownerOptions: CredentialOwnerOption[];
+  /** Pre-select this owner when creating (e.g. from an owner group action). */
+  preferredOwnerUserId?: number | null;
   onClose: () => void;
   onSubmit: (
     payload: SecureCredentialCreateRequest | SecureCredentialUpdateRequest,
@@ -44,7 +55,6 @@ function SecretInput({
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Hide whenever the typed value is cleared (e.g. after successful submit).
     if (!value) setVisible(false);
   }, [value]);
 
@@ -76,14 +86,29 @@ function SecretInput({
 export function SecureCredentialsFormDialog({
   mode,
   initial,
+  ownerOptions,
+  preferredOwnerUserId = null,
   onClose,
   onSubmit,
 }: SecureCredentialsFormDialogProps) {
+  const sortedOwners = useMemo(
+    () =>
+      [...ownerOptions].sort((a, b) =>
+        a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
+      ),
+    [ownerOptions],
+  );
+
+  const defaultOwnerId =
+    preferredOwnerUserId && preferredOwnerUserId > 0
+      ? String(preferredOwnerUserId)
+      : "";
+
   const [serviceName, setServiceName] = useState(initial?.service_name ?? "");
   const [credentialType, setCredentialType] = useState<CredentialType>(
     initial?.credential_type ?? "other",
   );
-  const [ownerUserId, setOwnerUserId] = useState("");
+  const [ownerUserId, setOwnerUserId] = useState(defaultOwnerId);
   const [username, setUsername] = useState(initial?.username ?? "");
   const [secret, setSecret] = useState(initial?.secret ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
@@ -96,7 +121,11 @@ export function SecureCredentialsFormDialog({
   useEffect(() => {
     setServiceName(initial?.service_name ?? "");
     setCredentialType(initial?.credential_type ?? "other");
-    setOwnerUserId("");
+    setOwnerUserId(
+      preferredOwnerUserId && preferredOwnerUserId > 0
+        ? String(preferredOwnerUserId)
+        : "",
+    );
     setUsername(initial?.username ?? "");
     setSecret(initial?.secret ?? "");
     setLoadedSecret(initial?.secret ?? "");
@@ -104,7 +133,7 @@ export function SecureCredentialsFormDialog({
     setClearUsername(false);
     setClearNotes(false);
     setSubmitError(null);
-  }, [initial, mode]);
+  }, [initial, mode, preferredOwnerUserId]);
 
   function clearSecretFields() {
     setOwnerUserId("");
@@ -122,12 +151,6 @@ export function SecureCredentialsFormDialog({
     if (name.length > 200) return "Service name must be at most 200 characters.";
     if (username.length > 500) return "Username must be at most 500 characters.";
     if (notes.length > 4000) return "Notes must be at most 4000 characters.";
-    if (mode === "create" && ownerUserId.trim()) {
-      const parsed = Number(ownerUserId.trim());
-      if (!Number.isFinite(parsed) || parsed <= 0 || !Number.isInteger(parsed)) {
-        return "Owner user ID must be a positive integer.";
-      }
-    }
     if (mode === "create") {
       const trimmedSecret = secret.trim();
       if (!trimmedSecret) return "Secret is required.";
@@ -155,8 +178,10 @@ export function SecureCredentialsFormDialog({
           credential_type: credentialType,
           secret: secret.trim(),
         };
-        const trimmedOwner = ownerUserId.trim();
-        if (trimmedOwner) payload.owner_user_id = Number(trimmedOwner);
+        const parsedOwner = Number(ownerUserId);
+        if (Number.isFinite(parsedOwner) && parsedOwner > 0) {
+          payload.owner_user_id = parsedOwner;
+        }
         const trimmedUsername = username.trim();
         if (trimmedUsername) payload.username = trimmedUsername;
         const trimmedNotes = notes.trim();
@@ -197,6 +222,11 @@ export function SecureCredentialsFormDialog({
   }
 
   const isCreate = mode === "create";
+  const secretCopy = secretFieldCopy(credentialType);
+  const ownerMissingFromOptions =
+    preferredOwnerUserId != null &&
+    preferredOwnerUserId > 0 &&
+    !sortedOwners.some((o) => o.id === preferredOwnerUserId);
 
   return (
     <Modal
@@ -204,7 +234,7 @@ export function SecureCredentialsFormDialog({
       title={isCreate ? "Add Credential" : "Edit Credential"}
       description={
         isCreate
-          ? "Store a password or key securely. Secrets are write-only and never returned by the API."
+          ? "Choose who owns this vault entry, then store the service login or key."
           : `Update ${initial?.service_name ?? "credential"}. Leave secret blank to keep the existing value.`
       }
       onClose={onClose}
@@ -228,21 +258,29 @@ export function SecureCredentialsFormDialog({
 
         {isCreate ? (
           <div className="space-y-1">
-            <label htmlFor="credential-owner-user-id" className="text-sm font-medium text-foreground">
-              Owner user ID
+            <label htmlFor="credential-owner" className="text-sm font-medium text-foreground">
+              Owner
             </label>
-            <input
-              id="credential-owner-user-id"
-              type="number"
-              min={1}
-              step={1}
+            <select
+              id="credential-owner"
               value={ownerUserId}
               onChange={(e) => setOwnerUserId(e.target.value)}
-              placeholder="Optional — defaults to you"
               className={inputClass}
-            />
+            >
+              <option value="">Me (current admin)</option>
+              {ownerMissingFromOptions ? (
+                <option value={String(preferredOwnerUserId)}>
+                  User #{preferredOwnerUserId}
+                </option>
+              ) : null}
+              {sortedOwners.map((owner) => (
+                <option key={owner.id} value={String(owner.id)}>
+                  {owner.label}
+                </option>
+              ))}
+            </select>
             <p className="text-xs text-muted-foreground">
-              Leave blank to assign the credential to your own account.
+              The credential is stored in that user&apos;s vault.
             </p>
           </div>
         ) : initial ? (
@@ -277,7 +315,7 @@ export function SecureCredentialsFormDialog({
 
         <div className="space-y-1">
           <label htmlFor="credential-username" className="text-sm font-medium text-foreground">
-            Username / Email
+            {credentialType === "two_fa_key" ? "Account label" : "Username / Email"}
           </label>
           <input
             id="credential-username"
@@ -286,7 +324,11 @@ export function SecureCredentialsFormDialog({
               setUsername(e.target.value);
               if (e.target.value) setClearUsername(false);
             }}
-            placeholder="Optional"
+            placeholder={
+              credentialType === "two_fa_key"
+                ? "Optional — e.g. Google, GitHub"
+                : "Optional"
+            }
             maxLength={500}
             disabled={!isCreate && clearUsername}
             autoComplete="off"
@@ -303,14 +345,14 @@ export function SecureCredentialsFormDialog({
                 }}
                 className="size-3.5 accent-primary"
               />
-              Clear stored username
+              Clear stored {credentialType === "two_fa_key" ? "label" : "username"}
             </label>
           ) : null}
         </div>
 
         <div className="space-y-1">
           <label htmlFor="credential-secret" className="text-sm font-medium text-foreground">
-            Password / Secret {isCreate ? <span className="text-destructive">*</span> : null}
+            {secretCopy.label} {isCreate ? <span className="text-destructive">*</span> : null}
           </label>
           <SecretInput
             id="credential-secret"
@@ -319,19 +361,19 @@ export function SecureCredentialsFormDialog({
             required={isCreate}
             placeholder={
               isCreate
-                ? "Required"
+                ? secretCopy.placeholderCreate
                 : initial?.has_secret && !secret
-                  ? "Leave blank to keep existing, or type a new secret"
-                  : "Enter secret"
+                  ? secretCopy.placeholderEdit
+                  : secretCopy.placeholderCreate
             }
           />
-          {!isCreate ? (
-            <p className="text-xs text-muted-foreground">
-              {secret
-                ? "Use the eye icon to show or hide the secret. Leave unchanged to keep it."
-                : "Leave blank to keep the existing secret, or type a new value to replace it."}
-            </p>
-          ) : null}
+          <p className="text-xs text-muted-foreground">
+            {isCreate
+              ? secretCopy.hint
+              : secret
+                ? "Use the eye icon to show or hide. Leave unchanged to keep it."
+                : secretCopy.placeholderEdit}
+          </p>
         </div>
 
         <div className="space-y-1">

@@ -1,13 +1,4 @@
-import {
-  BarChart3,
-  Briefcase,
-  Building2,
-  KeyRound,
-  Settings,
-  ShieldAlert,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { KeyRound, Users, type LucideIcon } from "lucide-react";
 
 /** Leaf link in the admin sidebar. */
 export type AdminNavItem = {
@@ -28,36 +19,12 @@ export type AdminNavGroup = {
   children: AdminNavItem[];
 };
 
-/**
- * Sidebar structure:
- * - Jobs → Analytics, Users, Companies, API Configuration, Block Lists
- * - Credentials → Credentials (admin-only vault)
- *
- * Note: Job Listings (/jobs) stays under Jobs so the jobs board remains reachable.
- */
 export const adminNavGroups: AdminNavGroup[] = [
   {
-    id: "jobs",
-    label: "Jobs",
-    icon: Briefcase,
-    children: [
-      {
-        href: "/analytics",
-        label: "Analytics",
-        icon: BarChart3,
-        permission: "stats.read",
-      },
-      { href: "/jobs", label: "Job Listings", icon: Briefcase, permission: "jobs.read" },
-      { href: "/users", label: "Users", icon: Users, permission: "users.read" },
-      { href: "/companies", label: "Companies", icon: Building2, permission: "companies.read" },
-      {
-        href: "/settings/api-config",
-        label: "API Configuration",
-        icon: Settings,
-        permission: "api_config.read",
-      },
-      { href: "/scam-urls", label: "Block Lists", icon: ShieldAlert, permission: "scam_urls.read" },
-    ],
+    id: "people",
+    label: "People",
+    icon: Users,
+    children: [{ href: "/users", label: "Users", icon: Users, permission: "users.read" }],
   },
   {
     id: "credentials",

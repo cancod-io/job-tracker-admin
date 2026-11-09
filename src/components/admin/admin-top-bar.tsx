@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LogOut, Menu, Settings, UserRound } from "lucide-react";
 import { AdminBreadcrumbs } from "@/components/admin/admin-breadcrumbs";
-import { RealtimeConnectionIndicator } from "@/components/realtime/realtime-connection-indicator";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
@@ -49,7 +48,6 @@ export function AdminTopBar({ onMenuClick }: AdminTopBarProps) {
           <AdminBreadcrumbs className="hidden min-w-0 flex-1 overflow-x-auto md:block" />
         </div>
 
-        <RealtimeConnectionIndicator />
         <ThemeToggle />
 
         <div className="relative shrink-0" ref={menuRef}>
