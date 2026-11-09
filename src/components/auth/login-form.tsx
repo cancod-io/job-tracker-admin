@@ -11,6 +11,7 @@ import {
   LOGIN_ERROR_CODES,
   type LoginField,
 } from "@/lib/auth-errors";
+import { verifyEmailHref } from "@/lib/auth-verification-api";
 import { isPasskeyRequiredCode } from "@/lib/webauthn-api";
 import { useAuth } from "@/providers/auth-provider";
 import type { FaceDescriptor } from "@/types/face-auth";
@@ -40,7 +41,7 @@ function LoginFormInner() {
   const { status, login, loginWithPasskey, loginWithFace } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") ?? "/analytics";
+  const nextPath = searchParams.get("next") ?? "/users";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -123,6 +124,10 @@ function LoginFormInner() {
       await login(email.trim(), password);
       redirectAfterAuth();
     } catch (err) {
+      if (isLoginAuthError(err) && err.code === LOGIN_ERROR_CODES.EMAIL_NOT_VERIFIED) {
+        router.push(verifyEmailHref(email.trim()));
+        return;
+      }
       if (isLoginAuthError(err) && isPasskeyRequiredCode(err.code)) {
         setErrorCode(err.code ?? null);
         setError(err.message);

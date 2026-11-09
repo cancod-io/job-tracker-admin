@@ -8,6 +8,7 @@ import {
   MIN_PASSWORD_LENGTH,
   PasswordFieldsGroup,
 } from "@/components/auth/password-fields-group";
+import { verifyEmailHref } from "@/lib/auth-verification-api";
 import { useAuth } from "@/providers/auth-provider";
 
 function RegisterFormInner() {
@@ -41,6 +42,10 @@ function RegisterFormInner() {
     setSubmitting(true);
     try {
       const result = await register({ email, full_name: fullName.trim(), password });
+      if (result.status === "needs_verification") {
+        router.replace(verifyEmailHref(result.email));
+        return;
+      }
       if (result.status === "pending") {
         setPendingEmail(result.email);
         return;

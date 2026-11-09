@@ -308,6 +308,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(message);
       }
       const created = (await res.json()) as AuthUser;
+      // Email verification is required before login; show that step first.
+      if (created.email_verified !== true) {
+        return { status: "needs_verification", email: payload.email };
+      }
       if (created.approval_status === "pending") {
         return { status: "pending", email: payload.email };
       }

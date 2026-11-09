@@ -12,6 +12,8 @@ export const API_PATHS = {
     login: "/api/v1/auth/login",
     refresh: "/api/v1/auth/refresh",
     me: "/api/v1/auth/me",
+    verifyEmail: "/api/v1/auth/verify-email",
+    resendVerification: "/api/v1/auth/resend-verification",
     webauthn: {
       registerOptions: "/api/v1/auth/webauthn/register/options",
       registerVerify: "/api/v1/auth/webauthn/register/verify",

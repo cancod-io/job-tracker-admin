@@ -8,6 +8,7 @@ export type AuthUser = {
   full_name: string;
   role: UserRole;
   approval_status: UserApprovalStatus;
+  email_verified?: boolean;
 };
 
 export type TokenResponse = {
@@ -18,5 +19,17 @@ export type TokenResponse = {
   refresh_expires_in?: number;
 };
 
-/** After registration: pending users are not signed in until an admin approves. */
-export type RegisterResult = { status: "authenticated" } | { status: "pending"; email: string };
+/** After registration: verify email before sign-in; pending users also need admin approval. */
+export type RegisterResult =
+  | { status: "authenticated" }
+  | { status: "needs_verification"; email: string }
+  | { status: "pending"; email: string };
+
+export type VerifyEmailPayload = {
+  email: string;
+  code: string;
+};
+
+export type ResendVerificationPayload = {
+  email: string;
+};
