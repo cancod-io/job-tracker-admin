@@ -20,23 +20,10 @@ import {
   type RealtimeNavBadgeKey,
 } from "@/lib/admin-realtime-badges";
 import { listAdminUsers } from "@/lib/admin-user-api";
-import {
-  formatJobsIngestSummary,
-  formatUserUpdatedToast,
-  REALTIME_ANALYTICS_INVALIDATE_EVENT,
-  REALTIME_JOBS_INGESTED_EVENT,
-  REALTIME_SCRAPER_RUN_UPDATED_EVENT,
-  REALTIME_USER_UPDATED_EVENT,
-} from "@/lib/realtime-sync-events";
-import { formatScraperRunResultToast, isTerminalScraperRunStatus } from "@/lib/scraper-provider-utils";
+import { formatUserUpdatedToast, REALTIME_USER_UPDATED_EVENT } from "@/lib/realtime-sync-events";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAuth } from "@/providers/auth-provider";
-import type {
-  AnalyticsInvalidatePayload,
-  JobsIngestedPayload,
-  ScraperRunUpdatedPayload,
-  UserUpdatedPayload,
-} from "@/types/realtime";
+import type { UserUpdatedPayload } from "@/types/realtime";
 
 type IncrementalBadgeKey = Exclude<RealtimeNavBadgeKey, "users">;
 
@@ -52,17 +39,6 @@ const INITIAL_BADGES: Record<IncrementalBadgeKey, number> = {
   analytics: 0,
   "api-config": 0,
 };
-
-function formatAnalyticsInvalidateMessage(payload: AnalyticsInvalidatePayload): string {
-  switch (payload.reason) {
-    case "jobs.ingested":
-      return "New job data ingested — charts will refresh.";
-    case "scraper_run.updated":
-      return "Scraper run finished — charts will refresh.";
-    default:
-      return "Dashboard data refreshed.";
-  }
-}
 
 function isDocumentVisible(): boolean {
   return typeof document === "undefined" || document.visibilityState === "visible";
@@ -84,10 +60,6 @@ export function AdminRealtimeNotificationsProvider({ children }: { children: Rea
 
   const clearBadge = useCallback((key: IncrementalBadgeKey) => {
     setBadges((prev) => (prev[key] === 0 ? prev : { ...prev, [key]: 0 }));
-  }, []);
-
-  const incrementBadge = useCallback((key: IncrementalBadgeKey) => {
-    setBadges((prev) => ({ ...prev, [key]: prev[key] + 1 }));
   }, []);
 
   const adjustUsersPendingCount = useCallback((delta: number) => {
@@ -128,56 +100,6 @@ export function AdminRealtimeNotificationsProvider({ children }: { children: Rea
   }, [pathname, clearBadge]);
 
   useEffect(() => {
-    const activeKey = realtimeBadgeKeyForPathname(pathname);
-
-    const onJobsIngested = (event: Event) => {
-      const payload = (event as CustomEvent<JobsIngestedPayload>).detail;
-      if (!payload || payload.added <= 0) return;
-      if (activeKey === "jobs" || !isDocumentVisible()) return;
-
-      incrementBadge("jobs");
-      setToast({
-        kind: "success",
-        title: "Jobs",
-        message: formatJobsIngestSummary(payload),
-      });
-    };
-
-    const onScraperRunUpdated = (event: Event) => {
-      const payload = (event as CustomEvent<ScraperRunUpdatedPayload>).detail;
-      if (!payload || !isTerminalScraperRunStatus(payload.status)) return;
-      if (activeKey === "api-config" || !isDocumentVisible()) return;
-
-      const toastMessage = formatScraperRunResultToast({
-        provider: payload.provider,
-        status: payload.status,
-        added_count: payload.added_count,
-        blocked_count: payload.blocked_count,
-        error_message: payload.error_message,
-      });
-      if (!toastMessage) return;
-
-      incrementBadge("api-config");
-      setToast({
-        kind: payload.status === "success" ? "success" : "error",
-        title: payload.status === "success" ? "Scraper finished" : "Scraper failed",
-        message: toastMessage,
-      });
-    };
-
-    const onAnalyticsInvalidate = (event: Event) => {
-      const payload = (event as CustomEvent<AnalyticsInvalidatePayload>).detail;
-      if (!payload) return;
-      if (activeKey === "analytics" || !isDocumentVisible()) return;
-
-      incrementBadge("analytics");
-      setToast({
-        kind: "info",
-        title: "Analytics",
-        message: formatAnalyticsInvalidateMessage(payload),
-      });
-    };
-
     const onUserUpdated = (event: Event) => {
       const payload = (event as CustomEvent<UserUpdatedPayload>).detail;
       if (!payload) return;
@@ -203,18 +125,12 @@ export function AdminRealtimeNotificationsProvider({ children }: { children: Rea
       }
     };
 
-    window.addEventListener(REALTIME_JOBS_INGESTED_EVENT, onJobsIngested);
-    window.addEventListener(REALTIME_SCRAPER_RUN_UPDATED_EVENT, onScraperRunUpdated);
-    window.addEventListener(REALTIME_ANALYTICS_INVALIDATE_EVENT, onAnalyticsInvalidate);
     window.addEventListener(REALTIME_USER_UPDATED_EVENT, onUserUpdated);
 
     return () => {
-      window.removeEventListener(REALTIME_JOBS_INGESTED_EVENT, onJobsIngested);
-      window.removeEventListener(REALTIME_SCRAPER_RUN_UPDATED_EVENT, onScraperRunUpdated);
-      window.removeEventListener(REALTIME_ANALYTICS_INVALIDATE_EVENT, onAnalyticsInvalidate);
       window.removeEventListener(REALTIME_USER_UPDATED_EVENT, onUserUpdated);
     };
-  }, [pathname, incrementBadge, adjustUsersPendingCount, setToast]);
+  }, [pathname, adjustUsersPendingCount, setToast]);
 
   const getBadgeCountForHref = useCallback(
     (href: string) => {

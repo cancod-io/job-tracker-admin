@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Ban,
-  Briefcase,
   CheckCircle2,
   Copy,
   Download,
@@ -12,12 +11,11 @@ import {
   Loader2,
   Mail,
   Shield,
-  Tag,
   Trash2,
   UserRound,
 } from "lucide-react";
 import { SidePanel } from "@/components/ui/side-panel";
-import { ApplicantAvatar } from "@/components/admin/applicant-avatar";
+import { UserAvatar } from "@/components/admin/user-avatar";
 import { AdminUserCvPreviewModal } from "@/components/admin/admin-user-cv-preview-modal";
 import { AdminUserPermissionsEditor } from "@/components/admin/admin-user-permissions-editor";
 import { AdminUserRoleSection } from "@/components/admin/admin-user-role-section";
@@ -37,9 +35,6 @@ import { hasAnySocialLink } from "@/lib/admin-user-social";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { formatDateTime } from "@/lib/format-date";
 import { useUserUpdatedRealtime } from "@/hooks/use-user-updated-realtime";
-import { useUsersApplicationStatsRealtime } from "@/hooks/use-users-application-stats-realtime";
-import { formatAnalyticsNumber } from "@/lib/analytics-utils";
-import { applicantBadgeClass, formatApplicantStatus } from "@/lib/applicant-status";
 import {
   approvalBadgeClass,
   approvalLabel,
@@ -59,12 +54,11 @@ type AdminUserDetailPanelProps = {
   layout?: "drawer" | "page";
 };
 
-type UserDetailTab = "account" | "permissions" | "applications";
+type UserDetailTab = "account" | "permissions";
 
 const PAGE_TABS: { id: UserDetailTab; label: string; icon: typeof UserRound }[] = [
   { id: "account", label: "Account information", icon: UserRound },
   { id: "permissions", label: "Permission settings", icon: Shield },
-  { id: "applications", label: "Applications", icon: Briefcase },
 ];
 
 export function AdminUserDetailPanel({
@@ -84,7 +78,6 @@ export function AdminUserDetailPanel({
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<UserDetailTab>("account");
   const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const applicationStats = useUsersApplicationStatsRealtime();
 
   const load = useCallback(async () => {
     if (!accessToken || userId == null) return;
@@ -598,146 +591,6 @@ export function AdminUserDetailPanel({
     );
   };
 
-  const renderApplicationsSection = (detail: AdminUserDetail) => {
-    const liveStats =
-      userId != null ? applicationStats?.users.find((row) => row.user_id === userId) : null;
-    const totalApplications =
-      liveStats?.application_count ?? detail.job_applications.length;
-    const todayApplications = liveStats?.applications_today ?? 0;
-
-    const statusTags = [...detail.job_applications.reduce((map, app) => {
-      map.set(app.status, (map.get(app.status) ?? 0) + 1);
-      return map;
-    }, new Map<string, number>())].sort((a, b) => b[1] - a[1]);
-
-    return (
-      <div className={cn(isPageLayout ? "space-y-6 p-6" : undefined)}>
-        <section className={cn(!isPageLayout && "border-b border-border/60 px-5 py-4")}>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Tag className="size-4 text-primary" aria-hidden />
-              <h3 className="text-sm font-semibold text-foreground">Application summary</h3>
-            </div>
-            {isPageLayout ? (
-              <p className="text-xs text-muted-foreground">Live counts from WebSocket</p>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center rounded-full border border-border/80 bg-muted/40 px-3 py-1.5 text-xs font-medium text-foreground">
-              Total: {formatAnalyticsNumber(totalApplications)}
-            </span>
-            <span
-              className={cn(
-                "inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium",
-                todayApplications > 0
-                  ? "border-primary/35 bg-primary/10 text-primary"
-                  : "border-border/80 bg-muted/40 text-muted-foreground",
-              )}
-            >
-              Today: {formatAnalyticsNumber(todayApplications)}
-            </span>
-            {statusTags.map(([status, count]) => (
-              <span
-                key={status}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium",
-                  applicantBadgeClass(status),
-                )}
-              >
-                {formatApplicantStatus(status)}
-                <span className="tabular-nums opacity-80">{count}</span>
-              </span>
-            ))}
-          </div>
-        </section>
-
-        {isPageLayout ? (
-          <div className="overflow-hidden rounded-xl border border-border/80">
-            {detail.job_applications.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-sm">
-                  <thead className="border-b border-border/80 bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">Job title</th>
-                      <th className="px-4 py-3 font-medium">Company</th>
-                      <th className="px-4 py-3 font-medium">Status</th>
-                      <th className="px-4 py-3 font-medium">Applied</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detail.job_applications.map((app) => (
-                      <tr
-                        key={app.application_id}
-                        className="border-b border-border/50 transition-colors last:border-0 hover:bg-muted/30"
-                      >
-                        <td className="px-4 py-3 font-medium text-foreground">{app.job_title}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{app.company || "—"}</td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={cn(
-                              "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                              applicantBadgeClass(app.status),
-                            )}
-                          >
-                            {formatApplicantStatus(app.status)}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 tabular-nums text-muted-foreground">
-                          {app.applied_at ? formatDateTime(app.applied_at) : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="px-4 py-12 text-center text-sm text-muted-foreground">
-                No job applications yet.
-              </p>
-            )}
-          </div>
-        ) : (
-          <DetailSection icon={Briefcase} title="Job applications">
-            {detail.job_applications.length > 0 ? (
-              <ul className="space-y-2">
-                {detail.job_applications.map((app) => (
-                  <li
-                    key={app.application_id}
-                    className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2.5"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate font-medium text-foreground">{app.job_title}</p>
-                        <p className="truncate text-xs text-muted-foreground">{app.company}</p>
-                      </div>
-                      <span
-                        className={cn(
-                          "inline-flex shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                          applicantBadgeClass(app.status),
-                        )}
-                      >
-                        {formatApplicantStatus(app.status)}
-                      </span>
-                    </div>
-                    {app.applied_at ? (
-                      <p className="mt-1 text-xs tabular-nums text-muted-foreground">
-                        Applied {formatDateTime(app.applied_at)}
-                      </p>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="rounded-lg border border-dashed border-border/80 bg-muted/20 px-3 py-8 text-center text-sm text-muted-foreground">
-                No job applications yet.
-              </p>
-            )}
-          </DetailSection>
-        )}
-      </div>
-    );
-  };
-
   const detailBody =
     loading && !detail ? (
       <div className="flex items-center justify-center gap-2 px-5 py-20 text-muted-foreground">
@@ -767,12 +620,9 @@ export function AdminUserDetailPanel({
               <div className="border-b border-border/60 bg-gradient-to-r from-muted/30 via-card to-card px-6 py-6 lg:px-8">
                 <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
                   <div className="flex min-w-0 items-start gap-5">
-                    <ApplicantAvatar
-                      userId={detail.id}
+                    <UserAvatar
                       name={detail.full_name || detail.email}
                       profilePictureUrl={detail.profile_picture_url}
-                      hasAvatar={detail.has_avatar}
-                      attemptFetch
                       sizeClass="size-20"
                       textClass="text-xl"
                     />
@@ -843,24 +693,8 @@ export function AdminUserDetailPanel({
                 </div>
               </div>
 
-              {(() => {
-                const liveStats =
-                  userId != null
-                    ? applicationStats?.users.find((row) => row.user_id === userId)
-                    : null;
-                const totalApplications =
-                  liveStats?.application_count ?? detail.job_applications.length;
-                const todayApplications = liveStats?.applications_today ?? 0;
-
-                return (
-                  <div className="grid grid-cols-2 gap-3 border-b border-border/60 px-6 py-4 lg:grid-cols-4 lg:px-8">
+              <div className="grid grid-cols-2 gap-3 border-b border-border/60 px-6 py-4 lg:px-8">
                     {[
-                      { label: "Total applications", value: formatAnalyticsNumber(totalApplications) },
-                      {
-                        label: "Applications today",
-                        value: formatAnalyticsNumber(todayApplications),
-                        highlight: todayApplications > 0,
-                      },
                       {
                         label: "Last login",
                         value: detail.last_login_at ? formatDateTime(detail.last_login_at) : "Never",
@@ -881,26 +715,20 @@ export function AdminUserDetailPanel({
                           className={cn(
                             "mt-1 font-semibold tabular-nums text-foreground",
                             stat.small ? "text-sm" : "text-xl",
-                            stat.highlight && "text-primary",
                           )}
                         >
                           {stat.value}
                         </p>
                       </div>
                     ))}
-                  </div>
-                );
-              })()}
+              </div>
             </>
           ) : (
             <div className="border-b border-border/60 px-5 py-5">
               <div className="flex items-start gap-4">
-                <ApplicantAvatar
-                  userId={detail.id}
+                <UserAvatar
                   name={detail.full_name || detail.email}
                   profilePictureUrl={detail.profile_picture_url}
-                  hasAvatar={detail.has_avatar}
-                  attemptFetch
                   sizeClass="size-16"
                   textClass="text-lg"
                 />
@@ -971,17 +799,7 @@ export function AdminUserDetailPanel({
                 aria-label="User detail sections"
               >
                 <div className="flex flex-wrap gap-1">
-                  {PAGE_TABS.map(({ id, label, icon: Icon }) => {
-                    const liveStats =
-                      userId != null
-                        ? applicationStats?.users.find((row) => row.user_id === userId)
-                        : null;
-                    const tabLabel =
-                      id === "applications"
-                        ? `${label} (${formatAnalyticsNumber(liveStats?.application_count ?? detail.job_applications.length)})`
-                        : label;
-
-                    return (
+                  {PAGE_TABS.map(({ id, label, icon: Icon }) => (
                       <button
                         key={id}
                         type="button"
@@ -996,24 +814,21 @@ export function AdminUserDetailPanel({
                         )}
                       >
                         <Icon className="size-4" aria-hidden />
-                        {tabLabel}
+                        {label}
                       </button>
-                    );
-                  })}
+                  ))}
                 </div>
               </div>
 
               <div role="tabpanel" className="min-h-[24rem]">
                 {activeTab === "account" ? renderAccountSection(detail) : null}
                 {activeTab === "permissions" ? renderPermissionsSection(detail) : null}
-                {activeTab === "applications" ? renderApplicationsSection(detail) : null}
               </div>
             </>
           ) : (
             <>
               {renderAccountSection(detail)}
               {renderPermissionsSection(detail)}
-              {renderApplicationsSection(detail)}
             </>
           )}
         </>

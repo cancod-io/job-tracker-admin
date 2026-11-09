@@ -71,12 +71,20 @@ export async function proxyToBackend(
       signal: ctrl.signal,
     });
 
-    const payload = await res.arrayBuffer();
     const outHeaders = filterResponseHeaders(res.headers);
     if (!outHeaders.has("Content-Type") && res.headers.get("content-type")) {
       outHeaders.set("Content-Type", res.headers.get("content-type")!);
     }
 
+    if (res.status === 204 || res.status === 205 || res.status === 304) {
+      return new NextResponse(null, {
+        status: res.status,
+        statusText: res.statusText,
+        headers: outHeaders,
+      });
+    }
+
+    const payload = await res.arrayBuffer();
     return new NextResponse(payload, {
       status: res.status,
       statusText: res.statusText,

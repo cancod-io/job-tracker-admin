@@ -8,7 +8,7 @@
  *   PUT    /api/admin/credentials/{id}         — update (omit secret to keep)
  *   DELETE /api/admin/credentials/{id}         — delete (204)
  *
- * Admin role only (backend require_roles(ADMIN)). List table never displays plaintext secrets.
+ * Admin role only. List responses include the decrypted secret so it can be shown or copied.
  */
 import { fetchAuthedJson } from "@/lib/fetch-authed";
 import { API_PATHS } from "@/lib/api-paths";
@@ -27,14 +27,13 @@ export type ListSecureCredentialsParams = {
   page_size: number;
   q?: string;
   credential_type?: CredentialType;
-  /** Filter to a specific owner's credentials. */
   owner_user_id?: number;
 };
 
 const CREDENTIAL_TYPES: readonly CredentialType[] = [
   "pc_login",
   "company_email",
-  "api_key",
+  "two_fa_key",
   "other",
 ];
 
@@ -54,6 +53,8 @@ function normalizeCredentialType(value: unknown): CredentialType {
   if (typeof value === "string" && CREDENTIAL_TYPES.includes(value as CredentialType)) {
     return value as CredentialType;
   }
+  // Legacy value before API Key was replaced by 2FA Key.
+  if (value === "api_key") return "other";
   return "other";
 }
 

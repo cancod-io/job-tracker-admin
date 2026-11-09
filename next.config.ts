@@ -30,11 +30,11 @@ const nextConfig: NextConfig = {
         message: /Critical dependency: require function is used/,
       },
     ];
-    // Face-api is browser-only — never pull it into the Node server bundle.
+    // Browser-only / heavy Node libs — keep them out of the server graph.
     if (isServer) {
       config.externals = config.externals ?? [];
       if (Array.isArray(config.externals)) {
-        config.externals.push("@vladmandic/face-api");
+        config.externals.push("@vladmandic/face-api", "mammoth", "bluebird");
       }
     }
     return config;

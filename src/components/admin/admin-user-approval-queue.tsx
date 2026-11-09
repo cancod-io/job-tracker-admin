@@ -5,18 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, Search } from "lucide-react";
-import { ApplicantAvatar } from "@/components/admin/applicant-avatar";
+import { UserAvatar } from "@/components/admin/user-avatar";
 import { adminUsersQueryKeys } from "@/lib/admin-users-query-keys";
 import {
   useAdminUsersListQuery,
   useAdminUsersTabCountsQuery,
 } from "@/hooks/use-admin-users-queries";
-import { useUsersApplicationStatsRealtime } from "@/hooks/use-users-application-stats-realtime";
 import { formatDateTime } from "@/lib/format-date";
-import { mergeUserApplicationStats } from "@/lib/user-application-stats";
 import { approvalBadgeClass, approvalLabel } from "@/lib/user-approval";
-import { formatAnalyticsNumber } from "@/lib/analytics-utils";
-import { queryErrorMessage } from "@/hooks/use-analytics-queries";
 import { useAuth } from "@/providers/auth-provider";
 import { cn } from "@/lib/utils";
 import type { UserApprovalStatus } from "@/types/auth";
@@ -30,7 +26,6 @@ export function AdminUserApprovalQueue() {
   const [filter, setFilter] = useState<FilterValue>("all");
   const [searchDraft, setSearchDraft] = useState("");
   const [page, setPage] = useState(1);
-  const applicationStats = useUsersApplicationStatsRealtime();
 
   const listQuery = useAdminUsersListQuery({
     page,
@@ -39,18 +34,15 @@ export function AdminUserApprovalQueue() {
   });
   const tabCountsQuery = useAdminUsersTabCountsQuery();
 
-  const items = useMemo(() => {
-    const rows = listQuery.data?.items ?? [];
-    if (!applicationStats?.users.length) return rows;
-    return mergeUserApplicationStats(rows, applicationStats.users);
-  }, [listQuery.data?.items, applicationStats]);
+  const items = listQuery.data?.items ?? [];
 
   const total = listQuery.data?.total ?? 0;
   const tabCounts = tabCountsQuery.data ?? null;
-  const applicationsTodayTotal = applicationStats?.applications_today_total ?? null;
   const loading = listQuery.isLoading;
   const refreshing = listQuery.isFetching || tabCountsQuery.isFetching;
-  const error = queryErrorMessage(listQuery.error) ?? queryErrorMessage(tabCountsQuery.error);
+  const error =
+    (listQuery.error instanceof Error ? listQuery.error.message : null) ??
+    (tabCountsQuery.error instanceof Error ? tabCountsQuery.error.message : null);
 
   const filteredItems = useMemo(() => {
     const q = searchDraft.trim().toLowerCase();
@@ -110,14 +102,6 @@ export function AdminUserApprovalQueue() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {applicationsTodayTotal != null ? (
-            <p className="rounded-lg border border-border/80 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-              Applications today:{" "}
-              <span className="font-semibold tabular-nums text-foreground">
-                {formatAnalyticsNumber(applicationsTodayTotal)}
-              </span>
-            </p>
-          ) : null}
           <label className="relative min-w-[12rem] flex-1 lg:max-w-xs">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -164,8 +148,6 @@ export function AdminUserApprovalQueue() {
             <thead className="border-b border-border/80 bg-muted/40 text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-medium">User</th>
-                <th className="px-4 py-3 text-right font-medium">Applications</th>
-                <th className="px-4 py-3 text-right font-medium">Today</th>
                 <th className="px-4 py-3 font-medium">Created</th>
                 <th className="px-4 py-3 font-medium">Last login</th>
                 <th className="px-4 py-3 font-medium">Role</th>
@@ -176,7 +158,7 @@ export function AdminUserApprovalQueue() {
             <tbody>
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
                     {searchDraft.trim() ? "No users match your search." : "No users match this filter."}
                   </td>
                 </tr>
@@ -203,11 +185,9 @@ export function AdminUserApprovalQueue() {
                     >
                       <td className="px-4 py-3 align-middle">
                         <div className="flex items-center gap-3">
-                          <ApplicantAvatar
-                            userId={u.id}
+                          <UserAvatar
                             name={u.full_name || u.email}
                             profilePictureUrl={u.profile_picture_url}
-                            hasAvatar={u.has_avatar}
                             sizeClass="size-9"
                             textClass="text-xs"
                           />
@@ -223,18 +203,6 @@ export function AdminUserApprovalQueue() {
                             <div className="truncate text-xs text-muted-foreground">{u.email}</div>
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-foreground">
-                        {formatAnalyticsNumber(u.application_count)}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
-                        {u.applications_today > 0 ? (
-                          <span className="font-medium text-primary">
-                            {formatAnalyticsNumber(u.applications_today)}
-                          </span>
-                        ) : (
-                          formatAnalyticsNumber(u.applications_today)
-                        )}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 tabular-nums text-muted-foreground">
                         {formatDateTime(u.created_at)}

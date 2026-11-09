@@ -19,7 +19,6 @@ import { resolveSocialFields } from "@/lib/admin-user-social";
 import type {
   AdminUserCv,
   AdminUserDetail,
-  AdminUserJobApplication,
   AdminUserListResponse,
   AdminUserRow,
   AdminUserSocialLink,
@@ -73,22 +72,6 @@ function normalizeSocialLink(raw: unknown): AdminUserSocialLink | null {
   return { platform, url };
 }
 
-function normalizeJobApplication(raw: unknown): AdminUserJobApplication | null {
-  if (typeof raw !== "object" || raw === null) return null;
-  const r = raw as Record<string, unknown>;
-  const application_id = nonNegativeInt(r.application_id ?? r.id, 0);
-  const job_id = nonNegativeInt(r.job_id, 0);
-  if (application_id <= 0) return null;
-  return {
-    application_id,
-    job_id,
-    job_title: str(r.job_title, "—"),
-    company: str(r.company, "—"),
-    status: str(r.status, "unknown"),
-    applied_at: strOrNull(r.applied_at ?? r.created_at),
-  };
-}
-
 function normalizeCv(raw: unknown): AdminUserCv | null {
   if (typeof raw !== "object" || raw === null) return null;
   const r = raw as Record<string, unknown>;
@@ -135,8 +118,6 @@ function normalizeUserRow(raw: unknown): AdminUserRow | null {
     last_login_at: strOrNull(r.last_login_at ?? r.last_login),
     profile_picture_url: avatar.profile_picture_url,
     has_avatar: avatar.has_avatar,
-    application_count: nonNegativeInt(r.application_count, 0),
-    applications_today: nonNegativeInt(r.applications_today, 0),
   };
 }
 
@@ -162,16 +143,11 @@ function normalizeUserDetail(raw: unknown): AdminUserDetail {
   const r = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
 
   const socialRaw = r.social_links ?? r.socials ?? [];
-  const appsRaw = r.job_applications ?? r.applications ?? [];
   const cvsRaw = r.cvs ?? r.resumes ?? r.cv_files ?? [];
 
   const social_links = (Array.isArray(socialRaw) ? socialRaw : [])
     .map(normalizeSocialLink)
     .filter((v): v is AdminUserSocialLink => v != null);
-
-  const job_applications = (Array.isArray(appsRaw) ? appsRaw : [])
-    .map(normalizeJobApplication)
-    .filter((v): v is AdminUserJobApplication => v != null);
 
   const cvs = (Array.isArray(cvsRaw) ? cvsRaw : [])
     .map(normalizeCv)
@@ -212,7 +188,6 @@ function normalizeUserDetail(raw: unknown): AdminUserDetail {
     two_factor_enabled: bool(r.two_factor_enabled ?? r.is_2fa_enabled ?? r.mfa_enabled),
     social,
     social_links,
-    job_applications,
     cvs,
   };
 }
