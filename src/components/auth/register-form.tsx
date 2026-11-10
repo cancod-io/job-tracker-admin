@@ -111,6 +111,10 @@ function RegisterFormInner() {
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Create admin account
         </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Registration is limited to authorized admin emails. If you need access, contact your
+          system administrator.
+        </p>
       </div>
 
       <form

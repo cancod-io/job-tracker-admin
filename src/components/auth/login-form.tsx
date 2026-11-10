@@ -360,6 +360,10 @@ function LoginFormInner() {
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
+        Sign-in is limited to authorized admin emails. Contact your system administrator if you need
+        access.
+      </p>
+      <p className="text-center text-sm text-muted-foreground">
         Need an account?{" "}
         <Link
           href="/register"

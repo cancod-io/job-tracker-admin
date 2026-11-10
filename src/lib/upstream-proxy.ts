@@ -26,6 +26,8 @@ function filterRequestHeaders(req: NextRequest): Headers {
     headers.set(key, value);
   });
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
+  // Mark traffic as admin portal so the API can gate signup/login to BOOTSTRAP_ADMIN_EMAILS.
+  headers.set("X-TrackCod-Client", "admin");
   return headers;
 }
 
