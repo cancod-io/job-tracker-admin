@@ -148,9 +148,7 @@ function normalizeTree(raw: Record<string, unknown>): CredentialTreeResponse {
       ? (raw.personal as Record<string, unknown>)
       : {};
   const jobsRaw =
-    typeof raw.jobs === "object" && raw.jobs !== null
-      ? (raw.jobs as Record<string, unknown>)
-      : {};
+    typeof raw.jobs === "object" && raw.jobs !== null ? (raw.jobs as Record<string, unknown>) : {};
   const employersRaw = Array.isArray(jobsRaw.employers) ? jobsRaw.employers : [];
 
   const personalItems = Array.isArray(personalRaw.items)
@@ -225,7 +223,8 @@ export async function getCredentialTree(
   if (ownerUserId != null && ownerUserId > 0) {
     q.set("owner_user_id", String(ownerUserId));
   }
-  const path = q.size > 0 ? `${API_PATHS.adminCredentials.tree}?${q}` : API_PATHS.adminCredentials.tree;
+  const path =
+    q.size > 0 ? `${API_PATHS.adminCredentials.tree}?${q}` : API_PATHS.adminCredentials.tree;
   const raw = await fetchAuthedJson<Record<string, unknown>>(token, path);
   return normalizeTree(raw);
 }

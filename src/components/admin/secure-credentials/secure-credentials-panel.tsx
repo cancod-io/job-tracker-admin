@@ -173,8 +173,7 @@ export function SecureCredentialsPanel() {
                 (treeSelection.kind === "jobs" || treeSelection.kind === "employer")
               ? "job"
               : undefined,
-        employer_id:
-          treeSelection.kind === "employer" ? treeSelection.employerId : undefined,
+        employer_id: treeSelection.kind === "employer" ? treeSelection.employerId : undefined,
       });
       setListItems(body.items);
       setListTotal(body.total);
@@ -375,12 +374,9 @@ export function SecureCredentialsPanel() {
     setCreateDefaults({
       vaultScope:
         opts?.vaultScope ??
-        (treeSelection.kind === "jobs" || treeSelection.kind === "employer"
-          ? "job"
-          : "personal"),
+        (treeSelection.kind === "jobs" || treeSelection.kind === "employer" ? "job" : "personal"),
       employerId:
-        opts?.employerId ??
-        (treeSelection.kind === "employer" ? treeSelection.employerId : null),
+        opts?.employerId ?? (treeSelection.kind === "employer" ? treeSelection.employerId : null),
     });
     if (accessToken && ownerId != null && ownerId > 0) {
       void listCredentialEmployers(accessToken, ownerId)
@@ -424,14 +420,9 @@ export function SecureCredentialsPanel() {
     if (!accessToken) return;
     setEditLoading(true);
     try {
-      const detail = row.secret
-        ? row
-        : await getSecureCredential(accessToken, row.id);
+      const detail = row.secret ? row : await getSecureCredential(accessToken, row.id);
       if (detail.owner_user_id > 0) {
-        const empBody = await listCredentialEmployers(
-          accessToken,
-          detail.owner_user_id,
-        );
+        const empBody = await listCredentialEmployers(accessToken, detail.owner_user_id);
         setEmployers(empBody.items);
       }
       setEditing(detail);
@@ -502,7 +493,9 @@ export function SecureCredentialsPanel() {
 
   const canAddEmployer =
     ownerFilter !== "all" &&
-    (treeSelection.kind === "jobs" || treeSelection.kind === "employer" || treeSelection.kind === "root");
+    (treeSelection.kind === "jobs" ||
+      treeSelection.kind === "employer" ||
+      treeSelection.kind === "root");
 
   const selectedEmployer =
     treeSelection.kind === "employer"
@@ -738,8 +731,7 @@ export function SecureCredentialsPanel() {
                     if (treeSelection.kind === "employer" && selectedEmployer) {
                       setEditingEmployer({
                         id: selectedEmployer.id,
-                        owner_user_id:
-                          tree?.owner_user_id ?? (ownerFilter as number),
+                        owner_user_id: tree?.owner_user_id ?? (ownerFilter as number),
                         owner_name: tree?.owner_name ?? null,
                         name: selectedEmployer.name,
                         website_url: selectedEmployer.website_url,

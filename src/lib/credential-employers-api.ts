@@ -96,10 +96,7 @@ export async function updateCredentialEmployer(
   return normalizeEmployer(raw);
 }
 
-export async function deleteCredentialEmployer(
-  token: string,
-  employerId: number,
-): Promise<void> {
+export async function deleteCredentialEmployer(token: string, employerId: number): Promise<void> {
   await fetchAuthedJson<void>(token, API_PATHS.adminCredentialEmployers.detail(employerId), {
     method: "DELETE",
   });

@@ -1,17 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import {
-  Check,
-  Copy,
-  Eye,
-  EyeOff,
-  KeyRound,
-  Pencil,
-  Plus,
-  Shield,
-  Trash2,
-} from "lucide-react";
+import { Check, Copy, Eye, EyeOff, KeyRound, Pencil, Plus, Shield, Trash2 } from "lucide-react";
 import {
   credentialTypeBadgeClass,
   formatCredentialType,
@@ -257,9 +247,7 @@ export function SecureCredentialsTable({
           <table className="w-full min-w-[48rem] border-collapse text-left text-sm">
             <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur-md">
               <tr className="border-b border-border/80 text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
-                {showOwner ? (
-                  <th className="px-4 py-2.5 font-semibold">Owner</th>
-                ) : null}
+                {showOwner ? <th className="px-4 py-2.5 font-semibold">Owner</th> : null}
                 <th className="px-4 py-2.5 font-semibold">Service</th>
                 {showPath ? <th className="px-3 py-2.5 font-semibold">Path</th> : null}
                 <th className="px-3 py-2.5 font-semibold">Type</th>

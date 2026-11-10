@@ -22,12 +22,7 @@ type EmployerFormDialogProps = {
   ) => Promise<void>;
 };
 
-export function EmployerFormDialog({
-  mode,
-  initial,
-  onClose,
-  onSubmit,
-}: EmployerFormDialogProps) {
+export function EmployerFormDialog({ mode, initial, onClose, onSubmit }: EmployerFormDialogProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [websiteUrl, setWebsiteUrl] = useState(initial?.website_url ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");

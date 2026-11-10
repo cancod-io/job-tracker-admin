@@ -27,13 +27,7 @@ type VaultTreeProps = {
   onSelect: (selection: VaultTreeSelection) => void;
 };
 
-export function VaultTree({
-  tree,
-  selection,
-  ownerName,
-  loading,
-  onSelect,
-}: VaultTreeProps) {
+export function VaultTree({ tree, selection, ownerName, loading, onSelect }: VaultTreeProps) {
   const [filter, setFilter] = useState("");
   const [personalOpen, setPersonalOpen] = useState(true);
   const [jobsOpen, setJobsOpen] = useState(true);
@@ -44,8 +38,7 @@ export function VaultTree({
     if (!q) return list;
     return list.filter(
       (e) =>
-        e.name.toLowerCase().includes(q) ||
-        (e.website_url?.toLowerCase().includes(q) ?? false),
+        e.name.toLowerCase().includes(q) || (e.website_url?.toLowerCase().includes(q) ?? false),
     );
   }, [tree?.jobs.employers, filter]);
 
@@ -83,8 +76,7 @@ export function VaultTree({
     );
   }
 
-  const total =
-    tree.personal.count + tree.jobs.credential_count;
+  const total = tree.personal.count + tree.jobs.credential_count;
 
   return (
     <div className="flex h-full flex-col">
@@ -155,9 +147,7 @@ export function VaultTree({
               <span
                 className={cn(
                   "rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
-                  selection.kind === "personal"
-                    ? "bg-white/20"
-                    : "bg-muted text-muted-foreground",
+                  selection.kind === "personal" ? "bg-white/20" : "bg-muted text-muted-foreground",
                 )}
               >
                 {tree.personal.count}
@@ -165,7 +155,7 @@ export function VaultTree({
             </button>
           </div>
           {personalOpen ? (
-            <ul className="ml-6 space-y-0.5 border-l border-border/60 pl-2 py-0.5">
+            <ul className="ml-6 space-y-0.5 border-l border-border/60 py-0.5 pl-2">
               {personalLeaves.length === 0 ? (
                 <li className="px-2 py-1 text-xs text-muted-foreground">No personal entries</li>
               ) : (
@@ -215,9 +205,7 @@ export function VaultTree({
               <span
                 className={cn(
                   "rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
-                  selection.kind === "jobs"
-                    ? "bg-white/20"
-                    : "bg-muted text-muted-foreground",
+                  selection.kind === "jobs" ? "bg-white/20" : "bg-muted text-muted-foreground",
                 )}
               >
                 {tree.jobs.employer_count} emp
@@ -225,27 +213,22 @@ export function VaultTree({
             </button>
           </div>
           {jobsOpen ? (
-            <ul className="ml-6 space-y-0.5 border-l border-border/60 pl-2 py-0.5">
+            <ul className="ml-6 space-y-0.5 border-l border-border/60 py-0.5 pl-2">
               {employers.length === 0 ? (
                 <li className="px-2 py-1 text-xs text-muted-foreground">
                   No employers yet — add one under Jobs
                 </li>
               ) : (
                 employers.map((emp) => {
-                  const active =
-                    selection.kind === "employer" && selection.employerId === emp.id;
+                  const active = selection.kind === "employer" && selection.employerId === emp.id;
                   return (
                     <li key={emp.id}>
                       <button
                         type="button"
-                        onClick={() =>
-                          onSelect({ kind: "employer", employerId: emp.id })
-                        }
+                        onClick={() => onSelect({ kind: "employer", employerId: emp.id })}
                         className={cn(
                           "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors",
-                          active
-                            ? "bg-primary text-primary-foreground"
-                            : "hover:bg-muted/70",
+                          active ? "bg-primary text-primary-foreground" : "hover:bg-muted/70",
                         )}
                       >
                         <Building2 className="size-3.5 shrink-0" aria-hidden />
