@@ -159,19 +159,21 @@ export function VaultTree({ tree, selection, ownerName, loading, onSelect }: Vau
               {personalLeaves.length === 0 ? (
                 <li className="px-2 py-1 text-xs text-muted-foreground">No personal entries</li>
               ) : (
-                personalLeaves.map((c) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      onClick={() => onSelect({ kind: "personal" })}
-                      className="flex w-full truncate rounded-md px-2 py-1 text-left text-xs text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                      title={c.service_name}
-                    >
-                      {c.service_name}
-                    </button>
+                personalLeaves.slice(0, 8).map((c) => (
+                  <li
+                    key={c.id}
+                    className="truncate px-2 py-1 text-xs text-muted-foreground"
+                    title={c.service_name}
+                  >
+                    {c.service_name}
                   </li>
                 ))
               )}
+              {personalLeaves.length > 8 ? (
+                <li className="px-2 py-1 text-[11px] text-muted-foreground">
+                  +{personalLeaves.length - 8} more in detail pane
+                </li>
+              ) : null}
             </ul>
           ) : null}
         </div>

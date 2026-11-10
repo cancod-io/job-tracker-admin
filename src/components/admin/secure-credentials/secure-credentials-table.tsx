@@ -12,6 +12,11 @@ import { formatDateTime } from "@/lib/format-date";
 import { cn } from "@/lib/utils";
 import type { SecureCredential } from "@/types/secure-credentials";
 
+export type BreadcrumbCrumb = {
+  label: string;
+  onClick?: () => void;
+};
+
 type SecureCredentialsTableProps = {
   items: SecureCredential[];
   loading: boolean;
@@ -20,13 +25,15 @@ type SecureCredentialsTableProps = {
   showPath?: boolean;
   heading: string;
   subheading?: string;
-  breadcrumb?: string[];
+  breadcrumb?: BreadcrumbCrumb[];
   emptyTitle: string;
   emptyDescription: string;
   primaryActionLabel?: string;
   secondaryActionLabel?: string;
+  dangerActionLabel?: string;
   onPrimaryAction?: () => void;
   onSecondaryAction?: () => void;
+  onDangerAction?: () => void;
   onEdit: (row: SecureCredential) => void;
   onDelete: (row: SecureCredential) => void;
 };
@@ -168,8 +175,10 @@ export function SecureCredentialsTable({
   emptyDescription,
   primaryActionLabel,
   secondaryActionLabel,
+  dangerActionLabel,
   onPrimaryAction,
   onSecondaryAction,
+  onDangerAction,
   onEdit,
   onDelete,
 }: SecureCredentialsTableProps) {
@@ -188,7 +197,22 @@ export function SecureCredentialsTable({
         <div className="min-w-0">
           {breadcrumb && breadcrumb.length > 0 ? (
             <p className="mb-0.5 truncate text-[11px] text-muted-foreground">
-              {breadcrumb.join(" › ")}
+              {breadcrumb.map((crumb, index) => (
+                <span key={`${crumb.label}-${index}`}>
+                  {index > 0 ? <span> › </span> : null}
+                  {crumb.onClick ? (
+                    <button
+                      type="button"
+                      onClick={crumb.onClick}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {crumb.label}
+                    </button>
+                  ) : (
+                    <span>{crumb.label}</span>
+                  )}
+                </span>
+              ))}
             </p>
           ) : null}
           <div className="flex items-center gap-2">
@@ -202,6 +226,15 @@ export function SecureCredentialsTable({
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {dangerActionLabel && onDangerAction ? (
+            <button
+              type="button"
+              onClick={onDangerAction}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-500/30 bg-card px-3 text-sm font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+            >
+              {dangerActionLabel}
+            </button>
+          ) : null}
           {secondaryActionLabel && onSecondaryAction ? (
             <button
               type="button"

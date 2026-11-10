@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { KeyRound, Mail, Monitor, Plus, Search, Shield, Users } from "lucide-react";
+import { EmployerDeleteConfirm } from "@/components/admin/secure-credentials/employer-delete-confirm";
+import { EmployerFolderList } from "@/components/admin/secure-credentials/employer-folder-list";
 import { EmployerFormDialog } from "@/components/admin/secure-credentials/employer-form-dialog";
 import { SecureCredentialsDeleteConfirm } from "@/components/admin/secure-credentials/secure-credentials-delete-confirm";
 import {
@@ -11,8 +13,10 @@ import {
 } from "@/components/admin/secure-credentials/secure-credentials-form-dialog";
 import {
   SecureCredentialsTable,
+  type BreadcrumbCrumb,
   type VaultOwnerSummary,
 } from "@/components/admin/secure-credentials/secure-credentials-table";
+import { VaultOverview } from "@/components/admin/secure-credentials/vault-overview";
 import {
   VaultTree,
   type VaultTreeSelection,
@@ -89,6 +93,11 @@ export function SecureCredentialsPanel() {
   const [deleting, setDeleting] = useState<SecureCredential | null>(null);
   const [showEmployerCreate, setShowEmployerCreate] = useState(false);
   const [editingEmployer, setEditingEmployer] = useState<CredentialEmployer | null>(null);
+  const [deletingEmployer, setDeletingEmployer] = useState<{
+    id: number;
+    name: string;
+    credentialCount: number;
+  } | null>(null);
 
   const loadOwners = useCallback(async () => {
     if (!accessToken) {
@@ -312,18 +321,19 @@ export function SecureCredentialsPanel() {
     [sidebarOwners, ownerFilter],
   );
 
+  const showingJobsFolders = !search && ownerFilter !== "all" && treeSelection.kind === "jobs";
+  const showingVaultOverview = !search && ownerFilter !== "all" && treeSelection.kind === "root";
+
   const detailItems = useMemo(() => {
     if (ownerFilter === "all" || search) return listItems;
     if (!tree) return listItems;
     if (treeSelection.kind === "personal") return tree.personal.items;
-    if (treeSelection.kind === "jobs") {
-      return tree.jobs.employers.flatMap((e) => e.items);
-    }
     if (treeSelection.kind === "employer") {
       const emp = tree.jobs.employers.find((e) => e.id === treeSelection.employerId);
       return emp?.items ?? [];
     }
-    return [...tree.personal.items, ...tree.jobs.employers.flatMap((e) => e.items)];
+    // Jobs hub and root use dedicated panes — no floating credential list.
+    return [];
   }, [ownerFilter, search, listItems, tree, treeSelection]);
 
   const filteredDetailItems = useMemo(() => {
@@ -331,29 +341,40 @@ export function SecureCredentialsPanel() {
     return detailItems.filter((r) => r.credential_type === typeFilter);
   }, [detailItems, typeFilter]);
 
-  const breadcrumb = useMemo(() => {
-    if (ownerFilter === "all") return ["Everyone"];
-    const name = selectedOwner?.name || tree?.owner_name || `User #${ownerFilter}`;
-    if (treeSelection.kind === "personal") return [name, "Personal"];
-    if (treeSelection.kind === "jobs") return [name, "Jobs"];
+  const ownerLabel =
+    selectedOwner?.name ||
+    tree?.owner_name ||
+    (ownerFilter === "all" ? "Everyone" : `User #${ownerFilter}`);
+
+  const breadcrumb = useMemo((): BreadcrumbCrumb[] => {
+    if (ownerFilter === "all") return [{ label: "Everyone" }];
+    const root: BreadcrumbCrumb = {
+      label: ownerLabel,
+      onClick: () => setTreeSelection({ kind: "root" }),
+    };
+    if (treeSelection.kind === "personal") return [root, { label: "Personal" }];
+    if (treeSelection.kind === "jobs") return [root, { label: "Jobs" }];
     if (treeSelection.kind === "employer") {
       const emp = tree?.jobs.employers.find((e) => e.id === treeSelection.employerId);
-      return [name, "Jobs", emp?.name || "Employer"];
+      return [
+        root,
+        { label: "Jobs", onClick: () => setTreeSelection({ kind: "jobs" }) },
+        { label: emp?.name || "Employer" },
+      ];
     }
-    return [name];
-  }, [ownerFilter, selectedOwner, tree, treeSelection]);
+    return [root];
+  }, [ownerFilter, ownerLabel, tree, treeSelection]);
 
   const detailHeading = useMemo(() => {
-    if (search) return `Search results`;
+    if (search) return "Search results";
     if (ownerFilter === "all") return "All credentials";
     if (treeSelection.kind === "personal") return "Personal";
-    if (treeSelection.kind === "jobs") return "Jobs / Employers";
     if (treeSelection.kind === "employer") {
       const emp = tree?.jobs.employers.find((e) => e.id === treeSelection.employerId);
       return emp?.name || "Employer";
     }
-    return selectedOwner?.name || "Vault";
-  }, [search, ownerFilter, treeSelection, tree, selectedOwner]);
+    return ownerLabel;
+  }, [search, ownerFilter, treeSelection, tree, ownerLabel]);
 
   const searchActive = search.length > 0;
   const filtersActive = typeFilter !== "all" || ownerFilter !== "all";
@@ -464,18 +485,11 @@ export function SecureCredentialsPanel() {
   };
 
   const handleDeleteEmployer = async () => {
-    if (!accessToken || treeSelection.kind !== "employer") return;
-    try {
-      await deleteCredentialEmployer(accessToken, treeSelection.employerId);
-      setToast({ kind: "success", message: "Employer deleted" });
-      setTreeSelection({ kind: "jobs" });
-      await refreshAll();
-    } catch (e) {
-      setToast({
-        kind: "error",
-        message: e instanceof Error ? e.message : "Could not delete employer.",
-      });
-    }
+    if (!accessToken || !deletingEmployer) throw new Error("Not signed in.");
+    await deleteCredentialEmployer(accessToken, deletingEmployer.id);
+    setToast({ kind: "success", message: "Employer deleted" });
+    setTreeSelection({ kind: "jobs" });
+    await refreshAll();
   };
 
   const handleInlineEmployer = async (name: string) => {
@@ -491,16 +505,25 @@ export function SecureCredentialsPanel() {
     return <AuthRequiredNotice resourceLabel="Credentials" />;
   }
 
-  const canAddEmployer =
-    ownerFilter !== "all" &&
-    (treeSelection.kind === "jobs" ||
-      treeSelection.kind === "employer" ||
-      treeSelection.kind === "root");
-
   const selectedEmployer =
     treeSelection.kind === "employer"
       ? (tree?.jobs.employers.find((e) => e.id === treeSelection.employerId) ?? null)
       : null;
+
+  const toolbarPrimary =
+    showingJobsFolders || (ownerFilter !== "all" && treeSelection.kind === "jobs")
+      ? { label: "Add employer", action: () => setShowEmployerCreate(true) }
+      : {
+          label: "Add Credential",
+          action: () =>
+            openCreate(
+              treeSelection.kind === "employer"
+                ? { vaultScope: "job", employerId: treeSelection.employerId }
+                : treeSelection.kind === "personal"
+                  ? { vaultScope: "personal" }
+                  : undefined,
+            ),
+        };
 
   return (
     <div className="space-y-4">
@@ -572,11 +595,11 @@ export function SecureCredentialsPanel() {
             />
             <button
               type="button"
-              onClick={() => openCreate()}
+              onClick={toolbarPrimary.action}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
             >
               <Plus className="size-4" aria-hidden />
-              Add Credential
+              {toolbarPrimary.label}
             </button>
           </div>
         </div>
@@ -693,42 +716,73 @@ export function SecureCredentialsPanel() {
 
         {/* Detail */}
         <section className="flex min-h-[22rem] min-w-0 flex-col">
-          <SecureCredentialsTable
-            items={filteredDetailItems}
-            loading={loading}
-            hasLoaded={!loading || filteredDetailItems.length > 0 || listItems.length > 0}
-            showOwner={ownerFilter === "all" || Boolean(search)}
-            showPath={Boolean(search) || ownerFilter === "all"}
-            heading={detailHeading}
-            subheading={`${filteredDetailItems.length} credential${filteredDetailItems.length === 1 ? "" : "s"}`}
-            breadcrumb={breadcrumb}
-            emptyTitle={
-              searchActive || filtersActive
-                ? "Nothing matches"
-                : treeSelection.kind === "jobs"
-                  ? "No job credentials yet"
+          {showingVaultOverview && tree ? (
+            <VaultOverview
+              ownerLabel={ownerLabel}
+              personalCount={tree.personal.count}
+              employerCount={tree.jobs.employer_count}
+              jobCredentialCount={tree.jobs.credential_count}
+              onOpenPersonal={() => setTreeSelection({ kind: "personal" })}
+              onOpenJobs={() => setTreeSelection({ kind: "jobs" })}
+            />
+          ) : showingJobsFolders && tree ? (
+            <EmployerFolderList
+              employers={tree.jobs.employers}
+              ownerLabel={ownerLabel}
+              loading={treeLoading}
+              onOpen={(employerId) => setTreeSelection({ kind: "employer", employerId })}
+              onAddEmployer={() => setShowEmployerCreate(true)}
+              onBreadcrumbRoot={() => setTreeSelection({ kind: "root" })}
+            />
+          ) : (
+            <SecureCredentialsTable
+              items={filteredDetailItems}
+              loading={loading}
+              hasLoaded={!loading || filteredDetailItems.length > 0 || listItems.length > 0}
+              showOwner={ownerFilter === "all" || Boolean(search)}
+              showPath={Boolean(search) || ownerFilter === "all"}
+              heading={detailHeading}
+              subheading={`${filteredDetailItems.length} credential${filteredDetailItems.length === 1 ? "" : "s"}`}
+              breadcrumb={breadcrumb}
+              emptyTitle={
+                searchActive || filtersActive
+                  ? "Nothing matches"
                   : treeSelection.kind === "employer"
-                    ? "No credentials under this employer"
-                    : "Vault is empty"
-            }
-            emptyDescription={
-              treeSelection.kind === "jobs" || treeSelection.kind === "employer"
-                ? "Add an employer folder, then add portal logins under it."
-                : "Save a PC login, Gmail, Outlook, or 2FA key under Personal — or switch to Jobs for employer folders."
-            }
-            primaryActionLabel="Add credential"
-            secondaryActionLabel={
-              canAddEmployer
-                ? treeSelection.kind === "employer"
-                  ? "Edit employer"
-                  : "Add employer"
-                : undefined
-            }
-            onPrimaryAction={() => openCreate()}
-            onSecondaryAction={
-              canAddEmployer
-                ? () => {
-                    if (treeSelection.kind === "employer" && selectedEmployer) {
+                    ? "No credentials in this folder"
+                    : treeSelection.kind === "personal"
+                      ? "No personal credentials yet"
+                      : "Vault is empty"
+              }
+              emptyDescription={
+                treeSelection.kind === "employer"
+                  ? "Add careers-portal, work email, or 2FA logins for this employer."
+                  : treeSelection.kind === "personal"
+                    ? "Store Gmail, Outlook, PC login, or personal 2FA here. Job portals belong under Jobs → employer."
+                    : "Pick a person, then open Personal or Jobs in the vault tree."
+              }
+              primaryActionLabel={
+                treeSelection.kind === "employer" || treeSelection.kind === "personal" || search
+                  ? "Add credential"
+                  : ownerFilter === "all"
+                    ? "Add credential"
+                    : undefined
+              }
+              secondaryActionLabel={
+                treeSelection.kind === "employer" && selectedEmployer ? "Edit employer" : undefined
+              }
+              dangerActionLabel={
+                treeSelection.kind === "employer" && selectedEmployer ? "Delete folder" : undefined
+              }
+              onPrimaryAction={() =>
+                openCreate(
+                  treeSelection.kind === "employer"
+                    ? { vaultScope: "job", employerId: treeSelection.employerId }
+                    : { vaultScope: "personal" },
+                )
+              }
+              onSecondaryAction={
+                selectedEmployer
+                  ? () => {
                       setEditingEmployer({
                         id: selectedEmployer.id,
                         owner_user_id: tree?.owner_user_id ?? (ownerFilter as number),
@@ -741,26 +795,23 @@ export function SecureCredentialsPanel() {
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString(),
                       });
-                    } else {
-                      setShowEmployerCreate(true);
                     }
-                  }
-                : undefined
-            }
-            onEdit={(row) => void openEdit(row)}
-            onDelete={setDeleting}
-          />
-          {treeSelection.kind === "employer" && selectedEmployer ? (
-            <div className="border-t border-border/60 px-4 py-2 text-right">
-              <button
-                type="button"
-                onClick={() => void handleDeleteEmployer()}
-                className="text-xs font-semibold text-rose-600 hover:underline"
-              >
-                Delete employer folder
-              </button>
-            </div>
-          ) : null}
+                  : undefined
+              }
+              onDangerAction={
+                selectedEmployer
+                  ? () =>
+                      setDeletingEmployer({
+                        id: selectedEmployer.id,
+                        name: selectedEmployer.name,
+                        credentialCount: selectedEmployer.count,
+                      })
+                  : undefined
+              }
+              onEdit={(row) => void openEdit(row)}
+              onDelete={setDeleting}
+            />
+          )}
         </section>
       </div>
 
@@ -826,6 +877,15 @@ export function SecureCredentialsPanel() {
           credential={deleting}
           onClose={() => setDeleting(null)}
           onConfirm={() => handleDelete(deleting)}
+        />
+      ) : null}
+
+      {deletingEmployer ? (
+        <EmployerDeleteConfirm
+          employerName={deletingEmployer.name}
+          credentialCount={deletingEmployer.credentialCount}
+          onClose={() => setDeletingEmployer(null)}
+          onConfirm={handleDeleteEmployer}
         />
       ) : null}
     </div>
