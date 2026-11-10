@@ -34,10 +34,7 @@ export async function updateProfile(
   return withNormalizedAvatar(data);
 }
 
-export async function changePassword(
-  token: string,
-  payload: ChangePasswordRequest,
-): Promise<void> {
+export async function changePassword(token: string, payload: ChangePasswordRequest): Promise<void> {
   await fetchAuthedJson<void>(token, "/api/v1/profile/me/password", {
     method: "POST",
     body: payload,

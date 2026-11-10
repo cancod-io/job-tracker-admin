@@ -18,10 +18,7 @@ export function realtimeBadgeKeyForHref(href: string): RealtimeNavBadgeKey | nul
 export function realtimeBadgeKeyForPathname(pathname: string): RealtimeNavBadgeKey | null {
   if (pathname === "/jobs" || pathname.startsWith("/jobs/")) return "jobs";
   if (pathname === "/analytics" || pathname.startsWith("/analytics/")) return "analytics";
-  if (
-    pathname === "/settings/api-config" ||
-    pathname.startsWith("/settings/api-config/")
-  ) {
+  if (pathname === "/settings/api-config" || pathname.startsWith("/settings/api-config/")) {
     return "api-config";
   }
   if (pathname === "/users" || pathname.startsWith("/users/")) return "users";

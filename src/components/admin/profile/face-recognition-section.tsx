@@ -9,19 +9,14 @@ import { ConfirmDialogFooter } from "@/components/ui/confirm-dialog-footer";
 import { Modal } from "@/components/ui/modal";
 import { formatDateTime } from "@/lib/format-date";
 import { isAdminRole } from "@/lib/admin-permissions";
-import {
-  deleteFaceEnrollment,
-  enrollFace,
-  getFaceStatus,
-} from "@/lib/face-auth-api";
+import { deleteFaceEnrollment, enrollFace, getFaceStatus } from "@/lib/face-auth-api";
 import { isLoginAuthError, LOGIN_ERROR_CODES } from "@/lib/auth-errors";
 import { useAuth } from "@/providers/auth-provider";
 import type { FaceDescriptor } from "@/types/face-auth";
 import type { FaceStatusResponse } from "@/types/face-auth";
 
 const FaceCapturePanel = dynamic(
-  () =>
-    import("@/components/auth/face-capture-panel").then((m) => m.FaceCapturePanel),
+  () => import("@/components/auth/face-capture-panel").then((m) => m.FaceCapturePanel),
   {
     ssr: false,
     loading: () => (
@@ -38,10 +33,7 @@ type FaceRecognitionSectionProps = {
   onError?: (message: string) => void;
 };
 
-export function FaceRecognitionSection({
-  onSuccess,
-  onError,
-}: FaceRecognitionSectionProps) {
+export function FaceRecognitionSection({ onSuccess, onError }: FaceRecognitionSectionProps) {
   const { accessToken, user } = useAuth();
   const isAdmin = isAdminRole(user?.role);
 

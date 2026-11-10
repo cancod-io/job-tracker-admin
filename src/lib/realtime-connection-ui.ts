@@ -81,7 +81,11 @@ export function formatConnectionUptime(connectedAt: number, now = Date.now()): s
   return `${hours}h ${remMins}m`;
 }
 
-export function formatRetryCountdown(retryInMs: number, now = Date.now(), startedAt?: number): number {
+export function formatRetryCountdown(
+  retryInMs: number,
+  now = Date.now(),
+  startedAt?: number,
+): number {
   if (startedAt == null) return Math.ceil(retryInMs / 1000);
   const elapsed = now - startedAt;
   return Math.max(0, Math.ceil((retryInMs - elapsed) / 1000));

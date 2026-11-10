@@ -3,7 +3,10 @@
 import { Github, Globe, Linkedin, Twitter, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProfileSectionCard } from "@/components/admin/profile/profile-section-card";
-import type { ProfileFormErrors, ProfileFormState } from "@/components/admin/profile/profile-helpers";
+import type {
+  ProfileFormErrors,
+  ProfileFormState,
+} from "@/components/admin/profile/profile-helpers";
 
 type SocialLinksSectionProps = {
   state: ProfileFormState;
@@ -22,10 +25,25 @@ type SocialField = {
 };
 
 const FIELDS: SocialField[] = [
-  { key: "linkedin_url", label: "LinkedIn", icon: Linkedin, placeholder: "https://linkedin.com/in/yourname" },
-  { key: "twitter_url", label: "Twitter / X", icon: Twitter, placeholder: "https://twitter.com/yourhandle" },
+  {
+    key: "linkedin_url",
+    label: "LinkedIn",
+    icon: Linkedin,
+    placeholder: "https://linkedin.com/in/yourname",
+  },
+  {
+    key: "twitter_url",
+    label: "Twitter / X",
+    icon: Twitter,
+    placeholder: "https://twitter.com/yourhandle",
+  },
   { key: "github_url", label: "GitHub", icon: Github, placeholder: "https://github.com/yourname" },
-  { key: "portfolio_url", label: "Portfolio / Website", icon: Globe, placeholder: "https://yourdomain.dev" },
+  {
+    key: "portfolio_url",
+    label: "Portfolio / Website",
+    icon: Globe,
+    placeholder: "https://yourdomain.dev",
+  },
 ];
 
 export function SocialLinksSection({

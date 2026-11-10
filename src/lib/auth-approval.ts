@@ -11,10 +11,10 @@ export function assertUserApproved(user: AuthUser): void {
   }
   if (user.approval_status === "rejected") {
     throw createLoginAuthError({
-      message: "Your registration was not approved. Contact support if you believe this is an error.",
+      message:
+        "Your registration was not approved. Contact support if you believe this is an error.",
       code: LOGIN_ERROR_CODES.ACCOUNT_REJECTED,
       fields: [],
     });
   }
 }
-

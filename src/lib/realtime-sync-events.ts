@@ -93,7 +93,9 @@ export function isUserUpdatedPayload(
   return typeof payload.user_id === "number";
 }
 
-function isUserApplicationStatsItem(raw: unknown): raw is UsersApplicationStatsPayload["users"][number] {
+function isUserApplicationStatsItem(
+  raw: unknown,
+): raw is UsersApplicationStatsPayload["users"][number] {
   if (!raw || typeof raw !== "object") return false;
   const item = raw as Record<string, unknown>;
   return (

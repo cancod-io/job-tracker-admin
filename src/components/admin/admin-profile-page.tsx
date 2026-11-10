@@ -158,7 +158,9 @@ export function AdminProfilePage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <UserRound className="size-5 text-primary" aria-hidden />
-              <h1 className="text-xl font-semibold text-foreground md:text-2xl">Profile Settings</h1>
+              <h1 className="text-xl font-semibold text-foreground md:text-2xl">
+                Profile Settings
+              </h1>
             </div>
             <p className="text-sm text-muted-foreground">
               Manage your personal information and account preferences.

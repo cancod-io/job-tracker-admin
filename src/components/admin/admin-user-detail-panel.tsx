@@ -615,224 +615,224 @@ export function AdminUserDetailPanel({
       </div>
     ) : detail ? (
       <>
-          {isPageLayout ? (
-            <>
-              <div className="border-b border-border/60 bg-gradient-to-r from-muted/30 via-card to-card px-6 py-6 lg:px-8">
-                <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="flex min-w-0 items-start gap-5">
-                    <UserAvatar
-                      name={detail.full_name || detail.email}
-                      profilePictureUrl={detail.profile_picture_url}
-                      sizeClass="size-20"
-                      textClass="text-xl"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                          {detail.full_name || detail.email}
-                        </h1>
-                        {isSelf ? (
-                          <span className="inline-flex rounded-full border border-primary/35 bg-primary/12 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                            Your account
-                          </span>
-                        ) : null}
-                        <span
-                          className={cn(
-                            "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                            approvalBadgeClass(detail.approval_status),
-                          )}
-                        >
-                          {approvalLabel(detail.approval_status)}
+        {isPageLayout ? (
+          <>
+            <div className="border-b border-border/60 bg-gradient-to-r from-muted/30 via-card to-card px-6 py-6 lg:px-8">
+              <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+                <div className="flex min-w-0 items-start gap-5">
+                  <UserAvatar
+                    name={detail.full_name || detail.email}
+                    profilePictureUrl={detail.profile_picture_url}
+                    sizeClass="size-20"
+                    textClass="text-xl"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                        {detail.full_name || detail.email}
+                      </h1>
+                      {isSelf ? (
+                        <span className="bg-primary/12 inline-flex rounded-full border border-primary/35 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                          Your account
                         </span>
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                        <span className="inline-flex min-w-0 items-center gap-1.5">
-                          <Mail className="size-3.5 shrink-0" aria-hidden />
-                          <span className="truncate">{detail.email}</span>
-                          <button
-                            type="button"
-                            onClick={(e) => void copyEmail(e)}
-                            className={cn(
-                              "inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors",
-                              copied
-                                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                            )}
-                            aria-label={
-                              copied ? "Email copied to clipboard" : "Copy email to clipboard"
-                            }
-                          >
-                            {copied ? (
-                              <CheckCircle2 className="size-3.5" aria-hidden />
-                            ) : (
-                              <Copy className="size-3.5" aria-hidden />
-                            )}
-                            {copied ? "Copied" : "Copy"}
-                          </button>
-                          <span className="sr-only" role="status" aria-live="polite">
-                            {copied ? "Email copied to clipboard." : ""}
-                          </span>
-                        </span>
-                        <span>
-                          User ID:{" "}
-                          <span className="font-medium tabular-nums text-foreground">
-                            USR-{detail.id}
-                          </span>
-                        </span>
-                        <span>
-                          Role:{" "}
-                          <span className="font-medium text-foreground">
-                            {roleLabel(detail.role)}
-                          </span>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 xl:max-w-xl">{renderQuickActions(detail)}</div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 border-b border-border/60 px-6 py-4 lg:px-8">
-                    {[
-                      {
-                        label: "Last login",
-                        value: detail.last_login_at ? formatDateTime(detail.last_login_at) : "Never",
-                        small: true,
-                      },
-                      {
-                        label: "Member since",
-                        value: formatDateTime(detail.created_at),
-                        small: true,
-                      },
-                    ].map((stat) => (
-                      <div
-                        key={stat.label}
-                        className="rounded-xl border border-border/80 bg-muted/15 px-4 py-3"
-                      >
-                        <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
-                        <p
-                          className={cn(
-                            "mt-1 font-semibold tabular-nums text-foreground",
-                            stat.small ? "text-sm" : "text-xl",
-                          )}
-                        >
-                          {stat.value}
-                        </p>
-                      </div>
-                    ))}
-              </div>
-            </>
-          ) : (
-            <div className="border-b border-border/60 px-5 py-5">
-              <div className="flex items-start gap-4">
-                <UserAvatar
-                  name={detail.full_name || detail.email}
-                  profilePictureUrl={detail.profile_picture_url}
-                  sizeClass="size-16"
-                  textClass="text-lg"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-lg font-semibold text-foreground">
-                      {detail.full_name}
-                    </p>
-                    <span
-                      className={cn(
-                        "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                        approvalBadgeClass(detail.approval_status),
-                      )}
-                    >
-                      {approvalLabel(detail.approval_status)}
-                    </span>
-                  </div>
-                  <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Mail className="size-3.5 shrink-0" aria-hidden />
-                    <span className="truncate">{detail.email}</span>
-                    <button
-                      type="button"
-                      onClick={(e) => void copyEmail(e)}
-                      className={cn(
-                        "inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors",
-                        copied
-                          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      )}
-                      aria-label={copied ? "Email copied to clipboard" : "Copy email to clipboard"}
-                    >
-                      {copied ? (
-                        <CheckCircle2 className="size-3.5" aria-hidden />
-                      ) : (
-                        <Copy className="size-3.5" aria-hidden />
-                      )}
-                      {copied ? "Copied" : "Copy"}
-                    </button>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    User ID: <span className="tabular-nums text-foreground">USR-{detail.id}</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Role: <span className="text-foreground">{roleLabel(detail.role)}</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {error ? (
-            <p
-              className={cn(
-                "rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive",
-                isPageLayout ? "mx-6 mt-4 lg:mx-8" : "mx-5 mt-4",
-              )}
-              role="alert"
-            >
-              {error}
-            </p>
-          ) : null}
-
-          {isPageLayout ? (
-            <>
-              <div
-                className="border-b border-border/60 px-6 lg:px-8"
-                role="tablist"
-                aria-label="User detail sections"
-              >
-                <div className="flex flex-wrap gap-1">
-                  {PAGE_TABS.map(({ id, label, icon: Icon }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        role="tab"
-                        aria-selected={activeTab === id}
-                        onClick={() => setActiveTab(id)}
+                      ) : null}
+                      <span
                         className={cn(
-                          "inline-flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
-                          activeTab === id
-                            ? "border-primary text-foreground"
-                            : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+                          "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                          approvalBadgeClass(detail.approval_status),
                         )}
                       >
-                        <Icon className="size-4" aria-hidden />
-                        {label}
-                      </button>
-                  ))}
+                        {approvalLabel(detail.approval_status)}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                      <span className="inline-flex min-w-0 items-center gap-1.5">
+                        <Mail className="size-3.5 shrink-0" aria-hidden />
+                        <span className="truncate">{detail.email}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => void copyEmail(e)}
+                          className={cn(
+                            "inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors",
+                            copied
+                              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          )}
+                          aria-label={
+                            copied ? "Email copied to clipboard" : "Copy email to clipboard"
+                          }
+                        >
+                          {copied ? (
+                            <CheckCircle2 className="size-3.5" aria-hidden />
+                          ) : (
+                            <Copy className="size-3.5" aria-hidden />
+                          )}
+                          {copied ? "Copied" : "Copy"}
+                        </button>
+                        <span className="sr-only" role="status" aria-live="polite">
+                          {copied ? "Email copied to clipboard." : ""}
+                        </span>
+                      </span>
+                      <span>
+                        User ID:{" "}
+                        <span className="font-medium tabular-nums text-foreground">
+                          USR-{detail.id}
+                        </span>
+                      </span>
+                      <span>
+                        Role:{" "}
+                        <span className="font-medium text-foreground">
+                          {roleLabel(detail.role)}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div role="tabpanel" className="min-h-[24rem]">
-                {activeTab === "account" ? renderAccountSection(detail) : null}
-                {activeTab === "permissions" ? renderPermissionsSection(detail) : null}
+                <div className="shrink-0 xl:max-w-xl">{renderQuickActions(detail)}</div>
               </div>
-            </>
-          ) : (
-            <>
-              {renderAccountSection(detail)}
-              {renderPermissionsSection(detail)}
-            </>
-          )}
-        </>
-      ) : null;
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 border-b border-border/60 px-6 py-4 lg:px-8">
+              {[
+                {
+                  label: "Last login",
+                  value: detail.last_login_at ? formatDateTime(detail.last_login_at) : "Never",
+                  small: true,
+                },
+                {
+                  label: "Member since",
+                  value: formatDateTime(detail.created_at),
+                  small: true,
+                },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-xl border border-border/80 bg-muted/15 px-4 py-3"
+                >
+                  <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
+                  <p
+                    className={cn(
+                      "mt-1 font-semibold tabular-nums text-foreground",
+                      stat.small ? "text-sm" : "text-xl",
+                    )}
+                  >
+                    {stat.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="border-b border-border/60 px-5 py-5">
+            <div className="flex items-start gap-4">
+              <UserAvatar
+                name={detail.full_name || detail.email}
+                profilePictureUrl={detail.profile_picture_url}
+                sizeClass="size-16"
+                textClass="text-lg"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-lg font-semibold text-foreground">
+                    {detail.full_name}
+                  </p>
+                  <span
+                    className={cn(
+                      "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                      approvalBadgeClass(detail.approval_status),
+                    )}
+                  >
+                    {approvalLabel(detail.approval_status)}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Mail className="size-3.5 shrink-0" aria-hidden />
+                  <span className="truncate">{detail.email}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => void copyEmail(e)}
+                    className={cn(
+                      "inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium transition-colors",
+                      copied
+                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                    aria-label={copied ? "Email copied to clipboard" : "Copy email to clipboard"}
+                  >
+                    {copied ? (
+                      <CheckCircle2 className="size-3.5" aria-hidden />
+                    ) : (
+                      <Copy className="size-3.5" aria-hidden />
+                    )}
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  User ID: <span className="tabular-nums text-foreground">USR-{detail.id}</span>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Role: <span className="text-foreground">{roleLabel(detail.role)}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error ? (
+          <p
+            className={cn(
+              "rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive",
+              isPageLayout ? "mx-6 mt-4 lg:mx-8" : "mx-5 mt-4",
+            )}
+            role="alert"
+          >
+            {error}
+          </p>
+        ) : null}
+
+        {isPageLayout ? (
+          <>
+            <div
+              className="border-b border-border/60 px-6 lg:px-8"
+              role="tablist"
+              aria-label="User detail sections"
+            >
+              <div className="flex flex-wrap gap-1">
+                {PAGE_TABS.map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === id}
+                    onClick={() => setActiveTab(id)}
+                    className={cn(
+                      "inline-flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
+                      activeTab === id
+                        ? "border-primary text-foreground"
+                        : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="size-4" aria-hidden />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div role="tabpanel" className="min-h-[24rem]">
+              {activeTab === "account" ? renderAccountSection(detail) : null}
+              {activeTab === "permissions" ? renderPermissionsSection(detail) : null}
+            </div>
+          </>
+        ) : (
+          <>
+            {renderAccountSection(detail)}
+            {renderPermissionsSection(detail)}
+          </>
+        )}
+      </>
+    ) : null;
 
   const cvPreviewModal = (
     <AdminUserCvPreviewModal

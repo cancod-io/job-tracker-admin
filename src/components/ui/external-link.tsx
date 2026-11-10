@@ -8,12 +8,7 @@ type ExternalLinkProps = {
   truncate?: boolean;
 };
 
-export function ExternalLink({
-  href,
-  children,
-  className,
-  truncate = true,
-}: ExternalLinkProps) {
+export function ExternalLink({ href, children, className, truncate = true }: ExternalLinkProps) {
   return (
     <a
       href={href}

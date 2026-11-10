@@ -21,12 +21,7 @@ const REFRESH_URL = () => apiUrl(API_PATHS.auth.refresh);
 let refreshInFlight: Promise<string | null> | null = null;
 
 export function applyTokenResponse(data: TokenResponse): void {
-  setStoredTokens(
-    data.access_token,
-    data.refresh_token,
-    data.expires_in,
-    data.refresh_expires_in,
-  );
+  setStoredTokens(data.access_token, data.refresh_token, data.expires_in, data.refresh_expires_in);
   signalTokenRefreshed(data.access_token);
 }
 

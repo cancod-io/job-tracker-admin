@@ -4,10 +4,7 @@ import { Suspense, useCallback, useEffect, useState, type FormEvent } from "reac
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import {
-  isVerificationAuthError,
-  VERIFICATION_ERROR_CODES,
-} from "@/lib/auth-errors";
+import { isVerificationAuthError, VERIFICATION_ERROR_CODES } from "@/lib/auth-errors";
 import {
   RESEND_COOLDOWN_SECONDS,
   resendVerificationRequest,

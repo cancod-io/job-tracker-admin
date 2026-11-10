@@ -290,9 +290,27 @@ export function AvatarEditorModal({
               <div className="flex flex-col items-center gap-3">
                 <p className="text-xs font-medium text-muted-foreground">Preview</p>
                 <div className="flex items-end gap-3">
-                  <CropPreview src={objectUrl} size={72} natW={dims.w} natH={dims.h} state={state} />
-                  <CropPreview src={objectUrl} size={40} natW={dims.w} natH={dims.h} state={state} />
-                  <CropPreview src={objectUrl} size={28} natW={dims.w} natH={dims.h} state={state} />
+                  <CropPreview
+                    src={objectUrl}
+                    size={72}
+                    natW={dims.w}
+                    natH={dims.h}
+                    state={state}
+                  />
+                  <CropPreview
+                    src={objectUrl}
+                    size={40}
+                    natW={dims.w}
+                    natH={dims.h}
+                    state={state}
+                  />
+                  <CropPreview
+                    src={objectUrl}
+                    size={28}
+                    natW={dims.w}
+                    natH={dims.h}
+                    state={state}
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <button

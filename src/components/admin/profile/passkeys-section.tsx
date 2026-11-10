@@ -142,7 +142,10 @@ export function PasskeysSection({ onSuccess, onError }: PasskeysSectionProps) {
           {loadError ? <AlertBanner>{loadError}</AlertBanner> : null}
 
           {loading && items.length === 0 ? (
-            <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground" aria-busy="true">
+            <div
+              className="flex items-center gap-2 py-6 text-sm text-muted-foreground"
+              aria-busy="true"
+            >
               <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
               Loading passkeys…
             </div>
@@ -158,7 +161,7 @@ export function PasskeysSection({ onSuccess, onError }: PasskeysSectionProps) {
               </p>
             </div>
           ) : (
-            <ul className="divide-y divide-border/80 rounded-xl border border-border overflow-hidden">
+            <ul className="divide-y divide-border/80 overflow-hidden rounded-xl border border-border">
               {items.map((cred) => (
                 <li
                   key={cred.id}
@@ -171,9 +174,7 @@ export function PasskeysSection({ onSuccess, onError }: PasskeysSectionProps) {
                     <p className="text-xs text-muted-foreground">
                       Hint <span className="font-mono">{cred.credential_id_hint}</span>
                       {" · "}Added {formatDateTime(cred.created_at)}
-                      {cred.last_used_at
-                        ? ` · Last used ${formatDateTime(cred.last_used_at)}`
-                        : ""}
+                      {cred.last_used_at ? ` · Last used ${formatDateTime(cred.last_used_at)}` : ""}
                     </p>
                   </div>
                   <button
@@ -236,7 +237,7 @@ function PasskeyDeleteConfirm({
           <AlertTriangle className="size-7" aria-hidden />
         </div>
         <p className="text-sm text-foreground">
-          Delete passkey <span className="font-semibold break-all">&apos;{label}&apos;</span>?
+          Delete passkey <span className="break-all font-semibold">&apos;{label}&apos;</span>?
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
           You will no longer be able to sign in with this authenticator. If it is your last passkey,

@@ -4,10 +4,7 @@ import { Suspense, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import {
-  MIN_PASSWORD_LENGTH,
-  PasswordFieldsGroup,
-} from "@/components/auth/password-fields-group";
+import { MIN_PASSWORD_LENGTH, PasswordFieldsGroup } from "@/components/auth/password-fields-group";
 import { verifyEmailHref } from "@/lib/auth-verification-api";
 import { useAuth } from "@/providers/auth-provider";
 
@@ -62,7 +59,9 @@ function RegisterFormInner() {
     return (
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Pending approval</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Pending approval
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{pendingEmail}</span> is queued for admin
             review. Another administrator must approve this account before you can open the console.

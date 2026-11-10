@@ -112,7 +112,7 @@ function normalizeUserRow(raw: unknown): AdminUserRow | null {
     email: str(r.email),
     full_name: str(r.full_name ?? r.name, "—"),
     role: str(r.role, "user"),
-    approval_status: (str(r.approval_status, "pending") as UserApprovalStatus),
+    approval_status: str(r.approval_status, "pending") as UserApprovalStatus,
     is_active: bool(r.is_active, true),
     created_at: str(r.created_at, new Date(0).toISOString()),
     last_login_at: strOrNull(r.last_login_at ?? r.last_login),
@@ -198,9 +198,7 @@ function normalizeListResponse(
   requestedPageSize: number,
 ): AdminUserListResponse {
   const itemsRaw = Array.isArray(raw.items) ? raw.items : [];
-  const items = itemsRaw
-    .map(normalizeUserRow)
-    .filter((v): v is AdminUserRow => v != null);
+  const items = itemsRaw.map(normalizeUserRow).filter((v): v is AdminUserRow => v != null);
 
   return {
     items,
@@ -260,11 +258,7 @@ export async function resetUserPassword(token: string, userId: number): Promise<
   });
 }
 
-export async function patchUserRole(
-  token: string,
-  userId: number,
-  role: UserRole,
-): Promise<void> {
+export async function patchUserRole(token: string, userId: number, role: UserRole): Promise<void> {
   await fetchAuthedJson<unknown>(token, API_PATHS.adminUsers.role(userId), {
     method: "PATCH",
     body: { role },
@@ -277,16 +271,10 @@ export async function deleteAdminUser(token: string, userId: number): Promise<vo
   });
 }
 
-export async function fetchUserCvBlob(
-  token: string,
-  userId: number,
-  cvId: number,
-): Promise<Blob> {
-  const res = await fetchAuthedResponse(
-    token,
-    API_PATHS.adminUsers.cvDownload(userId, cvId),
-    { timeoutMs: 60_000 },
-  );
+export async function fetchUserCvBlob(token: string, userId: number, cvId: number): Promise<Blob> {
+  const res = await fetchAuthedResponse(token, API_PATHS.adminUsers.cvDownload(userId, cvId), {
+    timeoutMs: 60_000,
+  });
   return res.blob();
 }
 

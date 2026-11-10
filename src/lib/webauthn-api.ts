@@ -14,11 +14,7 @@ import {
 } from "@simplewebauthn/browser";
 import { apiUrl } from "@/lib/api";
 import { API_PATHS } from "@/lib/api-paths";
-import {
-  createLoginAuthError,
-  resolveLoginError,
-  type ApiAuthErrorShape,
-} from "@/lib/auth-errors";
+import { createLoginAuthError, resolveLoginError, type ApiAuthErrorShape } from "@/lib/auth-errors";
 import { fetchAuthedJson } from "@/lib/fetch-authed";
 import { fetchWithTimeout } from "@/lib/http";
 import type { TokenResponse } from "@/types/auth";
@@ -63,16 +59,16 @@ export function isPasskeyRequiredCode(code: string | null | undefined): boolean 
   return code === WEBAUTHN_ERROR_CODES.PASSKEY_REQUIRED;
 }
 
-function normalizeCredential(raw: Partial<WebAuthnCredential> & { id: number }): WebAuthnCredential {
+function normalizeCredential(
+  raw: Partial<WebAuthnCredential> & { id: number },
+): WebAuthnCredential {
   return {
     id: raw.id,
     device_name: typeof raw.device_name === "string" ? raw.device_name : null,
     transports: typeof raw.transports === "string" ? raw.transports : null,
-    created_at:
-      typeof raw.created_at === "string" ? raw.created_at : new Date(0).toISOString(),
+    created_at: typeof raw.created_at === "string" ? raw.created_at : new Date(0).toISOString(),
     last_used_at: typeof raw.last_used_at === "string" ? raw.last_used_at : null,
-    credential_id_hint:
-      typeof raw.credential_id_hint === "string" ? raw.credential_id_hint : "—",
+    credential_id_hint: typeof raw.credential_id_hint === "string" ? raw.credential_id_hint : "—",
   };
 }
 
@@ -110,8 +106,7 @@ function browserCancelMessage(err: unknown): string | null {
     return "This browser or device does not support passkeys.";
   }
   if (name === "SecurityError") {
-    const current =
-      typeof window !== "undefined" ? window.location.origin : "(unknown)";
+    const current = typeof window !== "undefined" ? window.location.origin : "(unknown)";
     return (
       `Passkey blocked by the browser (SecurityError). Current page: ${current}. ` +
       `Open the admin app exactly at ${WEBAUTHN_REQUIRED_ORIGIN} — localhost / HTTP / wrong host will fail ` +
@@ -251,10 +246,7 @@ export async function enrollWebAuthnPasskey(
   });
 }
 
-export async function deleteWebAuthnCredential(
-  token: string,
-  credentialId: number,
-): Promise<void> {
+export async function deleteWebAuthnCredential(token: string, credentialId: number): Promise<void> {
   try {
     await fetchAuthedJson<void>(token, PATHS.credentialDelete(credentialId), {
       method: "DELETE",

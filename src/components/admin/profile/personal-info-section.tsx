@@ -3,7 +3,10 @@
 import { cn } from "@/lib/utils";
 import { AvatarUploader } from "@/components/admin/profile/avatar-uploader";
 import { ProfileSectionCard } from "@/components/admin/profile/profile-section-card";
-import type { ProfileFormErrors, ProfileFormState } from "@/components/admin/profile/profile-helpers";
+import type {
+  ProfileFormErrors,
+  ProfileFormState,
+} from "@/components/admin/profile/profile-helpers";
 
 type PersonalInfoSectionProps = {
   state: ProfileFormState;

@@ -161,18 +161,15 @@ const FORM_LEVEL_CODES = new Set<string>([
 ]);
 
 const FACE_MESSAGES: Record<string, string> = {
-  [LOGIN_ERROR_CODES.FACE_REQUIRED]:
-    "Face verification is required for this admin account.",
+  [LOGIN_ERROR_CODES.FACE_REQUIRED]: "Face verification is required for this admin account.",
   [LOGIN_ERROR_CODES.FACE_NOT_MATCHED]:
     "Face did not match. Position your face in the frame and try again.",
   [LOGIN_ERROR_CODES.FACE_SESSION_INVALID]:
     "Face verification session expired. Please sign in again.",
   [LOGIN_ERROR_CODES.FACE_DESCRIPTOR_INVALID]:
     "Invalid face descriptor. Please try capturing again.",
-  [LOGIN_ERROR_CODES.FACE_DISABLED]:
-    "Face recognition is disabled on the server.",
-  [LOGIN_ERROR_CODES.IP_NOT_ALLOWED]:
-    "Sign-in is not allowed from this IP address.",
+  [LOGIN_ERROR_CODES.FACE_DISABLED]: "Face recognition is disabled on the server.",
+  [LOGIN_ERROR_CODES.IP_NOT_ALLOWED]: "Sign-in is not allowed from this IP address.",
   [LOGIN_ERROR_CODES.ADMIN_EMAIL_NOT_ALLOWED]:
     "This email isn’t authorized for admin access. Contact your system administrator if you need an account.",
   [LOGIN_ERROR_CODES.ADMIN_BOOTSTRAP_NOT_CONFIGURED]:
@@ -207,8 +204,7 @@ export function resolveLoginError(
     message,
     code,
     fields,
-    faceSessionId:
-      code === LOGIN_ERROR_CODES.FACE_REQUIRED ? faceSessionId : null,
+    faceSessionId: code === LOGIN_ERROR_CODES.FACE_REQUIRED ? faceSessionId : null,
   };
 }
 
@@ -228,8 +224,7 @@ export function isLoginAuthError(err: unknown): err is LoginAuthError {
   return err instanceof Error && ("code" in err || "fields" in err);
 }
 
-export const SESSION_EXPIRED_MESSAGE =
-  "Your session has expired. Please log in again.";
+export const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
 
 export class SessionExpiredError extends Error {
   override readonly name = "SessionExpiredError";

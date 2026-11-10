@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  AlertCircle,
-  BellRing,
-  CheckCircle2,
-  Info,
-  X,
-  type LucideIcon,
-} from "lucide-react";
+import { AlertCircle, BellRing, CheckCircle2, Info, X, type LucideIcon } from "lucide-react";
 import type { ToastMessage } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -60,12 +53,7 @@ function toastStyle(kind: ToastMessage["kind"]): ToastStyle {
   }
 }
 
-export function ToastBanner({
-  toast,
-  className,
-  onDismiss,
-  layout = "inline",
-}: ToastBannerProps) {
+export function ToastBanner({ toast, className, onDismiss, layout = "inline" }: ToastBannerProps) {
   if (!toast) return null;
 
   const style = toastStyle(toast.kind);
@@ -78,7 +66,7 @@ export function ToastBanner({
       className={cn(
         "relative overflow-hidden rounded-xl border text-foreground shadow-lg backdrop-blur-md",
         style.surface,
-        isFloating && "animate-in slide-in-from-top-4 fade-in duration-300",
+        isFloating && "duration-300 animate-in fade-in slide-in-from-top-4",
         isFloating && "ring-1 ring-inset",
         style.ring,
         className,
@@ -86,10 +74,7 @@ export function ToastBanner({
       role={toast.kind === "error" ? "alert" : "status"}
       aria-live="polite"
     >
-      <span
-        className={cn("absolute inset-y-0 left-0 w-1", style.accent)}
-        aria-hidden
-      />
+      <span className={cn("absolute inset-y-0 left-0 w-1", style.accent)} aria-hidden />
 
       <div className="flex items-start gap-3 py-3 pl-4 pr-3">
         <span

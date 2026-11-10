@@ -34,8 +34,7 @@ export const API_PATHS = {
     base: "/api/admin/users",
     detail: (userId: number) => `/api/admin/users/${userId}`,
     avatar: (userId: number) => `/api/admin/users/${userId}/avatar`,
-    cvDownload: (userId: number, cvId: number) =>
-      `/api/admin/users/${userId}/cvs/${cvId}/download`,
+    cvDownload: (userId: number, cvId: number) => `/api/admin/users/${userId}/cvs/${cvId}/download`,
     status: (userId: number) => `/api/admin/users/${userId}/status`,
     role: (userId: number) => `/api/admin/users/${userId}/role`,
     approval: (userId: number) => `/api/v1/admin/users/${userId}/approval`,
@@ -115,8 +114,7 @@ export const API_PATHS = {
   adminNotifications: {
     base: "/api/admin/notifications",
     unreadCount: "/api/admin/notifications/unread-count",
-    read: (notificationId: number) =>
-      `/api/admin/notifications/${notificationId}/read`,
+    read: (notificationId: number) => `/api/admin/notifications/${notificationId}/read`,
     readAll: "/api/admin/notifications/read-all",
   },
 
@@ -135,8 +133,7 @@ export const API_PATHS = {
     applicationsBySource: "/api/admin/analytics/applications/by-source",
     usersSummary: "/api/admin/analytics/users/summary",
     usersTimeseries: "/api/admin/analytics/users/timeseries",
-    userPipeline: (userId: number) =>
-      `/api/admin/analytics/users/${userId}/pipeline`,
+    userPipeline: (userId: number) => `/api/admin/analytics/users/${userId}/pipeline`,
     fetchRunsSummary: "/api/admin/analytics/fetch-runs/summary",
     fetchRunsTimeseries: "/api/admin/analytics/fetch-runs/timeseries",
     scrapingSummary: "/api/admin/analytics/scraping/summary",

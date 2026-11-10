@@ -29,10 +29,7 @@ export function ProfileSectionCard({
     >
       <div className="flex flex-col gap-3 border-b border-border/60 pb-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-1">
-          <h2
-            id={`${id}-title`}
-            className="text-base font-semibold text-foreground md:text-lg"
-          >
+          <h2 id={`${id}-title`} className="text-base font-semibold text-foreground md:text-lg">
             {title}
           </h2>
           {description ? (

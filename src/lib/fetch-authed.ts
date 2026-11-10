@@ -53,11 +53,7 @@ async function resolveAccessToken(passedToken: string): Promise<string | null> {
   return ensureAccessToken();
 }
 
-async function authedFetch(
-  token: string,
-  path: string,
-  init: AuthedJsonInit,
-): Promise<Response> {
+async function authedFetch(token: string, path: string, init: AuthedJsonInit): Promise<Response> {
   const { body, headers, timeoutMs, ...rest } = init;
   const isStreamingBody = body instanceof FormData || body instanceof Blob;
   const finalHeaders = new Headers(headers);
@@ -70,11 +66,7 @@ async function authedFetch(
   }
 
   const finalBody: BodyInit | undefined =
-    body === undefined
-      ? undefined
-      : isStreamingBody
-        ? (body as BodyInit)
-        : JSON.stringify(body);
+    body === undefined ? undefined : isStreamingBody ? (body as BodyInit) : JSON.stringify(body);
 
   return fetchWithTimeout(
     apiUrl(path),

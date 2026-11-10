@@ -1,4 +1,9 @@
-import { adminNavGroups, adminNavItems, type AdminNavGroup, type AdminNavItem } from "@/config/admin-nav";
+import {
+  adminNavGroups,
+  adminNavItems,
+  type AdminNavGroup,
+  type AdminNavItem,
+} from "@/config/admin-nav";
 
 /** Route prefix → minimum permission required to view the page. */
 export const ADMIN_ROUTE_PERMISSIONS: Record<string, string> = {
@@ -14,9 +19,7 @@ export function permissionForPath(pathname: string): string | null {
   const path = pathname.split("?")[0] ?? "/";
   if (path === "/" || path === "") return "users.read";
 
-  const entries = Object.entries(ADMIN_ROUTE_PERMISSIONS).sort(
-    (a, b) => b[0].length - a[0].length,
-  );
+  const entries = Object.entries(ADMIN_ROUTE_PERMISSIONS).sort((a, b) => b[0].length - a[0].length);
   for (const [prefix, permission] of entries) {
     if (path === prefix || path.startsWith(`${prefix}/`)) return permission;
   }
@@ -25,9 +28,7 @@ export function permissionForPath(pathname: string): string | null {
 
 export function isAdminOnlyPath(pathname: string): boolean {
   const path = pathname.split("?")[0] ?? "/";
-  return ADMIN_ONLY_ROUTES.some(
-    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
-  );
+  return ADMIN_ONLY_ROUTES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
 function isLeafVisible(

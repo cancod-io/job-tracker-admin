@@ -31,10 +31,7 @@ export function DataTable({
           {loadingMessage}
         </div>
       ) : (
-        <table
-          className={cn("w-full text-left text-sm", tableClassName)}
-          style={{ minWidth }}
-        >
+        <table className={cn("w-full text-left text-sm", tableClassName)} style={{ minWidth }}>
           {children}
         </table>
       )}

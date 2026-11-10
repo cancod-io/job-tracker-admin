@@ -188,39 +188,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("authenticated");
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    let res: Response;
-    try {
-      res = await fetchWithTimeout(apiUrl(API_PATHS.auth.login), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-    } catch (e) {
-      if (e instanceof Error && e.name === "AbortError") {
-        throw new Error(
-          `Could not reach the API at ${getPublicApiUrl()} (timed out). Ensure the backend is running and NEXT_PUBLIC_API_URL is correct.`,
-        );
-      }
-      throw e;
-    }
-    if (!res.ok) {
-      const err = (await res.json().catch(() => ({}))) as Parameters<typeof resolveLoginError>[0];
-      const resolved = resolveLoginError(err);
-      if (isPasskeyRequiredCode(resolved.code)) {
-        throw createLoginAuthError({
-          message: messageForWebAuthnCode(resolved.code, resolved.message),
-          code: resolved.code,
-          fields: [],
-          faceSessionId: null,
+  const login = useCallback(
+    async (email: string, password: string) => {
+      let res: Response;
+      try {
+        res = await fetchWithTimeout(apiUrl(API_PATHS.auth.login), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
         });
+      } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") {
+          throw new Error(
+            `Could not reach the API at ${getPublicApiUrl()} (timed out). Ensure the backend is running and NEXT_PUBLIC_API_URL is correct.`,
+          );
+        }
+        throw e;
       }
-      // FACE_REQUIRED includes faceSessionId from details — do not apply tokens.
-      throw createLoginAuthError(resolved);
-    }
-    const data = (await res.json()) as TokenResponse;
-    await applyAuthenticatedSession(data);
-  }, [applyAuthenticatedSession]);
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as Parameters<typeof resolveLoginError>[0];
+        const resolved = resolveLoginError(err);
+        if (isPasskeyRequiredCode(resolved.code)) {
+          throw createLoginAuthError({
+            message: messageForWebAuthnCode(resolved.code, resolved.message),
+            code: resolved.code,
+            fields: [],
+            faceSessionId: null,
+          });
+        }
+        // FACE_REQUIRED includes faceSessionId from details — do not apply tokens.
+        throw createLoginAuthError(resolved);
+      }
+      const data = (await res.json()) as TokenResponse;
+      await applyAuthenticatedSession(data);
+    },
+    [applyAuthenticatedSession],
+  );
 
   const loginWithPasskey = useCallback(
     async (email: string) => {

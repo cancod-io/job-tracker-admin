@@ -69,9 +69,7 @@ function normalizeCatalogResponse(raw: Record<string, unknown>): AdminPermission
   const rolesRaw = Array.isArray(raw.roles) ? raw.roles : [];
 
   const catalog = filterDisplayCatalog(
-    catalogRaw
-      .map(normalizeCatalogItem)
-      .filter((v): v is PermissionCatalogItem => v != null),
+    catalogRaw.map(normalizeCatalogItem).filter((v): v is PermissionCatalogItem => v != null),
   );
 
   const roles = rolesRaw

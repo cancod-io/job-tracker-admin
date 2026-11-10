@@ -11,11 +11,7 @@ import {
   SecureCredentialsTable,
   type VaultOwnerSummary,
 } from "@/components/admin/secure-credentials/secure-credentials-table";
-import {
-  CREDENTIAL_TYPE_FILTER_OPTIONS,
-  credentialTypeBadgeClass,
-  formatCredentialType,
-} from "@/components/admin/secure-credentials/constants";
+import { CREDENTIAL_TYPE_FILTER_OPTIONS } from "@/components/admin/secure-credentials/constants";
 import { AuthRequiredNotice } from "@/components/admin/shared/auth-required-notice";
 import { ListNotifications } from "@/components/admin/shared/list-notifications";
 import { ListSearchInput } from "@/components/admin/shared/list-search-input";
@@ -259,14 +255,6 @@ export function SecureCredentialsPanel() {
       a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
     );
   }, [ownerDirectory, ownerOptions, data?.items]);
-
-  const typeCounts = useMemo(() => {
-    const counts: Partial<Record<CredentialType, number>> = {};
-    for (const row of data?.items ?? []) {
-      counts[row.credential_type] = (counts[row.credential_type] ?? 0) + 1;
-    }
-    return counts;
-  }, [data?.items]);
 
   const searchActive = search.length > 0;
   const filtersActive = typeFilter !== "all" || ownerFilter !== "all";

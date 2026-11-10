@@ -34,7 +34,7 @@ export function AdminUserApprovalQueue() {
   });
   const tabCountsQuery = useAdminUsersTabCountsQuery();
 
-  const items = listQuery.data?.items ?? [];
+  const items = useMemo(() => listQuery.data?.items ?? [], [listQuery.data?.items]);
 
   const total = listQuery.data?.total ?? 0;
   const tabCounts = tabCountsQuery.data ?? null;
@@ -159,7 +159,9 @@ export function AdminUserApprovalQueue() {
               {filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
-                    {searchDraft.trim() ? "No users match your search." : "No users match this filter."}
+                    {searchDraft.trim()
+                      ? "No users match your search."
+                      : "No users match this filter."}
                   </td>
                 </tr>
               ) : (
@@ -195,7 +197,7 @@ export function AdminUserApprovalQueue() {
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-medium text-foreground">{u.full_name}</span>
                               {isSelf ? (
-                                <span className="inline-flex rounded-full border border-primary/35 bg-primary/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                                <span className="bg-primary/12 inline-flex rounded-full border border-primary/35 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
                                   Your account
                                 </span>
                               ) : null}
@@ -221,7 +223,9 @@ export function AdminUserApprovalQueue() {
                           {approvalLabel(u.approval_status)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{u.is_active ? "Yes" : "No"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {u.is_active ? "Yes" : "No"}
+                      </td>
                     </tr>
                   );
                 })

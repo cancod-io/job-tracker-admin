@@ -100,4 +100,3 @@ export function canPreviewApplicationFile(_file: NamedFile): boolean {
 export function canPreviewFilename(_filename: string, _contentType?: string | null): boolean {
   return true;
 }
-

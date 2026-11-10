@@ -132,7 +132,8 @@ export function AdminRolePermissionsChecklist({
 
   const fullAccess = isAdminRole(targetRole);
   const isUserScope = scope === "user";
-  const roleEditable = editable && !fullAccess && (isUserScope ? true : (roleEntry?.editable ?? !fullAccess));
+  const roleEditable =
+    editable && !fullAccess && (isUserScope ? true : (roleEntry?.editable ?? !fullAccess));
   const granted = useMemo(() => {
     if (isUserScope && userPermissions !== undefined) {
       return filterDisplayPermissions(userPermissions);
@@ -196,9 +197,7 @@ export function AdminRolePermissionsChecklist({
     try {
       await onSave(filterDisplayPermissions(Array.from(draft)).sort());
       setSaveSuccess(
-        isUserScope
-          ? "Saved user permissions."
-          : `Saved ${roleLabel(targetRole)} permissions.`,
+        isUserScope ? "Saved user permissions." : `Saved ${roleLabel(targetRole)} permissions.`,
       );
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : "Failed to save permissions.");
@@ -228,7 +227,9 @@ export function AdminRolePermissionsChecklist({
             <span
               className={cn(
                 "flex size-10 shrink-0 items-center justify-center rounded-xl",
-                fullAccess ? "bg-primary/15 text-primary" : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300",
+                fullAccess
+                  ? "bg-primary/15 text-primary"
+                  : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300",
               )}
             >
               <Shield className="size-5" aria-hidden />
@@ -282,20 +283,19 @@ export function AdminRolePermissionsChecklist({
 
       {!fullAccess && roleEditable && !isUserScope ? (
         <p className="text-xs text-muted-foreground">
-          Changes apply to <span className="font-medium text-foreground">new registrations only</span>{" "}
-          with the <span className="font-medium text-foreground">{roleLabel(targetRole)}</span> role.
-          To change an existing user, edit their permissions on the user detail page.
+          Changes apply to{" "}
+          <span className="font-medium text-foreground">new registrations only</span> with the{" "}
+          <span className="font-medium text-foreground">{roleLabel(targetRole)}</span> role. To
+          change an existing user, edit their permissions on the user detail page.
         </p>
       ) : null}
 
-      {!fullAccess && hintText ? (
-        <p className="text-xs text-muted-foreground">{hintText}</p>
-      ) : null}
+      {!fullAccess && hintText ? <p className="text-xs text-muted-foreground">{hintText}</p> : null}
 
       {!fullAccess && isUserScope && roleTemplate && roleTemplate.length > 0 && !hintText ? (
         <p className="text-xs text-muted-foreground">
-          Default for <span className="font-medium text-foreground">{roleLabel(targetRole)}</span> role:{" "}
-          {roleTemplate.join(", ")}.
+          Default for <span className="font-medium text-foreground">{roleLabel(targetRole)}</span>{" "}
+          role: {roleTemplate.join(", ")}.
         </p>
       ) : null}
 
@@ -344,7 +344,9 @@ export function AdminRolePermissionsChecklist({
                     {group.category}
                   </h4>
                   <p className="text-xs tabular-nums text-muted-foreground">
-                    {fullAccess ? `${keys.length} of ${keys.length}` : `${onCount} of ${keys.length}`}{" "}
+                    {fullAccess
+                      ? `${keys.length} of ${keys.length}`
+                      : `${onCount} of ${keys.length}`}{" "}
                     enabled
                   </p>
                 </div>
@@ -379,7 +381,8 @@ export function AdminRolePermissionsChecklist({
                           : {})}
                         className={cn(
                           "flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors",
-                          roleEditable && "hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60",
+                          roleEditable &&
+                            "hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60",
                           !roleEditable && !enabled && "opacity-55",
                         )}
                       >

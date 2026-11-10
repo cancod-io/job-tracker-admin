@@ -3,19 +3,11 @@
  */
 import { apiUrl } from "@/lib/api";
 import { API_PATHS } from "@/lib/api-paths";
-import {
-  createLoginAuthError,
-  resolveLoginError,
-  type ApiAuthErrorShape,
-} from "@/lib/auth-errors";
+import { createLoginAuthError, resolveLoginError, type ApiAuthErrorShape } from "@/lib/auth-errors";
 import { fetchAuthedJson } from "@/lib/fetch-authed";
 import { fetchWithTimeout } from "@/lib/http";
 import type { TokenResponse } from "@/types/auth";
-import type {
-  FaceDescriptor,
-  FaceEnrollRequest,
-  FaceStatusResponse,
-} from "@/types/face-auth";
+import type { FaceDescriptor, FaceEnrollRequest, FaceStatusResponse } from "@/types/face-auth";
 import { FACE_DESCRIPTOR_LENGTH } from "@/types/face-auth";
 
 const PATHS = API_PATHS.auth.face;
@@ -42,8 +34,7 @@ export async function getFaceStatus(token: string): Promise<FaceStatusResponse> 
     enrolled: raw.enrolled === true,
     label: typeof raw.label === "string" ? raw.label : null,
     enrolled_at: typeof raw.enrolled_at === "string" ? raw.enrolled_at : null,
-    last_verified_at:
-      typeof raw.last_verified_at === "string" ? raw.last_verified_at : null,
+    last_verified_at: typeof raw.last_verified_at === "string" ? raw.last_verified_at : null,
     face_required_on_login: raw.face_required_on_login === true,
   };
 }
@@ -64,10 +55,9 @@ export async function enrollFace(
   });
   return {
     enrolled: raw.enrolled !== false,
-    label: typeof raw.label === "string" ? raw.label : body.label ?? null,
+    label: typeof raw.label === "string" ? raw.label : (body.label ?? null),
     enrolled_at: typeof raw.enrolled_at === "string" ? raw.enrolled_at : null,
-    last_verified_at:
-      typeof raw.last_verified_at === "string" ? raw.last_verified_at : null,
+    last_verified_at: typeof raw.last_verified_at === "string" ? raw.last_verified_at : null,
     face_required_on_login: raw.face_required_on_login !== false,
   };
 }

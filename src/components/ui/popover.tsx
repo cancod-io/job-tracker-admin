@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +52,10 @@ export function Popover({
     let top = r.bottom + gap;
     if (top + ph > window.innerHeight - VIEWPORT_MARGIN) {
       const above = r.top - gap - ph;
-      top = above >= VIEWPORT_MARGIN ? above : Math.max(VIEWPORT_MARGIN, window.innerHeight - ph - VIEWPORT_MARGIN);
+      top =
+        above >= VIEWPORT_MARGIN
+          ? above
+          : Math.max(VIEWPORT_MARGIN, window.innerHeight - ph - VIEWPORT_MARGIN);
     }
 
     setCoords({ top, left });

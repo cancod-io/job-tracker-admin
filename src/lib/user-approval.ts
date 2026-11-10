@@ -23,14 +23,11 @@ export function roleLabel(role: UserRole | string): string {
   return ROLE_LABELS[role as UserRole] ?? role;
 }
 
-export function formatApprovedBy(detail: Pick<
-  AdminUserDetail,
-  "approved_by_name" | "approved_by_role" | "approved_by_id"
->): string {
+export function formatApprovedBy(
+  detail: Pick<AdminUserDetail, "approved_by_name" | "approved_by_role" | "approved_by_id">,
+): string {
   if (detail.approved_by_name) {
-    const roleSuffix = detail.approved_by_role
-      ? ` (${detail.approved_by_role})`
-      : "";
+    const roleSuffix = detail.approved_by_role ? ` (${detail.approved_by_role})` : "";
     return `${detail.approved_by_name}${roleSuffix}`;
   }
   if (detail.approved_by_id != null) {

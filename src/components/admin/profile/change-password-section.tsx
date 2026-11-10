@@ -90,7 +90,11 @@ export function ChangePasswordSection({ onSuccess, onError }: ChangePasswordSect
           aria-pressed={visible}
           aria-label={visible ? "Hide passwords" : "Show passwords"}
         >
-          {visible ? <EyeOff className="size-3.5" aria-hidden /> : <Eye className="size-3.5" aria-hidden />}
+          {visible ? (
+            <EyeOff className="size-3.5" aria-hidden />
+          ) : (
+            <Eye className="size-3.5" aria-hidden />
+          )}
           {visible ? "Hide" : "Show"}
         </button>
       }

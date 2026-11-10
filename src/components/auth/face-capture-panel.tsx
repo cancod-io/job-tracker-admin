@@ -123,7 +123,7 @@ export function FaceCapturePanel({
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-xl border border-border bg-black/90 aspect-[4/3]">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-black/90">
         <video
           ref={videoRef}
           className="h-full w-full scale-x-[-1] object-cover"

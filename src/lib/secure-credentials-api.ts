@@ -74,8 +74,7 @@ function normalizeNullableString(value: unknown): string | null {
 function normalizeCredential(
   raw: Partial<SecureCredential> & Record<string, unknown> & { id: number },
 ): SecureCredential {
-  const username =
-    typeof raw.username === "string" && raw.username.trim() ? raw.username : null;
+  const username = typeof raw.username === "string" && raw.username.trim() ? raw.username : null;
   const notes = typeof raw.notes === "string" ? raw.notes : null;
   // Secret only kept when the API explicitly returns it (for edit reveal). Never invent it.
   const secret = typeof raw.secret === "string" && raw.secret.length > 0 ? raw.secret : null;
@@ -96,10 +95,8 @@ function normalizeCredential(
     created_by_name: normalizeNullableString(raw.created_by_name),
     updated_by_id: normalizeNullableNumber(raw.updated_by_id),
     updated_by_name: normalizeNullableString(raw.updated_by_name),
-    created_at:
-      typeof raw.created_at === "string" ? raw.created_at : new Date(0).toISOString(),
-    updated_at:
-      typeof raw.updated_at === "string" ? raw.updated_at : new Date(0).toISOString(),
+    created_at: typeof raw.created_at === "string" ? raw.created_at : new Date(0).toISOString(),
+    updated_at: typeof raw.updated_at === "string" ? raw.updated_at : new Date(0).toISOString(),
   };
 }
 
@@ -187,10 +184,7 @@ export async function updateSecureCredential(
   return normalizeCredential(raw);
 }
 
-export async function deleteSecureCredential(
-  token: string,
-  credentialId: number,
-): Promise<void> {
+export async function deleteSecureCredential(token: string, credentialId: number): Promise<void> {
   await fetchAuthedJson<void>(token, API_PATHS.adminCredentials.detail(credentialId), {
     method: "DELETE",
   });

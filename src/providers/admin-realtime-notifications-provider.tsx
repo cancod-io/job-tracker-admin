@@ -106,10 +106,7 @@ export function AdminRealtimeNotificationsProvider({ children }: { children: Rea
 
       if (payload.approval_status === "pending") {
         adjustUsersPendingCount(1);
-      } else if (
-        payload.approval_status === "approved" ||
-        payload.approval_status === "rejected"
-      ) {
+      } else if (payload.approval_status === "approved" || payload.approval_status === "rejected") {
         adjustUsersPendingCount(-1);
       }
 

@@ -33,7 +33,11 @@ function getPasswordLengthError(password: string, showWhenEmpty: boolean): strin
   return null;
 }
 
-function getPasswordMatchError(password: string, confirm: string, showWhenEmpty: boolean): string | null {
+function getPasswordMatchError(
+  password: string,
+  confirm: string,
+  showWhenEmpty: boolean,
+): string | null {
   if (confirm.length === 0) {
     return showWhenEmpty ? "Passwords do not match." : null;
   }
@@ -69,7 +73,11 @@ export function PasswordFieldsGroup({
           aria-label={visible ? "Hide passwords" : "Show passwords"}
           aria-pressed={visible}
         >
-          {visible ? <EyeOff className="size-4" strokeWidth={2} aria-hidden /> : <Eye className="size-4" strokeWidth={2} aria-hidden />}
+          {visible ? (
+            <EyeOff className="size-4" strokeWidth={2} aria-hidden />
+          ) : (
+            <Eye className="size-4" strokeWidth={2} aria-hidden />
+          )}
           <span>{visible ? "Hide" : "Show"}</span>
         </button>
       </div>
@@ -123,4 +131,3 @@ export function PasswordFieldsGroup({
     </div>
   );
 }
-

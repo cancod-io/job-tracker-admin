@@ -36,9 +36,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInlineScript() }} />
       </head>
-      <body
-        className={`${inter.variable} min-h-screen bg-background font-sans antialiased`}
-      >
+      <body className={`${inter.variable} min-h-screen bg-background font-sans antialiased`}>
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>

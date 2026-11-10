@@ -71,7 +71,10 @@ export function UsersRealtimeSync() {
 
     return () => {
       window.removeEventListener(REALTIME_USER_UPDATED_EVENT, onUserUpdated);
-      window.removeEventListener(REALTIME_USERS_APPLICATION_STATS_UPDATED_EVENT, onApplicationStats);
+      window.removeEventListener(
+        REALTIME_USERS_APPLICATION_STATS_UPDATED_EVENT,
+        onApplicationStats,
+      );
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [queryClient]);

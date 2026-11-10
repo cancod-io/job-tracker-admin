@@ -64,33 +64,37 @@ export function AdminRealtimeProvider({ children }: { children: ReactNode }) {
   const [lastCloseReason, setLastCloseReason] = useState<string | null>(null);
 
   const canConnect =
-    authStatus === "authenticated" &&
-    Boolean(accessToken) &&
-    user?.approval_status === "approved";
+    authStatus === "authenticated" && Boolean(accessToken) && user?.approval_status === "approved";
 
   const showIndicator = authStatus === "authenticated" && Boolean(accessToken);
 
-  const handleStatusChange = useCallback((status: RealtimeConnectionStatus, meta?: RealtimeStatusMeta) => {
-    setConnectionStatus(status);
-    setRetryInMs(meta?.retryInMs ?? null);
-    if (meta?.closeCode != null) setLastCloseCode(meta.closeCode);
-    if (meta?.closeReason) setLastCloseReason(meta.closeReason);
-    if (status === "connected") {
-      setConnectedAt(Date.now());
-      setRetryInMs(null);
-      setLastCloseCode(null);
-      setLastCloseReason(null);
-    }
-  }, []);
+  const handleStatusChange = useCallback(
+    (status: RealtimeConnectionStatus, meta?: RealtimeStatusMeta) => {
+      setConnectionStatus(status);
+      setRetryInMs(meta?.retryInMs ?? null);
+      if (meta?.closeCode != null) setLastCloseCode(meta.closeCode);
+      if (meta?.closeReason) setLastCloseReason(meta.closeReason);
+      if (status === "connected") {
+        setConnectedAt(Date.now());
+        setRetryInMs(null);
+        setLastCloseCode(null);
+        setLastCloseReason(null);
+      }
+    },
+    [],
+  );
 
   const onEvent = useCallback((event: RealtimeEvent) => {
     routeRealtimeEvent(event);
   }, []);
 
-  const requestData = useCallback((client: RealtimeClient) => {
-    if (permissionsLoading) return;
-    sendRealtimeDataRequests(client, canRef.current);
-  }, [permissionsLoading]);
+  const requestData = useCallback(
+    (client: RealtimeClient) => {
+      if (permissionsLoading) return;
+      sendRealtimeDataRequests(client, canRef.current);
+    },
+    [permissionsLoading],
+  );
 
   const reconnect = useCallback(() => {
     if (!canConnect) return;

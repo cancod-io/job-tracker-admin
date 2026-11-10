@@ -2,10 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-export function useRowSelection<T extends { id: number }>(
-  pageItems: T[],
-  resetDeps: unknown[],
-) {
+export function useRowSelection<T extends { id: number }>(pageItems: T[], resetDeps: unknown[]) {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
@@ -14,10 +11,8 @@ export function useRowSelection<T extends { id: number }>(
   }, resetDeps);
 
   const selectedOnPageCount = pageItems.filter((item) => selectedIds.has(item.id)).length;
-  const allOnPageSelected =
-    pageItems.length > 0 && selectedOnPageCount === pageItems.length;
-  const someOnPageSelected =
-    selectedOnPageCount > 0 && selectedOnPageCount < pageItems.length;
+  const allOnPageSelected = pageItems.length > 0 && selectedOnPageCount === pageItems.length;
+  const someOnPageSelected = selectedOnPageCount > 0 && selectedOnPageCount < pageItems.length;
 
   const selectedItems = useMemo(
     () => pageItems.filter((item) => selectedIds.has(item.id)),

@@ -164,7 +164,11 @@ export function FilePreviewModal({
               <img src={previewUrl} alt={title} className="max-h-full max-w-full object-contain" />
             </div>
           ) : previewKind === "pdf" && previewUrl ? (
-            <iframe src={previewUrl} title={title} className="h-full w-full border-0 bg-background" />
+            <iframe
+              src={previewUrl}
+              title={title}
+              className="h-full w-full border-0 bg-background"
+            />
           ) : previewKind === "text" && previewText ? (
             <div className="h-full overflow-auto p-4 sm:p-5">
               <pre className="whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-foreground sm:text-sm">
@@ -191,7 +195,11 @@ export function FilePreviewModal({
               </audio>
             </div>
           ) : previewKind === "embed" && previewUrl ? (
-            <iframe src={previewUrl} title={title} className="h-full w-full border-0 bg-background" />
+            <iframe
+              src={previewUrl}
+              title={title}
+              className="h-full w-full border-0 bg-background"
+            />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
               <FileQuestion className="size-10 text-muted-foreground/70" aria-hidden />

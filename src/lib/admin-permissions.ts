@@ -89,12 +89,42 @@ export const HIDDEN_PERMISSION_KEYS = new Set([
 
 /** Fallback catalog when GET /api/admin/permissions is unavailable (admin-only endpoint). */
 export const FALLBACK_PERMISSION_CATALOG: PermissionCatalogItem[] = [
-  { key: "users.read", category: "Users", label: "View users", description: "View the user directory and profiles." },
-  { key: "users.approve", category: "Users", label: "Approve users", description: "Approve or reject new registrations." },
-  { key: "users.change_role", category: "Users", label: "Change user role", description: "Change a user's role label." },
-  { key: "users.reset_password", category: "Users", label: "Reset passwords", description: "Reset a user's login password." },
-  { key: "users.delete", category: "Users", label: "Delete users", description: "Remove users from the platform." },
-  { key: "permissions.manage", category: "Permissions", label: "Manage permissions", description: "Edit user permission grants." },
+  {
+    key: "users.read",
+    category: "Users",
+    label: "View users",
+    description: "View the user directory and profiles.",
+  },
+  {
+    key: "users.approve",
+    category: "Users",
+    label: "Approve users",
+    description: "Approve or reject new registrations.",
+  },
+  {
+    key: "users.change_role",
+    category: "Users",
+    label: "Change user role",
+    description: "Change a user's role label.",
+  },
+  {
+    key: "users.reset_password",
+    category: "Users",
+    label: "Reset passwords",
+    description: "Reset a user's login password.",
+  },
+  {
+    key: "users.delete",
+    category: "Users",
+    label: "Delete users",
+    description: "Remove users from the platform.",
+  },
+  {
+    key: "permissions.manage",
+    category: "Permissions",
+    label: "Manage permissions",
+    description: "Edit user permission grants.",
+  },
 ];
 
 export function filterDisplayCatalog(catalog: PermissionCatalogItem[]): PermissionCatalogItem[] {
@@ -105,7 +135,9 @@ export function filterDisplayPermissions(permissions: readonly string[]): string
   return permissions.filter((key) => !HIDDEN_PERMISSION_KEYS.has(key));
 }
 
-export function groupCatalogByCategory(catalog: PermissionCatalogItem[]): PermissionCategoryGroup[] {
+export function groupCatalogByCategory(
+  catalog: PermissionCatalogItem[],
+): PermissionCategoryGroup[] {
   const map = new Map<string, PermissionCatalogItem[]>();
   for (const item of filterDisplayCatalog(catalog)) {
     const category = displayCategoryForPermission(item);

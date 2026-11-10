@@ -6,8 +6,7 @@
 import type { FaceDescriptor } from "@/types/face-auth";
 import { FACE_DESCRIPTOR_LENGTH } from "@/types/face-auth";
 
-const MODEL_URL =
-  "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model";
+const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model";
 
 /** Minimal surface we use from @vladmandic/face-api (avoids `typeof import()` lint). */
 type FaceApiModule = {
@@ -59,9 +58,7 @@ export async function ensureFaceModelsLoaded(): Promise<void> {
     await modelsLoadPromise;
   } catch (err) {
     modelsLoadPromise = null;
-    throw err instanceof Error
-      ? err
-      : new Error("Could not load face recognition models.");
+    throw err instanceof Error ? err : new Error("Could not load face recognition models.");
   }
 }
 
@@ -74,9 +71,7 @@ export function isValidFaceDescriptor(value: unknown): value is FaceDescriptor {
  * Detect a single face in a video frame and return a 128-float descriptor.
  * Throws a user-facing Error when no face is found or models are unavailable.
  */
-export async function captureFaceDescriptor(
-  video: HTMLVideoElement,
-): Promise<FaceDescriptor> {
+export async function captureFaceDescriptor(video: HTMLVideoElement): Promise<FaceDescriptor> {
   await ensureFaceModelsLoaded();
   const faceapi = await getFaceApi();
 

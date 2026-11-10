@@ -5,11 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown, ShieldCheck, X } from "lucide-react";
-import {
-  getVisibleNavGroups,
-  isNavGroupActive,
-  isNavItemActive,
-} from "@/lib/admin-access";
+import { getVisibleNavGroups, isNavGroupActive, isNavItemActive } from "@/lib/admin-access";
 import { useAdminPermissions } from "@/providers/admin-permissions-provider";
 import { useAdminRealtimeNotifications } from "@/providers/admin-realtime-notifications-provider";
 import { formatBadgeCount } from "@/lib/admin-realtime-badges";
@@ -153,7 +149,10 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
                 </button>
 
                 {isOpen ? (
-                  <ul id={`nav-group-${group.id}`} className="mt-1 space-y-0.5 border-l border-border/70 ml-4 pl-2">
+                  <ul
+                    id={`nav-group-${group.id}`}
+                    className="ml-4 mt-1 space-y-0.5 border-l border-border/70 pl-2"
+                  >
                     {group.children.map((item) => {
                       const active = isNavItemActive(pathname, item.href);
                       const Icon = item.icon;
@@ -222,7 +221,11 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
         aria-label="Admin sidebar"
       >
         <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/80 px-4">
-          <Link href="/" className="group flex min-w-0 items-center gap-2.5" onClick={onMobileClose}>
+          <Link
+            href="/"
+            className="group flex min-w-0 items-center gap-2.5"
+            onClick={onMobileClose}
+          >
             <span className="relative flex min-w-0 items-center">
               <Image
                 src="/light-logo.png"
@@ -230,7 +233,7 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
                 width={220}
                 height={56}
                 priority
-                className="h-auto w-auto max-h-10 object-contain object-left dark:hidden"
+                className="h-auto max-h-10 w-auto object-contain object-left dark:hidden"
               />
               <Image
                 src="/dark-logo.png"
@@ -238,7 +241,7 @@ export function AdminSidebar({ mobileOpen, onMobileClose }: AdminSidebarProps) {
                 width={220}
                 height={56}
                 priority
-                className="hidden h-auto w-auto max-h-10 object-contain object-left dark:block"
+                className="hidden h-auto max-h-10 w-auto object-contain object-left dark:block"
               />
             </span>
           </Link>

@@ -20,14 +20,8 @@ function ConnectionPanel({
   manualSpin: boolean;
   close: () => void;
 }) {
-  const {
-    status,
-    retryInMs,
-    connectedAt,
-    lastCloseCode,
-    lastCloseReason,
-    reconnect,
-  } = useRealtimeConnection();
+  const { status, retryInMs, connectedAt, lastCloseCode, lastCloseReason, reconnect } =
+    useRealtimeConnection();
   const presentation = presentationForStatus(status);
   const [now, setNow] = useState(() => Date.now());
   const retryStartedAtRef = useRef<number | null>(null);
@@ -79,7 +73,9 @@ function ConnectionPanel({
           />
           <div className="min-w-0 space-y-1">
             <p className="text-sm font-medium text-foreground">{presentation.label}</p>
-            <p className="text-xs leading-relaxed text-muted-foreground">{presentation.description}</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {presentation.description}
+            </p>
           </div>
         </div>
 
@@ -140,5 +136,65 @@ function ConnectionPanel({
         ) : null}
       </div>
     </div>
+  );
+}
+
+export function RealtimeConnectionIndicator() {
+  const { status, enabled } = useRealtimeConnection();
+  const [manualSpin, setManualSpin] = useState(false);
+
+  if (!enabled) return null;
+
+  const presentation = presentationForStatus(status);
+  const isLive = status === "connected";
+  const isBusy = status === "connecting" || status === "reconnecting";
+
+  const handleManualReconnect = () => {
+    setManualSpin(true);
+    window.setTimeout(() => setManualSpin(false), 1200);
+  };
+
+  return (
+    <Popover
+      align="end"
+      panelClassName="z-[300]"
+      button={({ open, toggle }) => (
+        <button
+          type="button"
+          onClick={toggle}
+          aria-expanded={open}
+          aria-haspopup="dialog"
+          aria-label={`Live connection: ${presentation.label}`}
+          className={cn(
+            "inline-flex h-10 min-w-10 items-center justify-center gap-2 rounded-xl border px-2.5 text-xs font-medium shadow-sm transition-colors sm:min-w-0 sm:px-3",
+            presentation.pillClass,
+            open && "ring-2 ring-primary/20",
+            isBusy && "animate-[pulse_2.5s_ease-in-out_infinite]",
+          )}
+        >
+          <span
+            className="relative flex size-2.5 shrink-0 items-center justify-center sm:size-2"
+            aria-hidden
+          >
+            {isLive ? (
+              <span className="absolute inline-flex size-3.5 animate-ping rounded-full bg-emerald-400/50 sm:size-3" />
+            ) : null}
+            <span
+              className={cn("relative size-2.5 rounded-full sm:size-2", presentation.dotClass)}
+            />
+          </span>
+          <span className="hidden sm:inline">{presentation.shortLabel}</span>
+          <Radio className="size-3.5 shrink-0 opacity-70 sm:hidden" aria-hidden />
+        </button>
+      )}
+    >
+      {({ close }) => (
+        <ConnectionPanel
+          onReconnect={handleManualReconnect}
+          manualSpin={manualSpin}
+          close={close}
+        />
+      )}
+    </Popover>
   );
 }

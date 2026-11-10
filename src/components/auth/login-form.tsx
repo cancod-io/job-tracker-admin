@@ -18,8 +18,7 @@ import type { FaceDescriptor } from "@/types/face-auth";
 import { cn } from "@/lib/utils";
 
 const FaceCapturePanel = dynamic(
-  () =>
-    import("@/components/auth/face-capture-panel").then((m) => m.FaceCapturePanel),
+  () => import("@/components/auth/face-capture-panel").then((m) => m.FaceCapturePanel),
   {
     ssr: false,
     loading: () => (
@@ -203,7 +202,9 @@ function LoginFormInner() {
     return (
       <div className="w-full max-w-md space-y-4">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Verify your face</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Verify your face
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Complete face verification to finish signing in.
           </p>
