@@ -108,7 +108,13 @@ export const API_PATHS = {
 
   adminCredentials: {
     base: "/api/admin/credentials",
+    tree: "/api/admin/credentials/tree",
     detail: (credentialId: number) => `/api/admin/credentials/${credentialId}`,
+  },
+
+  adminCredentialEmployers: {
+    base: "/api/admin/credential-employers",
+    detail: (employerId: number) => `/api/admin/credential-employers/${employerId}`,
   },
 
   adminNotifications: {

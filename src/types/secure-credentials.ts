@@ -8,6 +8,8 @@ export type CredentialType =
   | "two_fa_key"
   | "other";
 
+export type VaultScope = "personal" | "job";
+
 /**
  * List/detail response.
  * Admin list responses include decrypted username, notes, and secret so the vault
@@ -17,6 +19,9 @@ export type SecureCredential = {
   id: number;
   owner_user_id: number;
   owner_name: string | null;
+  vault_scope: VaultScope;
+  employer_id: number | null;
+  employer_name: string | null;
   service_name: string;
   credential_type: CredentialType;
   username: string | null;
@@ -45,6 +50,8 @@ export type SecureCredentialListResponse = {
 export type SecureCredentialCreateRequest = {
   service_name: string;
   credential_type?: CredentialType;
+  vault_scope?: VaultScope;
+  employer_id?: number | null;
   username?: string | null;
   secret: string;
   notes?: string | null;
@@ -55,9 +62,71 @@ export type SecureCredentialCreateRequest = {
 export type SecureCredentialUpdateRequest = {
   service_name?: string;
   credential_type?: CredentialType;
+  vault_scope?: VaultScope;
+  employer_id?: number | null;
+  clear_employer?: boolean;
   username?: string | null;
   secret?: string;
   notes?: string | null;
   clear_username?: boolean;
   clear_notes?: boolean;
+};
+
+export type CredentialEmployer = {
+  id: number;
+  owner_user_id: number;
+  owner_name: string | null;
+  name: string;
+  website_url: string | null;
+  notes: string | null;
+  sort_order: number;
+  credential_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CredentialEmployerListResponse = {
+  items: CredentialEmployer[];
+  total: number;
+};
+
+export type CredentialEmployerCreateRequest = {
+  name: string;
+  website_url?: string | null;
+  notes?: string | null;
+  sort_order?: number;
+  owner_user_id?: number;
+};
+
+export type CredentialEmployerUpdateRequest = {
+  name?: string;
+  website_url?: string | null;
+  notes?: string | null;
+  sort_order?: number;
+  clear_website_url?: boolean;
+  clear_notes?: boolean;
+};
+
+export type CredentialTreeEmployerNode = {
+  id: number;
+  name: string;
+  website_url: string | null;
+  notes: string | null;
+  sort_order: number;
+  count: number;
+  items: SecureCredential[];
+};
+
+export type CredentialTreeResponse = {
+  owner_user_id: number;
+  owner_name: string | null;
+  personal: {
+    count: number;
+    items: SecureCredential[];
+  };
+  jobs: {
+    employer_count: number;
+    credential_count: number;
+    employers: CredentialTreeEmployerNode[];
+  };
 };

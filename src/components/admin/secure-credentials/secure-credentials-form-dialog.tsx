@@ -11,10 +11,12 @@ import {
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { Modal } from "@/components/ui/modal";
 import type {
+  CredentialEmployer,
   CredentialType,
   SecureCredential,
   SecureCredentialCreateRequest,
   SecureCredentialUpdateRequest,
+  VaultScope,
 } from "@/types/secure-credentials";
 
 export type CredentialOwnerOption = {
@@ -24,16 +26,23 @@ export type CredentialOwnerOption = {
 
 type Mode = "create" | "edit";
 
+export type CredentialFormDefaults = {
+  vaultScope?: VaultScope;
+  employerId?: number | null;
+};
+
 type SecureCredentialsFormDialogProps = {
   mode: Mode;
   initial?: SecureCredential | null;
   ownerOptions: CredentialOwnerOption[];
-  /** Pre-select this owner when creating (e.g. from an owner group action). */
+  employerOptions: CredentialEmployer[];
   preferredOwnerUserId?: number | null;
+  defaults?: CredentialFormDefaults;
   onClose: () => void;
   onSubmit: (
     payload: SecureCredentialCreateRequest | SecureCredentialUpdateRequest,
   ) => Promise<void>;
+  onCreateEmployerInline?: (name: string) => Promise<CredentialEmployer>;
 };
 
 const inputClass =
@@ -93,9 +102,12 @@ export function SecureCredentialsFormDialog({
   mode,
   initial,
   ownerOptions,
+  employerOptions,
   preferredOwnerUserId = null,
+  defaults,
   onClose,
   onSubmit,
+  onCreateEmployerInline,
 }: SecureCredentialsFormDialogProps) {
   const sortedOwners = useMemo(
     () =>
@@ -112,6 +124,15 @@ export function SecureCredentialsFormDialog({
   const [credentialType, setCredentialType] = useState<CredentialType>(
     initial?.credential_type ?? "other",
   );
+  const [vaultScope, setVaultScope] = useState<VaultScope>(
+    initial?.vault_scope ?? defaults?.vaultScope ?? "personal",
+  );
+  const [employerId, setEmployerId] = useState(
+    String(
+      initial?.employer_id ??
+        (defaults?.employerId && defaults.employerId > 0 ? defaults.employerId : ""),
+    ),
+  );
   const [ownerUserId, setOwnerUserId] = useState(defaultOwnerId);
   const [username, setUsername] = useState(initial?.username ?? "");
   const [secret, setSecret] = useState(initial?.secret ?? "");
@@ -121,10 +142,24 @@ export function SecureCredentialsFormDialog({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadedSecret, setLoadedSecret] = useState(initial?.secret ?? "");
+  const [newEmployerName, setNewEmployerName] = useState("");
+  const [creatingEmployer, setCreatingEmployer] = useState(false);
+  const [localEmployers, setLocalEmployers] = useState(employerOptions);
+
+  useEffect(() => {
+    setLocalEmployers(employerOptions);
+  }, [employerOptions]);
 
   useEffect(() => {
     setServiceName(initial?.service_name ?? "");
     setCredentialType(initial?.credential_type ?? "other");
+    setVaultScope(initial?.vault_scope ?? defaults?.vaultScope ?? "personal");
+    setEmployerId(
+      String(
+        initial?.employer_id ??
+          (defaults?.employerId && defaults.employerId > 0 ? defaults.employerId : ""),
+      ),
+    );
     setOwnerUserId(
       preferredOwnerUserId && preferredOwnerUserId > 0 ? String(preferredOwnerUserId) : "",
     );
@@ -135,7 +170,8 @@ export function SecureCredentialsFormDialog({
     setClearUsername(false);
     setClearNotes(false);
     setSubmitError(null);
-  }, [initial, mode, preferredOwnerUserId]);
+    setNewEmployerName("");
+  }, [initial, mode, preferredOwnerUserId, defaults]);
 
   function clearSecretFields() {
     setOwnerUserId("");
@@ -153,6 +189,12 @@ export function SecureCredentialsFormDialog({
     if (name.length > 200) return "Service name must be at most 200 characters.";
     if (username.length > 500) return "Username must be at most 500 characters.";
     if (notes.length > 4000) return "Notes must be at most 4000 characters.";
+    if (vaultScope === "job") {
+      const eid = Number(employerId);
+      if (!Number.isFinite(eid) || eid <= 0) {
+        return "Job credentials require an employer folder.";
+      }
+    }
     if (mode === "create") {
       const trimmedSecret = secret.trim();
       if (!trimmedSecret) return "Secret is required.";
@@ -161,6 +203,32 @@ export function SecureCredentialsFormDialog({
       return "Secret must be at most 8000 characters.";
     }
     return null;
+  }
+
+  async function handleCreateEmployer() {
+    if (!onCreateEmployerInline) return;
+    const trimmed = newEmployerName.trim();
+    if (!trimmed) {
+      setSubmitError("Enter an employer name to create.");
+      return;
+    }
+    setCreatingEmployer(true);
+    setSubmitError(null);
+    try {
+      const created = await onCreateEmployerInline(trimmed);
+      setLocalEmployers((prev) =>
+        [...prev.filter((e) => e.id !== created.id), created].sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+        ),
+      );
+      setEmployerId(String(created.id));
+      setVaultScope("job");
+      setNewEmployerName("");
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Could not create employer.");
+    } finally {
+      setCreatingEmployer(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -178,8 +246,12 @@ export function SecureCredentialsFormDialog({
         const payload: SecureCredentialCreateRequest = {
           service_name: serviceName.trim(),
           credential_type: credentialType,
+          vault_scope: vaultScope,
           secret: secret.trim(),
         };
+        if (vaultScope === "job") {
+          payload.employer_id = Number(employerId);
+        }
         const parsedOwner = Number(ownerUserId);
         if (Number.isFinite(parsedOwner) && parsedOwner > 0) {
           payload.owner_user_id = parsedOwner;
@@ -193,7 +265,14 @@ export function SecureCredentialsFormDialog({
         const payload: SecureCredentialUpdateRequest = {
           service_name: serviceName.trim(),
           credential_type: credentialType,
+          vault_scope: vaultScope,
         };
+        if (vaultScope === "personal") {
+          payload.clear_employer = true;
+          payload.employer_id = null;
+        } else {
+          payload.employer_id = Number(employerId);
+        }
         if (clearUsername) {
           payload.clear_username = true;
         } else {
@@ -236,7 +315,7 @@ export function SecureCredentialsFormDialog({
       title={isCreate ? "Add Credential" : "Edit Credential"}
       description={
         isCreate
-          ? "Choose who owns this vault entry, then store the service login or key."
+          ? "Choose Personal or Job scope, then store the login or key."
           : `Update ${initial?.service_name ?? "credential"}. Leave secret blank to keep the existing value.`
       }
       onClose={onClose}
@@ -248,21 +327,6 @@ export function SecureCredentialsFormDialog({
         autoComplete="off"
         noValidate
       >
-        <div className="space-y-1">
-          <label htmlFor="credential-service-name" className="text-sm font-medium text-foreground">
-            Service name <span className="text-destructive">*</span>
-          </label>
-          <input
-            id="credential-service-name"
-            value={serviceName}
-            onChange={(e) => setServiceName(e.target.value)}
-            placeholder="e.g. Shopify Admin Account"
-            maxLength={200}
-            required
-            className={inputClass}
-          />
-        </div>
-
         {isCreate ? (
           <div className="space-y-1">
             <label htmlFor="credential-owner" className="text-sm font-medium text-foreground">
@@ -284,9 +348,6 @@ export function SecureCredentialsFormDialog({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-muted-foreground">
-              The credential is stored in that user&apos;s vault.
-            </p>
           </div>
         ) : initial ? (
           <div className="rounded-lg border border-border/70 bg-muted/30 px-3 py-2 text-sm">
@@ -299,6 +360,94 @@ export function SecureCredentialsFormDialog({
             </p>
           </div>
         ) : null}
+
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">Scope</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setVaultScope("personal");
+                setEmployerId("");
+              }}
+              className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                vaultScope === "personal"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card hover:bg-muted"
+              }`}
+            >
+              Personal
+            </button>
+            <button
+              type="button"
+              onClick={() => setVaultScope("job")}
+              className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                vaultScope === "job"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card hover:bg-muted"
+              }`}
+            >
+              Job
+            </button>
+          </div>
+        </div>
+
+        {vaultScope === "job" ? (
+          <div className="space-y-2">
+            <label htmlFor="credential-employer" className="text-sm font-medium text-foreground">
+              Employer <span className="text-destructive">*</span>
+            </label>
+            <select
+              id="credential-employer"
+              value={employerId}
+              onChange={(e) => setEmployerId(e.target.value)}
+              className={inputClass}
+              required
+            >
+              <option value="">Select employer…</option>
+              {localEmployers.map((emp) => (
+                <option key={emp.id} value={String(emp.id)}>
+                  {emp.name}
+                </option>
+              ))}
+            </select>
+            {onCreateEmployerInline ? (
+              <div className="flex gap-2">
+                <input
+                  value={newEmployerName}
+                  onChange={(e) => setNewEmployerName(e.target.value)}
+                  placeholder="Or create employer…"
+                  className={inputClass}
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleCreateEmployer()}
+                  disabled={creatingEmployer}
+                  className="shrink-0 rounded-lg border border-border px-3 text-sm font-semibold hover:bg-muted disabled:opacity-60"
+                >
+                  {creatingEmployer ? "…" : "Add"}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="space-y-1">
+          <label htmlFor="credential-service-name" className="text-sm font-medium text-foreground">
+            Service name <span className="text-destructive">*</span>
+          </label>
+          <input
+            id="credential-service-name"
+            value={serviceName}
+            onChange={(e) => setServiceName(e.target.value)}
+            placeholder={
+              vaultScope === "job" ? "e.g. Greenhouse portal" : "e.g. Gmail personal"
+            }
+            maxLength={200}
+            required
+            className={inputClass}
+          />
+        </div>
 
         <div className="space-y-1">
           <label htmlFor="credential-type" className="text-sm font-medium text-foreground">
