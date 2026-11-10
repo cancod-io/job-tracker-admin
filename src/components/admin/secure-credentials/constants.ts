@@ -2,7 +2,9 @@ import type { CredentialType } from "@/types/secure-credentials";
 
 export const CREDENTIAL_TYPE_OPTIONS: { value: CredentialType; label: string }[] = [
   { value: "pc_login", label: "PC Login" },
-  { value: "company_email", label: "Company Email" },
+  { value: "gmail", label: "Gmail" },
+  { value: "outlook", label: "Outlook" },
+  { value: "company_email", label: "Other Email" },
   { value: "two_fa_key", label: "2FA Key" },
   { value: "other", label: "Other" },
 ];
@@ -17,11 +19,23 @@ export function formatCredentialType(type: CredentialType | string): string {
   return CREDENTIAL_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type;
 }
 
+export function isEmailCredentialType(type: CredentialType | string): boolean {
+  return type === "gmail" || type === "outlook" || type === "company_email";
+}
+
+export function isTwoFaCredentialType(type: CredentialType | string): boolean {
+  return type === "two_fa_key";
+}
+
 /** Soft accent classes per type for badges in the vault table. */
 export function credentialTypeBadgeClass(type: CredentialType | string): string {
   switch (type) {
     case "pc_login":
       return "border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300";
+    case "gmail":
+      return "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300";
+    case "outlook":
+      return "border-blue-500/25 bg-blue-500/10 text-blue-700 dark:text-blue-300";
     case "company_email":
       return "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
     case "two_fa_key":
@@ -43,6 +57,22 @@ export function secretFieldCopy(type: CredentialType): {
       placeholderCreate: "Authenticator secret or recovery codes",
       placeholderEdit: "Leave blank to keep existing, or type a new 2FA secret",
       hint: "Store the authenticator seed or recovery codes — not a one-time code from the app.",
+    };
+  }
+  if (type === "gmail") {
+    return {
+      label: "Gmail password",
+      placeholderCreate: "Gmail password or app password",
+      placeholderEdit: "Leave blank to keep existing, or type a new Gmail password",
+      hint: "Use an app password if 2-step verification is on for this Google account.",
+    };
+  }
+  if (type === "outlook") {
+    return {
+      label: "Outlook password",
+      placeholderCreate: "Outlook / Microsoft password",
+      placeholderEdit: "Leave blank to keep existing, or type a new Outlook password",
+      hint: "Microsoft account or mailbox password for Outlook / Microsoft 365.",
     };
   }
   if (type === "company_email") {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { KeyRound, Mail, Monitor, Plus, Shield } from "lucide-react";
 import { SecureCredentialsDeleteConfirm } from "@/components/admin/secure-credentials/secure-credentials-delete-confirm";
 import {
   SecureCredentialsFormDialog,
@@ -11,7 +11,11 @@ import {
   SecureCredentialsTable,
   type VaultOwnerSummary,
 } from "@/components/admin/secure-credentials/secure-credentials-table";
-import { CREDENTIAL_TYPE_FILTER_OPTIONS } from "@/components/admin/secure-credentials/constants";
+import {
+  CREDENTIAL_TYPE_FILTER_OPTIONS,
+  credentialTypeBadgeClass,
+  formatCredentialType,
+} from "@/components/admin/secure-credentials/constants";
 import { AuthRequiredNotice } from "@/components/admin/shared/auth-required-notice";
 import { ListNotifications } from "@/components/admin/shared/list-notifications";
 import { ListSearchInput } from "@/components/admin/shared/list-search-input";
@@ -38,6 +42,15 @@ import type {
 } from "@/types/secure-credentials";
 
 const DEFAULT_PAGE_SIZE = 100;
+
+const TYPE_ICONS: Record<CredentialType, typeof Monitor> = {
+  pc_login: Monitor,
+  gmail: Mail,
+  outlook: Mail,
+  company_email: Mail,
+  two_fa_key: Shield,
+  other: KeyRound,
+};
 
 export function SecureCredentialsPanel() {
   const { accessToken } = useAuth();
@@ -247,6 +260,14 @@ export function SecureCredentialsPanel() {
     );
   }, [ownerDirectory, ownerOptions, data?.items]);
 
+  const typeCounts = useMemo(() => {
+    const counts: Partial<Record<CredentialType, number>> = {};
+    for (const row of data?.items ?? []) {
+      counts[row.credential_type] = (counts[row.credential_type] ?? 0) + 1;
+    }
+    return counts;
+  }, [data?.items]);
+
   const searchActive = search.length > 0;
   const filtersActive = typeFilter !== "all" || ownerFilter !== "all";
 
@@ -329,8 +350,7 @@ export function SecureCredentialsPanel() {
     return <AuthRequiredNotice resourceLabel="Credentials" />;
   }
 
-  const rangeStart =
-    paginationTotal === 0 ? 0 : (currentPage - 1) * paginationPageSize + 1;
+  const rangeStart = paginationTotal === 0 ? 0 : (currentPage - 1) * paginationPageSize + 1;
   const rangeEnd = Math.min(
     paginationTotal,
     (currentPage - 1) * paginationPageSize + (data?.items.length ?? 0),
@@ -360,6 +380,8 @@ export function SecureCredentialsPanel() {
             >
               {CREDENTIAL_TYPE_FILTER_OPTIONS.map((opt) => {
                 const active = typeFilter === opt.value;
+                const Icon =
+                  opt.value === "all" ? KeyRound : TYPE_ICONS[opt.value as CredentialType];
                 return (
                   <button
                     key={opt.value}
@@ -369,13 +391,14 @@ export function SecureCredentialsPanel() {
                       setPage(1);
                     }}
                     className={cn(
-                      "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                      "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
                       active
                         ? "border-primary bg-primary text-primary-foreground shadow-sm"
                         : "border-border/80 bg-card/80 text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                     aria-pressed={active}
                   >
+                    <Icon className="size-3.5" aria-hidden />
                     {opt.label}
                   </button>
                 );

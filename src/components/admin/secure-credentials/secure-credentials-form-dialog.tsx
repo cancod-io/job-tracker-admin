@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import {
   CREDENTIAL_TYPE_OPTIONS,
+  isEmailCredentialType,
+  isTwoFaCredentialType,
   secretFieldCopy,
 } from "@/components/admin/secure-credentials/constants";
 import { AlertBanner } from "@/components/ui/alert-banner";
@@ -77,7 +79,11 @@ function SecretInput({
         aria-label={visible ? "Hide secret" : "Show typed secret"}
         tabIndex={-1}
       >
-        {visible ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
+        {visible ? (
+          <EyeOff className="size-4" aria-hidden />
+        ) : (
+          <Eye className="size-4" aria-hidden />
+        )}
       </button>
     </div>
   );
@@ -100,9 +106,7 @@ export function SecureCredentialsFormDialog({
   );
 
   const defaultOwnerId =
-    preferredOwnerUserId && preferredOwnerUserId > 0
-      ? String(preferredOwnerUserId)
-      : "";
+    preferredOwnerUserId && preferredOwnerUserId > 0 ? String(preferredOwnerUserId) : "";
 
   const [serviceName, setServiceName] = useState(initial?.service_name ?? "");
   const [credentialType, setCredentialType] = useState<CredentialType>(
@@ -122,9 +126,7 @@ export function SecureCredentialsFormDialog({
     setServiceName(initial?.service_name ?? "");
     setCredentialType(initial?.credential_type ?? "other");
     setOwnerUserId(
-      preferredOwnerUserId && preferredOwnerUserId > 0
-        ? String(preferredOwnerUserId)
-        : "",
+      preferredOwnerUserId && preferredOwnerUserId > 0 ? String(preferredOwnerUserId) : "",
     );
     setUsername(initial?.username ?? "");
     setSecret(initial?.secret ?? "");
@@ -240,7 +242,12 @@ export function SecureCredentialsFormDialog({
       onClose={onClose}
       maxWidth="max-w-lg"
     >
-      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4" autoComplete="off" noValidate>
+      <form
+        onSubmit={(e) => void handleSubmit(e)}
+        className="space-y-4"
+        autoComplete="off"
+        noValidate
+      >
         <div className="space-y-1">
           <label htmlFor="credential-service-name" className="text-sm font-medium text-foreground">
             Service name <span className="text-destructive">*</span>
@@ -269,9 +276,7 @@ export function SecureCredentialsFormDialog({
             >
               <option value="">Me (current admin)</option>
               {ownerMissingFromOptions ? (
-                <option value={String(preferredOwnerUserId)}>
-                  User #{preferredOwnerUserId}
-                </option>
+                <option value={String(preferredOwnerUserId)}>User #{preferredOwnerUserId}</option>
               ) : null}
               {sortedOwners.map((owner) => (
                 <option key={owner.id} value={String(owner.id)}>
@@ -315,7 +320,11 @@ export function SecureCredentialsFormDialog({
 
         <div className="space-y-1">
           <label htmlFor="credential-username" className="text-sm font-medium text-foreground">
-            {credentialType === "two_fa_key" ? "Account label" : "Username / Email"}
+            {isTwoFaCredentialType(credentialType)
+              ? "Account label"
+              : isEmailCredentialType(credentialType)
+                ? "Email"
+                : "Username / Email"}
           </label>
           <input
             id="credential-username"
@@ -325,9 +334,15 @@ export function SecureCredentialsFormDialog({
               if (e.target.value) setClearUsername(false);
             }}
             placeholder={
-              credentialType === "two_fa_key"
+              isTwoFaCredentialType(credentialType)
                 ? "Optional — e.g. Google, GitHub"
-                : "Optional"
+                : credentialType === "gmail"
+                  ? "name@gmail.com"
+                  : credentialType === "outlook"
+                    ? "name@outlook.com"
+                    : isEmailCredentialType(credentialType)
+                      ? "name@company.com"
+                      : "Optional"
             }
             maxLength={500}
             disabled={!isCreate && clearUsername}
@@ -345,7 +360,12 @@ export function SecureCredentialsFormDialog({
                 }}
                 className="size-3.5 accent-primary"
               />
-              Clear stored {credentialType === "two_fa_key" ? "label" : "username"}
+              Clear stored{" "}
+              {isTwoFaCredentialType(credentialType)
+                ? "label"
+                : isEmailCredentialType(credentialType)
+                  ? "email"
+                  : "username"}
             </label>
           ) : null}
         </div>

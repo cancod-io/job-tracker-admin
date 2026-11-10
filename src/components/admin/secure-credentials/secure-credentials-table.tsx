@@ -17,6 +17,8 @@ import {
 import {
   credentialTypeBadgeClass,
   formatCredentialType,
+  isEmailCredentialType,
+  isTwoFaCredentialType,
 } from "@/components/admin/secure-credentials/constants";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { formatDateTime } from "@/lib/format-date";
@@ -53,7 +55,7 @@ function TypeBadge({ type }: { type: SecureCredential["credential_type"] }) {
         credentialTypeBadgeClass(type),
       )}
     >
-      {type === "two_fa_key" ? <Shield className="size-3" aria-hidden /> : null}
+      {isTwoFaCredentialType(type) ? <Shield className="size-3" aria-hidden /> : null}
       {formatCredentialType(type)}
     </span>
   );
@@ -126,9 +128,7 @@ function SecretCell({ secret, isTwoFa }: { secret: string | null; isTwoFa?: bool
     <div
       className={cn(
         "flex min-w-0 items-center gap-0.5 rounded-lg border px-1.5 py-1",
-        isTwoFa
-          ? "border-amber-500/20 bg-amber-500/[0.06]"
-          : "border-border/70 bg-muted/40",
+        isTwoFa ? "border-amber-500/20 bg-amber-500/[0.06]" : "border-border/70 bg-muted/40",
       )}
     >
       <span className="min-w-0 flex-1 truncate font-mono text-xs tracking-wide text-foreground">
@@ -141,7 +141,11 @@ function SecretCell({ secret, isTwoFa }: { secret: string | null; isTwoFa?: bool
         onClick={() => setVisible((v) => !v)}
         className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-background hover:text-foreground"
       >
-        {visible ? <EyeOff className="size-3.5" aria-hidden /> : <Eye className="size-3.5" aria-hidden />}
+        {visible ? (
+          <EyeOff className="size-3.5" aria-hidden />
+        ) : (
+          <Eye className="size-3.5" aria-hidden />
+        )}
       </button>
       <CopyIconButton value={value} label="secret" />
     </div>
@@ -160,7 +164,9 @@ function UsernameCell({ username }: { username: string | null }) {
 }
 
 function ownerLabel(row: SecureCredential): string {
-  return row.owner_name?.trim() || (row.owner_user_id > 0 ? `User #${row.owner_user_id}` : "Unknown");
+  return (
+    row.owner_name?.trim() || (row.owner_user_id > 0 ? `User #${row.owner_user_id}` : "Unknown")
+  );
 }
 
 function MobileCredentialRow({
@@ -198,16 +204,23 @@ function MobileCredentialRow({
       <div className="space-y-2 text-sm">
         <div className="grid grid-cols-[4.75rem_1fr] items-center gap-2">
           <span className="text-xs text-muted-foreground">
-            {row.credential_type === "two_fa_key" ? "Label" : "User"}
+            {isTwoFaCredentialType(row.credential_type)
+              ? "Label"
+              : isEmailCredentialType(row.credential_type)
+                ? "Email"
+                : "User"}
           </span>
           <UsernameCell username={row.username} />
         </div>
         <div className="grid grid-cols-[4.75rem_1fr] items-center gap-2">
           <span className="text-xs text-muted-foreground">
-            {row.credential_type === "two_fa_key" ? "2FA" : "Secret"}
+            {isTwoFaCredentialType(row.credential_type) ? "2FA" : "Secret"}
           </span>
-          <SecretCell secret={row.secret} isTwoFa={row.credential_type === "two_fa_key"} />
+          <SecretCell secret={row.secret} isTwoFa={isTwoFaCredentialType(row.credential_type)} />
         </div>
+        {row.notes?.trim() ? (
+          <p className="line-clamp-2 text-xs text-muted-foreground">{row.notes.trim()}</p>
+        ) : null}
       </div>
     </li>
   );
@@ -230,7 +243,8 @@ export function SecureCredentialsTable({
   const [peopleQuery, setPeopleQuery] = useState("");
 
   const selectedOwner = useMemo(
-    () => (selectedOwnerId === "all" ? null : owners.find((o) => o.id === selectedOwnerId) ?? null),
+    () =>
+      selectedOwnerId === "all" ? null : (owners.find((o) => o.id === selectedOwnerId) ?? null),
     [owners, selectedOwnerId],
   );
 
@@ -392,9 +406,7 @@ export function SecureCredentialsTable({
           </div>
           <button
             type="button"
-            onClick={() =>
-              selectedOwnerId === "all" ? onAdd() : onAddForOwner(selectedOwnerId)
-            }
+            onClick={() => (selectedOwnerId === "all" ? onAdd() : onAddForOwner(selectedOwnerId))}
             className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
           >
             <Plus className="size-4" aria-hidden />
@@ -415,14 +427,12 @@ export function SecureCredentialsTable({
                   : "No credentials for this person"}
             </p>
             <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
-              Save a PC login, company email, or 2FA key. You can reveal and copy secrets from the
+              Save a PC login, Gmail, Outlook, or 2FA key. You can reveal and copy secrets from the
               table after saving.
             </p>
             <button
               type="button"
-              onClick={() =>
-                selectedOwnerId === "all" ? onAdd() : onAddForOwner(selectedOwnerId)
-              }
+              onClick={() => (selectedOwnerId === "all" ? onAdd() : onAddForOwner(selectedOwnerId))}
               className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
             >
               <Plus className="size-4" aria-hidden />
@@ -444,85 +454,116 @@ export function SecureCredentialsTable({
             </ul>
 
             <div className="hidden min-w-0 flex-1 overflow-auto md:block">
-              <table className="w-full min-w-[54rem] border-collapse text-left text-sm">
-                <thead className="sticky top-0 z-10 bg-muted/90 backdrop-blur-md">
+              <table className="w-full min-w-[52rem] border-collapse text-left text-sm">
+                <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur-md">
                   <tr className="border-b border-border/80 text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
                     {selectedOwnerId === "all" ? (
-                      <th className="px-4 py-3 font-semibold">Owner</th>
+                      <th className="sticky left-0 z-[1] bg-muted/95 px-4 py-2.5 font-semibold backdrop-blur-md">
+                        Owner
+                      </th>
                     ) : null}
-                    <th className="px-4 py-3 font-semibold">Service</th>
-                    <th className="px-3 py-3 font-semibold">Type</th>
-                    <th className="px-3 py-3 font-semibold">Username / label</th>
-                    <th className="min-w-[13rem] px-3 py-3 font-semibold">Secret</th>
-                    <th className="px-3 py-3 font-semibold">Updated</th>
-                    <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                    <th
+                      className={cn(
+                        "px-4 py-2.5 font-semibold",
+                        selectedOwnerId !== "all" &&
+                          "sticky left-0 z-[1] bg-muted/95 backdrop-blur-md",
+                      )}
+                    >
+                      Service
+                    </th>
+                    <th className="px-3 py-2.5 font-semibold">Type</th>
+                    <th className="px-3 py-2.5 font-semibold">Email / username</th>
+                    <th className="min-w-[12rem] px-3 py-2.5 font-semibold">Secret</th>
+                    <th className="px-3 py-2.5 font-semibold">Updated</th>
+                    <th className="sticky right-0 z-[1] bg-muted/95 px-3 py-2.5 text-right font-semibold backdrop-blur-md">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((row, index) => (
-                    <tr
-                      key={row.id}
-                      className={cn(
-                        "border-b border-border/50 transition-colors last:border-b-0 hover:bg-primary/[0.03]",
-                        index % 2 === 1 && "bg-muted/15",
-                      )}
-                    >
-                      {selectedOwnerId === "all" ? (
-                        <td className="max-w-[11rem] px-4 py-3">
-                          <div className="flex items-center gap-2.5">
-                            <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
-                              {ownerLabel(row).slice(0, 1).toUpperCase()}
-                            </span>
-                            <div className="min-w-0">
-                              <p className="truncate font-medium text-foreground">
-                                {ownerLabel(row)}
-                              </p>
-                              <p className="truncate text-[11px] text-muted-foreground">
-                                #{row.owner_user_id}
-                              </p>
+                  {items.map((row, index) => {
+                    const zebra = index % 2 === 1;
+                    const rowBg = zebra ? "bg-muted/20" : "bg-card";
+                    return (
+                      <tr
+                        key={row.id}
+                        className={cn(
+                          "border-b border-border/50 transition-colors last:border-b-0 hover:bg-primary/[0.04]",
+                          zebra && "bg-muted/15",
+                        )}
+                      >
+                        {selectedOwnerId === "all" ? (
+                          <td
+                            className={cn("sticky left-0 z-[1] max-w-[11rem] px-4 py-2.5", rowBg)}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
+                                {ownerLabel(row).slice(0, 1).toUpperCase()}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="truncate font-medium text-foreground">
+                                  {ownerLabel(row)}
+                                </p>
+                                <p className="truncate text-[11px] text-muted-foreground">
+                                  #{row.owner_user_id}
+                                </p>
+                              </div>
                             </div>
+                          </td>
+                        ) : null}
+                        <td
+                          className={cn(
+                            "max-w-[15rem] px-4 py-2.5",
+                            selectedOwnerId !== "all" && cn("sticky left-0 z-[1]", rowBg),
+                          )}
+                        >
+                          <p
+                            className="truncate font-semibold text-foreground"
+                            title={row.service_name}
+                          >
+                            {row.service_name}
+                          </p>
+                          {row.notes?.trim() ? (
+                            <p
+                              className="mt-0.5 truncate text-[11px] text-muted-foreground"
+                              title={row.notes.trim()}
+                            >
+                              {row.notes.trim()}
+                            </p>
+                          ) : null}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <TypeBadge type={row.credential_type} />
+                        </td>
+                        <td className="max-w-[12rem] px-3 py-2.5">
+                          <UsernameCell username={row.username} />
+                        </td>
+                        <td className="max-w-[15rem] px-3 py-2.5">
+                          <SecretCell
+                            secret={row.secret}
+                            isTwoFa={isTwoFaCredentialType(row.credential_type)}
+                          />
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2.5 text-xs text-muted-foreground">
+                          {formatDateTime(row.updated_at)}
+                        </td>
+                        <td className={cn("sticky right-0 z-[1] px-3 py-2.5 text-right", rowBg)}>
+                          <div className="inline-flex items-center justify-end gap-0.5">
+                            <IconAction label="Edit credential" onClick={() => onEdit(row)}>
+                              <Pencil className="size-3.5" aria-hidden />
+                            </IconAction>
+                            <IconAction
+                              label="Delete credential"
+                              tone="danger"
+                              onClick={() => onDelete(row)}
+                            >
+                              <Trash2 className="size-3.5" aria-hidden />
+                            </IconAction>
                           </div>
                         </td>
-                      ) : null}
-                      <td className="max-w-[15rem] px-4 py-3">
-                        <p className="truncate font-semibold text-foreground">{row.service_name}</p>
-                        {row.notes?.trim() ? (
-                          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                            {row.notes.trim()}
-                          </p>
-                        ) : null}
-                      </td>
-                      <td className="px-3 py-3">
-                        <TypeBadge type={row.credential_type} />
-                      </td>
-                      <td className="max-w-[12rem] px-3 py-3">
-                        <UsernameCell username={row.username} />
-                      </td>
-                      <td className="max-w-[16rem] px-3 py-3">
-                        <SecretCell
-                          secret={row.secret}
-                          isTwoFa={row.credential_type === "two_fa_key"}
-                        />
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-3 text-xs text-muted-foreground">
-                        {formatDateTime(row.updated_at)}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="inline-flex items-center justify-end gap-0.5">
-                          <IconAction label="Edit credential" onClick={() => onEdit(row)}>
-                            <Pencil className="size-3.5" aria-hidden />
-                          </IconAction>
-                          <IconAction
-                            label="Delete credential"
-                            tone="danger"
-                            onClick={() => onDelete(row)}
-                          >
-                            <Trash2 className="size-3.5" aria-hidden />
-                          </IconAction>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

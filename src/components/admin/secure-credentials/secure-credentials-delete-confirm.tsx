@@ -46,7 +46,7 @@ export function SecureCredentialsDeleteConfirm({
         </div>
         <p className="text-sm text-foreground">
           Are you sure you want to delete{" "}
-          <span className="font-semibold break-all">&apos;{credential.service_name}&apos;</span>?
+          <span className="break-all font-semibold">&apos;{credential.service_name}&apos;</span>?
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
           This permanently removes the encrypted credential and cannot be undone.
