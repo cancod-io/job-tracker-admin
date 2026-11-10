@@ -38,6 +38,8 @@ export const LOGIN_ERROR_CODES = {
   FACE_DESCRIPTOR_INVALID: "FACE_DESCRIPTOR_INVALID",
   FACE_DISABLED: "FACE_DISABLED",
   IP_NOT_ALLOWED: "IP_NOT_ALLOWED",
+  ADMIN_EMAIL_NOT_ALLOWED: "ADMIN_EMAIL_NOT_ALLOWED",
+  ADMIN_BOOTSTRAP_NOT_CONFIGURED: "ADMIN_BOOTSTRAP_NOT_CONFIGURED",
 } as const;
 
 export const VERIFICATION_ERROR_CODES = {
@@ -154,6 +156,8 @@ const FORM_LEVEL_CODES = new Set<string>([
   LOGIN_ERROR_CODES.FACE_DESCRIPTOR_INVALID,
   LOGIN_ERROR_CODES.FACE_DISABLED,
   LOGIN_ERROR_CODES.IP_NOT_ALLOWED,
+  LOGIN_ERROR_CODES.ADMIN_EMAIL_NOT_ALLOWED,
+  LOGIN_ERROR_CODES.ADMIN_BOOTSTRAP_NOT_CONFIGURED,
 ]);
 
 const FACE_MESSAGES: Record<string, string> = {
@@ -169,6 +173,10 @@ const FACE_MESSAGES: Record<string, string> = {
     "Face recognition is disabled on the server.",
   [LOGIN_ERROR_CODES.IP_NOT_ALLOWED]:
     "Sign-in is not allowed from this IP address.",
+  [LOGIN_ERROR_CODES.ADMIN_EMAIL_NOT_ALLOWED]:
+    "This email isn’t authorized for admin access. Contact your system administrator if you need an account.",
+  [LOGIN_ERROR_CODES.ADMIN_BOOTSTRAP_NOT_CONFIGURED]:
+    "Admin access isn’t available yet. Please contact your system administrator.",
 };
 
 export function messageForFaceCode(code: string | null | undefined, fallback: string): string {
