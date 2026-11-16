@@ -17,13 +17,11 @@ export type WebsiteLinkListResponse = {
 };
 
 export type WebsiteLinkCreateRequest = {
-  display_index: number;
   url: string;
   description?: string | null;
 };
 
 export type WebsiteLinkUpdateRequest = {
-  display_index?: number;
   url?: string;
   description?: string | null;
   clear_description?: boolean;

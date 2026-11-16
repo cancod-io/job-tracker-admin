@@ -14,7 +14,6 @@ type Mode = "create" | "edit";
 type LinksFormDialogProps = {
   mode: Mode;
   initial?: WebsiteLink | null;
-  defaultIndex?: number;
   onClose: () => void;
   onSubmit: (payload: WebsiteLinkCreateRequest | WebsiteLinkUpdateRequest) => Promise<void>;
 };
@@ -22,14 +21,7 @@ type LinksFormDialogProps = {
 const inputClass =
   "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30";
 
-export function LinksFormDialog({
-  mode,
-  initial,
-  defaultIndex = 1,
-  onClose,
-  onSubmit,
-}: LinksFormDialogProps) {
-  const [displayIndex, setDisplayIndex] = useState(String(initial?.display_index ?? defaultIndex));
+export function LinksFormDialog({ mode, initial, onClose, onSubmit }: LinksFormDialogProps) {
   const [url, setUrl] = useState(initial?.url ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [clearDescription, setClearDescription] = useState(false);
@@ -37,21 +29,15 @@ export function LinksFormDialog({
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    setDisplayIndex(String(initial?.display_index ?? defaultIndex));
     setUrl(initial?.url ?? "");
     setDescription(initial?.description ?? "");
     setClearDescription(false);
     setSubmitError(null);
-  }, [initial, mode, defaultIndex]);
+  }, [initial, mode]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError(null);
-    const index = Number(displayIndex);
-    if (!Number.isFinite(index) || index < 0) {
-      setSubmitError("Display index must be a non-negative number.");
-      return;
-    }
     const trimmedUrl = url.trim();
     if (!trimmedUrl) {
       setSubmitError("URL is required.");
@@ -61,18 +47,12 @@ export function LinksFormDialog({
     setSubmitting(true);
     try {
       if (mode === "create") {
-        const payload: WebsiteLinkCreateRequest = {
-          display_index: Math.floor(index),
-          url: trimmedUrl,
-        };
+        const payload: WebsiteLinkCreateRequest = { url: trimmedUrl };
         const trimmedDesc = description.trim();
         if (trimmedDesc) payload.description = trimmedDesc;
         await onSubmit(payload);
       } else {
-        const payload: WebsiteLinkUpdateRequest = {
-          display_index: Math.floor(index),
-          url: trimmedUrl,
-        };
+        const payload: WebsiteLinkUpdateRequest = { url: trimmedUrl };
         if (clearDescription) {
           payload.clear_description = true;
         } else {
@@ -94,26 +74,17 @@ export function LinksFormDialog({
     <Modal
       aria-label={isCreate ? "Add link" : "Edit link"}
       title={isCreate ? "Add Link" : "Edit Link"}
-      description="Shared with every user and admin. Display index controls sort order."
+      description="Shared with every user and admin. Index is assigned automatically."
       onClose={onClose}
       maxWidth="max-w-lg"
     >
       <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4" noValidate>
-        <div className="space-y-1">
-          <label htmlFor="link-display-index" className="text-sm font-medium">
-            Display index <span className="text-destructive">*</span>
-          </label>
-          <input
-            id="link-display-index"
-            type="number"
-            min={0}
-            step={1}
-            value={displayIndex}
-            onChange={(e) => setDisplayIndex(e.target.value)}
-            required
-            className={inputClass}
-          />
-        </div>
+        {!isCreate && initial ? (
+          <p className="text-xs text-muted-foreground">
+            Display index: <span className="font-mono font-semibold">#{initial.display_index}</span>
+          </p>
+        ) : null}
+
         <div className="space-y-1">
           <label htmlFor="link-url" className="text-sm font-medium">
             URL <span className="text-destructive">*</span>
