@@ -110,6 +110,12 @@ export const API_PATHS = {
     base: "/api/admin/credentials",
     tree: "/api/admin/credentials/tree",
     detail: (credentialId: number) => `/api/admin/credentials/${credentialId}`,
+    qrImage: (credentialId: number) => `/api/admin/credentials/${credentialId}/qr-image`,
+  },
+
+  adminWebsiteLinks: {
+    base: "/api/admin/website-links",
+    detail: (linkId: number) => `/api/admin/website-links/${linkId}`,
   },
 
   adminCredentialEmployers: {

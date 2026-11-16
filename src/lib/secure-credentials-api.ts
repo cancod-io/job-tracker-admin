@@ -11,7 +11,7 @@
  *
  * Admin role only. List/tree responses include the decrypted secret.
  */
-import { fetchAuthedJson } from "@/lib/fetch-authed";
+import { fetchAuthedJson, fetchAuthedResponse } from "@/lib/fetch-authed";
 import { API_PATHS } from "@/lib/api-paths";
 import type {
   CredentialTreeResponse,
@@ -103,6 +103,7 @@ export function normalizeCredential(
     has_username: raw.has_username === true || Boolean(username),
     has_secret: raw.has_secret === true || Boolean(secret),
     has_notes: raw.has_notes === true || Boolean(notes?.trim()),
+    has_qr_image: raw.has_qr_image === true,
     created_by_id: normalizeNullableNumber(raw.created_by_id),
     created_by_name: normalizeNullableString(raw.created_by_name),
     updated_by_id: normalizeNullableNumber(raw.updated_by_id),
@@ -268,4 +269,42 @@ export async function deleteSecureCredential(token: string, credentialId: number
   await fetchAuthedJson<void>(token, API_PATHS.adminCredentials.detail(credentialId), {
     method: "DELETE",
   });
+}
+
+export async function uploadCredentialQrImage(
+  token: string,
+  credentialId: number,
+  file: File,
+): Promise<SecureCredential> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const raw = await fetchAuthedJson<Partial<SecureCredential> & { id: number }>(
+    token,
+    API_PATHS.adminCredentials.qrImage(credentialId),
+    { method: "POST", body: formData, timeoutMs: 60_000 },
+  );
+  return normalizeCredential(raw);
+}
+
+export async function deleteCredentialQrImage(
+  token: string,
+  credentialId: number,
+): Promise<SecureCredential> {
+  const raw = await fetchAuthedJson<Partial<SecureCredential> & { id: number }>(
+    token,
+    API_PATHS.adminCredentials.qrImage(credentialId),
+    { method: "DELETE" },
+  );
+  return normalizeCredential(raw);
+}
+
+export async function fetchCredentialQrBlob(
+  token: string,
+  credentialId: number,
+): Promise<Blob> {
+  const res = await fetchAuthedResponse(
+    token,
+    API_PATHS.adminCredentials.qrImage(credentialId),
+  );
+  return res.blob();
 }

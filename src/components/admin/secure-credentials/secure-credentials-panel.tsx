@@ -36,6 +36,8 @@ import {
 } from "@/lib/credential-employers-api";
 import {
   createSecureCredential,
+  deleteCredentialQrImage,
+  uploadCredentialQrImage,
   deleteSecureCredential,
   getCredentialTree,
   getSecureCredential,
@@ -48,6 +50,7 @@ import type {
   CredentialEmployer,
   CredentialEmployerCreateRequest,
   CredentialEmployerUpdateRequest,
+  CredentialQrExtras,
   CredentialTreeResponse,
   CredentialType,
   SecureCredential,
@@ -411,11 +414,25 @@ export function SecureCredentialsPanel() {
     await Promise.all([loadList(), loadTreeAndEmployers(), refreshOwnerDirectory()]);
   };
 
+  const applyQrExtras = async (credentialId: number, extras?: CredentialQrExtras) => {
+    if (!accessToken) return;
+    if (extras?.qrFile) {
+      await uploadCredentialQrImage(accessToken, credentialId, extras.qrFile);
+    } else if (extras?.removeQr) {
+      await deleteCredentialQrImage(accessToken, credentialId);
+    }
+  };
+
   const handleCreate = async (
     payload: SecureCredentialCreateRequest | SecureCredentialUpdateRequest,
+    extras?: CredentialQrExtras,
   ) => {
     if (!accessToken) throw new Error("Not signed in.");
-    await createSecureCredential(accessToken, payload as SecureCredentialCreateRequest);
+    const created = await createSecureCredential(
+      accessToken,
+      payload as SecureCredentialCreateRequest,
+    );
+    await applyQrExtras(created.id, extras);
     setToast({ kind: "success", message: "Credential saved" });
     await refreshAll();
   };
@@ -423,9 +440,11 @@ export function SecureCredentialsPanel() {
   const handleUpdate = async (
     id: number,
     payload: SecureCredentialCreateRequest | SecureCredentialUpdateRequest,
+    extras?: CredentialQrExtras,
   ) => {
     if (!accessToken) throw new Error("Not signed in.");
     await updateSecureCredential(accessToken, id, payload as SecureCredentialUpdateRequest);
+    await applyQrExtras(id, extras);
     setToast({ kind: "success", message: "Credential updated" });
     await refreshAll();
   };
@@ -834,6 +853,7 @@ export function SecureCredentialsPanel() {
           employerOptions={employers}
           preferredOwnerUserId={createForOwnerId}
           defaults={createDefaults}
+          accessToken={accessToken}
           onClose={() => {
             setShowCreate(false);
             setCreateForOwnerId(null);
@@ -849,8 +869,9 @@ export function SecureCredentialsPanel() {
           initial={editing}
           ownerOptions={mergedOwnerOptions}
           employerOptions={employers}
+          accessToken={accessToken}
           onClose={() => setEditing(null)}
-          onSubmit={(payload) => handleUpdate(editing.id, payload)}
+          onSubmit={(payload, extras) => handleUpdate(editing.id, payload, extras)}
           onCreateEmployerInline={handleInlineEmployer}
         />
       ) : null}

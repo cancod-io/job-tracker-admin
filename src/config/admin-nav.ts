@@ -1,4 +1,4 @@
-import { KeyRound, Users, type LucideIcon } from "lucide-react";
+import { KeyRound, Link2, Users, type LucideIcon } from "lucide-react";
 
 /** Leaf link in the admin sidebar. */
 export type AdminNavItem = {
@@ -35,6 +35,12 @@ export const adminNavGroups: AdminNavGroup[] = [
         href: "/settings/secure-credentials",
         label: "Credentials",
         icon: KeyRound,
+        adminOnly: true,
+      },
+      {
+        href: "/settings/links",
+        label: "Links",
+        icon: Link2,
         adminOnly: true,
       },
     ],
