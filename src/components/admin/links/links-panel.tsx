@@ -67,18 +67,14 @@ export function LinksPanel() {
     return Math.max(...items.map((r) => r.display_index)) + 1;
   }, [items]);
 
-  const handleCreate = async (
-    payload: WebsiteLinkCreateRequest | WebsiteLinkUpdateRequest,
-  ) => {
+  const handleCreate = async (payload: WebsiteLinkCreateRequest | WebsiteLinkUpdateRequest) => {
     if (!accessToken) throw new Error("Not signed in.");
     await createWebsiteLink(accessToken, payload as WebsiteLinkCreateRequest);
     setToast({ kind: "success", message: "Link saved" });
     await load();
   };
 
-  const handleUpdate = async (
-    payload: WebsiteLinkCreateRequest | WebsiteLinkUpdateRequest,
-  ) => {
+  const handleUpdate = async (payload: WebsiteLinkCreateRequest | WebsiteLinkUpdateRequest) => {
     if (!accessToken || !editing) throw new Error("Not signed in.");
     await updateWebsiteLink(accessToken, editing.id, payload as WebsiteLinkUpdateRequest);
     setToast({ kind: "success", message: "Link updated" });

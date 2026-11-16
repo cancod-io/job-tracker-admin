@@ -298,13 +298,7 @@ export async function deleteCredentialQrImage(
   return normalizeCredential(raw);
 }
 
-export async function fetchCredentialQrBlob(
-  token: string,
-  credentialId: number,
-): Promise<Blob> {
-  const res = await fetchAuthedResponse(
-    token,
-    API_PATHS.adminCredentials.qrImage(credentialId),
-  );
+export async function fetchCredentialQrBlob(token: string, credentialId: number): Promise<Blob> {
+  const res = await fetchAuthedResponse(token, API_PATHS.adminCredentials.qrImage(credentialId));
   return res.blob();
 }

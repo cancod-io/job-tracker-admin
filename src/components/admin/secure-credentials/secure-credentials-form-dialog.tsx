@@ -255,8 +255,7 @@ export function SecureCredentialsFormDialog({
       }
     } else if (isTwoFa) {
       const hasSecretMaterial = Boolean(trimmedSecret) || Boolean(initial?.has_secret);
-      const hasQrMaterial =
-        Boolean(qrFile) || (Boolean(initial?.has_qr_image) && !removeQr);
+      const hasQrMaterial = Boolean(qrFile) || (Boolean(initial?.has_qr_image) && !removeQr);
       if (!hasSecretMaterial && !hasQrMaterial) {
         return "2FA credentials need a secret key and/or a QR image.";
       }

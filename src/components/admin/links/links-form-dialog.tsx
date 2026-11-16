@@ -16,9 +16,7 @@ type LinksFormDialogProps = {
   initial?: WebsiteLink | null;
   defaultIndex?: number;
   onClose: () => void;
-  onSubmit: (
-    payload: WebsiteLinkCreateRequest | WebsiteLinkUpdateRequest,
-  ) => Promise<void>;
+  onSubmit: (payload: WebsiteLinkCreateRequest | WebsiteLinkUpdateRequest) => Promise<void>;
 };
 
 const inputClass =
@@ -31,9 +29,7 @@ export function LinksFormDialog({
   onClose,
   onSubmit,
 }: LinksFormDialogProps) {
-  const [displayIndex, setDisplayIndex] = useState(
-    String(initial?.display_index ?? defaultIndex),
-  );
+  const [displayIndex, setDisplayIndex] = useState(String(initial?.display_index ?? defaultIndex));
   const [url, setUrl] = useState(initial?.url ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [clearDescription, setClearDescription] = useState(false);
