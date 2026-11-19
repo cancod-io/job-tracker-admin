@@ -41,6 +41,9 @@ const CREDENTIAL_TYPES: readonly CredentialType[] = [
   "outlook",
   "company_email",
   "two_fa_key",
+  "linkedin",
+  "anydesk",
+  "whatsapp",
   "other",
 ];
 
@@ -95,6 +98,9 @@ export function normalizeCredential(
     vault_scope: normalizeVaultScope(raw.vault_scope),
     employer_id: normalizeNullableNumber(raw.employer_id),
     employer_name: normalizeNullableString(raw.employer_name),
+    identity_id: normalizeNullableNumber(raw.identity_id),
+    identity_name: normalizeNullableString(raw.identity_name),
+    identity_country_code: normalizeNullableString(raw.identity_country_code),
     service_name: typeof raw.service_name === "string" ? raw.service_name : "—",
     credential_type: normalizeCredentialType(raw.credential_type),
     username,
@@ -151,9 +157,54 @@ function normalizeTree(raw: Record<string, unknown>): CredentialTreeResponse {
   const jobsRaw =
     typeof raw.jobs === "object" && raw.jobs !== null ? (raw.jobs as Record<string, unknown>) : {};
   const employersRaw = Array.isArray(jobsRaw.employers) ? jobsRaw.employers : [];
+  const accountsRaw =
+    typeof personalRaw.accounts === "object" && personalRaw.accounts !== null
+      ? (personalRaw.accounts as Record<string, unknown>)
+      : {};
+  const devicesRaw =
+    typeof personalRaw.devices === "object" && personalRaw.devices !== null
+      ? (personalRaw.devices as Record<string, unknown>)
+      : {};
+  const appsRaw =
+    typeof personalRaw.apps === "object" && personalRaw.apps !== null
+      ? (personalRaw.apps as Record<string, unknown>)
+      : {};
 
   const personalItems = Array.isArray(personalRaw.items)
     ? (personalRaw.items as unknown[]).filter(isRawCredential).map(normalizeCredential)
+    : [];
+
+  const identitiesRaw = Array.isArray(accountsRaw.identities) ? accountsRaw.identities : [];
+  const identities = identitiesRaw
+    .filter((e): e is Record<string, unknown> & { id: number } => {
+      return typeof e === "object" && e !== null && typeof (e as { id?: unknown }).id === "number";
+    })
+    .map((ident) => {
+      const items = Array.isArray(ident.items)
+        ? (ident.items as unknown[]).filter(isRawCredential).map(normalizeCredential)
+        : [];
+      const missing = Array.isArray(ident.missing_slots)
+        ? (ident.missing_slots as unknown[]).filter(
+            (s): s is CredentialType =>
+              typeof s === "string" && CREDENTIAL_TYPES.includes(s as CredentialType),
+          )
+        : [];
+      return {
+        id: ident.id,
+        display_name: typeof ident.display_name === "string" ? ident.display_name : "Identity",
+        country_code: normalizeNullableString(ident.country_code),
+        notes: normalizeNullableString(ident.notes),
+        count: nonNegativeInt(ident.count, items.length),
+        items,
+        missing_slots: missing,
+      };
+    });
+
+  const deviceItems = Array.isArray(devicesRaw.items)
+    ? (devicesRaw.items as unknown[]).filter(isRawCredential).map(normalizeCredential)
+    : [];
+  const appItems = Array.isArray(appsRaw.items)
+    ? (appsRaw.items as unknown[]).filter(isRawCredential).map(normalizeCredential)
     : [];
 
   const employers = employersRaw
@@ -180,6 +231,22 @@ function normalizeTree(raw: Record<string, unknown>): CredentialTreeResponse {
     owner_name: normalizeNullableString(raw.owner_name),
     personal: {
       count: nonNegativeInt(personalRaw.count, personalItems.length),
+      accounts: {
+        identity_count: nonNegativeInt(accountsRaw.identity_count, identities.length),
+        credential_count: nonNegativeInt(
+          accountsRaw.credential_count,
+          identities.reduce((sum, i) => sum + i.count, 0),
+        ),
+        identities,
+      },
+      devices: {
+        count: nonNegativeInt(devicesRaw.count, deviceItems.length),
+        items: deviceItems,
+      },
+      apps: {
+        count: nonNegativeInt(appsRaw.count, appItems.length),
+        items: appItems,
+      },
       items: personalItems,
     },
     jobs: {

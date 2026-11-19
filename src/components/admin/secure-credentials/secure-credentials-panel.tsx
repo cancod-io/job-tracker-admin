@@ -1,10 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { KeyRound, Mail, Monitor, Plus, Search, Shield, Users } from "lucide-react";
+import {
+  KeyRound,
+  Linkedin,
+  Mail,
+  MessageCircle,
+  Monitor,
+  Plus,
+  Search,
+  Shield,
+  Users,
+} from "lucide-react";
+import { ACCOUNT_SLOT_LABELS } from "@/components/admin/secure-credentials/constants";
 import { EmployerDeleteConfirm } from "@/components/admin/secure-credentials/employer-delete-confirm";
 import { EmployerFolderList } from "@/components/admin/secure-credentials/employer-folder-list";
 import { EmployerFormDialog } from "@/components/admin/secure-credentials/employer-form-dialog";
+import { IdentityDetail } from "@/components/admin/secure-credentials/identity-detail";
+import { IdentityFormDialog } from "@/components/admin/secure-credentials/identity-form-dialog";
 import { SecureCredentialsDeleteConfirm } from "@/components/admin/secure-credentials/secure-credentials-delete-confirm";
 import {
   SecureCredentialsFormDialog,
@@ -22,6 +35,7 @@ import {
   type VaultTreeSelection,
 } from "@/components/admin/secure-credentials/vault-tree";
 import { CREDENTIAL_TYPE_FILTER_OPTIONS } from "@/components/admin/secure-credentials/constants";
+import { Modal } from "@/components/ui/modal";
 import { AuthRequiredNotice } from "@/components/admin/shared/auth-required-notice";
 import { ListNotifications } from "@/components/admin/shared/list-notifications";
 import { ListSearchInput } from "@/components/admin/shared/list-search-input";
@@ -29,11 +43,17 @@ import { RefreshButton } from "@/components/admin/shared/refresh-button";
 import { useToast } from "@/hooks/use-toast";
 import { listAdminUsers } from "@/lib/admin-user-api";
 import {
+  createCredentialIdentity,
+  deleteCredentialIdentity,
+  updateCredentialIdentity,
+} from "@/lib/credential-identities-api";
+import {
   createCredentialEmployer,
   deleteCredentialEmployer,
   listCredentialEmployers,
   updateCredentialEmployer,
 } from "@/lib/credential-employers-api";
+import { countryFlagEmoji } from "@/lib/countries";
 import {
   createSecureCredential,
   deleteCredentialQrImage,
@@ -50,6 +70,9 @@ import type {
   CredentialEmployer,
   CredentialEmployerCreateRequest,
   CredentialEmployerUpdateRequest,
+  CredentialIdentity,
+  CredentialIdentityCreateRequest,
+  CredentialIdentityUpdateRequest,
   CredentialQrExtras,
   CredentialTreeResponse,
   CredentialType,
@@ -64,6 +87,9 @@ const TYPE_ICONS: Record<CredentialType, typeof Monitor> = {
   outlook: Mail,
   company_email: Mail,
   two_fa_key: Shield,
+  linkedin: Linkedin,
+  anydesk: Monitor,
+  whatsapp: MessageCircle,
   other: KeyRound,
 };
 
@@ -100,6 +126,13 @@ export function SecureCredentialsPanel() {
     id: number;
     name: string;
     credentialCount: number;
+  } | null>(null);
+  const [showIdentityCreate, setShowIdentityCreate] = useState(false);
+  const [editingIdentity, setEditingIdentity] = useState<CredentialIdentity | null>(null);
+  const [deletingIdentity, setDeletingIdentity] = useState<{
+    id: number;
+    name: string;
+    count: number;
   } | null>(null);
 
   const loadOwners = useCallback(async () => {
@@ -179,11 +212,15 @@ export function SecureCredentialsPanel() {
         credential_type: typeFilter === "all" ? undefined : typeFilter,
         owner_user_id: ownerFilter === "all" ? undefined : ownerFilter,
         vault_scope:
-          ownerFilter !== "all" && treeSelection.kind === "personal"
-            ? "personal"
+          ownerFilter !== "all" &&
+          (treeSelection.kind === "jobs" || treeSelection.kind === "employer")
+            ? "job"
             : ownerFilter !== "all" &&
-                (treeSelection.kind === "jobs" || treeSelection.kind === "employer")
-              ? "job"
+                (treeSelection.kind === "accounts" ||
+                  treeSelection.kind === "identity" ||
+                  treeSelection.kind === "devices" ||
+                  treeSelection.kind === "apps")
+              ? "personal"
               : undefined,
         employer_id: treeSelection.kind === "employer" ? treeSelection.employerId : undefined,
       });
@@ -327,15 +364,20 @@ export function SecureCredentialsPanel() {
   const showingJobsFolders = !search && ownerFilter !== "all" && treeSelection.kind === "jobs";
   const showingVaultOverview = !search && ownerFilter !== "all" && treeSelection.kind === "root";
 
+  const selectedIdentity = useMemo(() => {
+    if (treeSelection.kind !== "identity" || !tree) return null;
+    return tree.personal.accounts.identities.find((i) => i.id === treeSelection.identityId) ?? null;
+  }, [treeSelection, tree]);
+
   const detailItems = useMemo(() => {
     if (ownerFilter === "all" || search) return listItems;
     if (!tree) return listItems;
-    if (treeSelection.kind === "personal") return tree.personal.items;
+    if (treeSelection.kind === "devices") return tree.personal.devices.items;
+    if (treeSelection.kind === "apps") return tree.personal.apps.items;
     if (treeSelection.kind === "employer") {
       const emp = tree.jobs.employers.find((e) => e.id === treeSelection.employerId);
       return emp?.items ?? [];
     }
-    // Jobs hub and root use dedicated panes — no floating credential list.
     return [];
   }, [ownerFilter, search, listItems, tree, treeSelection]);
 
@@ -355,7 +397,19 @@ export function SecureCredentialsPanel() {
       label: ownerLabel,
       onClick: () => setTreeSelection({ kind: "root" }),
     };
-    if (treeSelection.kind === "personal") return [root, { label: "Personal" }];
+    if (treeSelection.kind === "accounts") return [root, { label: "Accounts" }];
+    if (treeSelection.kind === "identity") {
+      const ident = tree?.personal.accounts.identities.find(
+        (i) => i.id === treeSelection.identityId,
+      );
+      return [
+        root,
+        { label: "Accounts", onClick: () => setTreeSelection({ kind: "accounts" }) },
+        { label: ident?.display_name ?? "Identity" },
+      ];
+    }
+    if (treeSelection.kind === "devices") return [root, { label: "Devices & remote" }];
+    if (treeSelection.kind === "apps") return [root, { label: "Apps & other" }];
     if (treeSelection.kind === "jobs") return [root, { label: "Jobs" }];
     if (treeSelection.kind === "employer") {
       const emp = tree?.jobs.employers.find((e) => e.id === treeSelection.employerId);
@@ -371,7 +425,16 @@ export function SecureCredentialsPanel() {
   const detailHeading = useMemo(() => {
     if (search) return "Search results";
     if (ownerFilter === "all") return "All credentials";
-    if (treeSelection.kind === "personal") return "Personal";
+    if (treeSelection.kind === "accounts") return "Accounts";
+    if (treeSelection.kind === "identity") {
+      const ident = tree?.personal.accounts.identities.find(
+        (i) => i.id === treeSelection.identityId,
+      );
+      return ident?.display_name ?? "Identity";
+    }
+    if (treeSelection.kind === "devices") return "Devices & remote";
+    if (treeSelection.kind === "apps") return "Apps & other";
+    if (treeSelection.kind === "jobs") return "Jobs";
     if (treeSelection.kind === "employer") {
       const emp = tree?.jobs.employers.find((e) => e.id === treeSelection.employerId);
       return emp?.name || "Employer";
@@ -387,6 +450,9 @@ export function SecureCredentialsPanel() {
     ownerUserId?: number | null;
     vaultScope?: "personal" | "job";
     employerId?: number | null;
+    identityId?: number | null;
+    credentialType?: CredentialType;
+    serviceName?: string;
   }) => {
     const ownerId =
       opts?.ownerUserId && opts.ownerUserId > 0
@@ -401,6 +467,10 @@ export function SecureCredentialsPanel() {
         (treeSelection.kind === "jobs" || treeSelection.kind === "employer" ? "job" : "personal"),
       employerId:
         opts?.employerId ?? (treeSelection.kind === "employer" ? treeSelection.employerId : null),
+      identityId:
+        opts?.identityId ?? (treeSelection.kind === "identity" ? treeSelection.identityId : null),
+      credentialType: opts?.credentialType,
+      serviceName: opts?.serviceName,
     });
     if (accessToken && ownerId != null && ownerId > 0) {
       void listCredentialEmployers(accessToken, ownerId)
@@ -408,6 +478,33 @@ export function SecureCredentialsPanel() {
         .catch(() => undefined);
     }
     setShowCreate(true);
+  };
+
+  const openCreateForSelection = () => {
+    if (treeSelection.kind === "employer") {
+      openCreate({ vaultScope: "job", employerId: treeSelection.employerId });
+      return;
+    }
+    if (treeSelection.kind === "devices") {
+      openCreate({
+        vaultScope: "personal",
+        credentialType: "pc_login",
+        serviceName: "PC Login",
+      });
+      return;
+    }
+    if (treeSelection.kind === "apps") {
+      openCreate({ vaultScope: "personal", credentialType: "other" });
+      return;
+    }
+    if (treeSelection.kind === "identity") {
+      openCreate({
+        vaultScope: "personal",
+        identityId: treeSelection.identityId,
+      });
+      return;
+    }
+    openCreate({ vaultScope: "personal" });
   };
 
   const refreshAll = async () => {
@@ -520,6 +617,53 @@ export function SecureCredentialsPanel() {
     });
   };
 
+  const identityToFormModel = (node: NonNullable<typeof selectedIdentity>): CredentialIdentity => ({
+    id: node.id,
+    owner_user_id: tree?.owner_user_id ?? (typeof ownerFilter === "number" ? ownerFilter : 0),
+    owner_name: tree?.owner_name ?? null,
+    display_name: node.display_name,
+    country_code: node.country_code,
+    notes: node.notes,
+    credential_count: node.count,
+    created_at: "",
+    updated_at: "",
+  });
+
+  const handleCreateIdentity = async (
+    payload: CredentialIdentityCreateRequest | CredentialIdentityUpdateRequest,
+  ) => {
+    if (!accessToken) throw new Error("Not signed in.");
+    if (ownerFilter === "all") throw new Error("Select a person first.");
+    const created = await createCredentialIdentity(accessToken, {
+      ...(payload as CredentialIdentityCreateRequest),
+      owner_user_id: ownerFilter,
+    });
+    setToast({ kind: "success", message: "Identity created" });
+    await refreshAll();
+    setTreeSelection({ kind: "identity", identityId: created.id });
+  };
+
+  const handleUpdateIdentity = async (
+    payload: CredentialIdentityCreateRequest | CredentialIdentityUpdateRequest,
+  ) => {
+    if (!accessToken || !editingIdentity) throw new Error("Not signed in.");
+    await updateCredentialIdentity(
+      accessToken,
+      editingIdentity.id,
+      payload as CredentialIdentityUpdateRequest,
+    );
+    setToast({ kind: "success", message: "Identity updated" });
+    await refreshAll();
+  };
+
+  const handleDeleteIdentity = async () => {
+    if (!accessToken || !deletingIdentity) throw new Error("Not signed in.");
+    await deleteCredentialIdentity(accessToken, deletingIdentity.id);
+    setToast({ kind: "success", message: "Identity deleted" });
+    setTreeSelection({ kind: "accounts" });
+    await refreshAll();
+  };
+
   if (!accessToken) {
     return <AuthRequiredNotice resourceLabel="Credentials" />;
   }
@@ -529,20 +673,20 @@ export function SecureCredentialsPanel() {
       ? (tree?.jobs.employers.find((e) => e.id === treeSelection.employerId) ?? null)
       : null;
 
+  const showPrimaryAddCredential =
+    treeSelection.kind === "devices" ||
+    treeSelection.kind === "apps" ||
+    treeSelection.kind === "employer" ||
+    searchActive;
+
   const toolbarPrimary =
     showingJobsFolders || (ownerFilter !== "all" && treeSelection.kind === "jobs")
       ? { label: "Add employer", action: () => setShowEmployerCreate(true) }
-      : {
-          label: "Add Credential",
-          action: () =>
-            openCreate(
-              treeSelection.kind === "employer"
-                ? { vaultScope: "job", employerId: treeSelection.employerId }
-                : treeSelection.kind === "personal"
-                  ? { vaultScope: "personal" }
-                  : undefined,
-            ),
-        };
+      : treeSelection.kind === "accounts"
+        ? { label: "Add identity", action: () => setShowIdentityCreate(true) }
+        : showPrimaryAddCredential
+          ? { label: "Add Credential", action: () => openCreateForSelection() }
+          : null;
 
   return (
     <div className="space-y-4">
@@ -612,14 +756,16 @@ export function SecureCredentialsPanel() {
               onClick={() => void refreshAll()}
               ariaLabel="Refresh credentials"
             />
-            <button
-              type="button"
-              onClick={toolbarPrimary.action}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
-            >
-              <Plus className="size-4" aria-hidden />
-              {toolbarPrimary.label}
-            </button>
+            {toolbarPrimary ? (
+              <button
+                type="button"
+                onClick={toolbarPrimary.action}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+              >
+                <Plus className="size-4" aria-hidden />
+                {toolbarPrimary.label}
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -730,6 +876,8 @@ export function SecureCredentialsPanel() {
             ownerName={selectedOwner?.name ?? null}
             loading={treeLoading}
             onSelect={setTreeSelection}
+            onAddIdentity={ownerFilter !== "all" ? () => setShowIdentityCreate(true) : undefined}
+            onAddEmployer={ownerFilter !== "all" ? () => setShowEmployerCreate(true) : undefined}
           />
         </aside>
 
@@ -739,9 +887,14 @@ export function SecureCredentialsPanel() {
             <VaultOverview
               ownerLabel={ownerLabel}
               personalCount={tree.personal.count}
+              accountsCount={tree.personal.accounts.identity_count}
+              devicesCount={tree.personal.devices.count}
+              appsCount={tree.personal.apps.count}
               employerCount={tree.jobs.employer_count}
               jobCredentialCount={tree.jobs.credential_count}
-              onOpenPersonal={() => setTreeSelection({ kind: "personal" })}
+              onOpenAccounts={() => setTreeSelection({ kind: "accounts" })}
+              onOpenDevices={() => setTreeSelection({ kind: "devices" })}
+              onOpenApps={() => setTreeSelection({ kind: "apps" })}
               onOpenJobs={() => setTreeSelection({ kind: "jobs" })}
             />
           ) : showingJobsFolders && tree ? (
@@ -753,6 +906,77 @@ export function SecureCredentialsPanel() {
               onAddEmployer={() => setShowEmployerCreate(true)}
               onBreadcrumbRoot={() => setTreeSelection({ kind: "root" })}
             />
+          ) : !search && ownerFilter !== "all" && treeSelection.kind === "accounts" && tree ? (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="border-b border-border/70 px-4 py-3.5">
+                <h2 className="text-base font-semibold tracking-tight">Accounts</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Named identities with typed slots (Gmail, 2FA, LinkedIn…).
+                </p>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4">
+                {tree.personal.accounts.identities.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-10 text-center text-sm text-muted-foreground">
+                    No identities yet. Add one to start filling account slots.
+                  </p>
+                ) : (
+                  <ul className="grid gap-2 sm:grid-cols-2">
+                    {tree.personal.accounts.identities.map((ident) => (
+                      <li key={ident.id}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setTreeSelection({ kind: "identity", identityId: ident.id })
+                          }
+                          className="flex w-full items-center gap-3 rounded-xl border border-border bg-card p-3 text-left hover:border-primary/40 hover:bg-primary/5"
+                        >
+                          <span className="text-xl leading-none" aria-hidden>
+                            {countryFlagEmoji(ident.country_code)}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate font-medium">
+                            {ident.display_name}
+                          </span>
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            {ident.count}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          ) : !search &&
+            ownerFilter !== "all" &&
+            treeSelection.kind === "identity" &&
+            selectedIdentity ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-5">
+              <IdentityDetail
+                identity={selectedIdentity}
+                onEditIdentity={() => setEditingIdentity(identityToFormModel(selectedIdentity))}
+                onDeleteIdentity={() =>
+                  setDeletingIdentity({
+                    id: selectedIdentity.id,
+                    name: selectedIdentity.display_name,
+                    count: selectedIdentity.count,
+                  })
+                }
+                onAddSlot={(slot: CredentialType) =>
+                  openCreate({
+                    vaultScope: "personal",
+                    identityId: selectedIdentity.id,
+                    credentialType: slot,
+                    serviceName: ACCOUNT_SLOT_LABELS[slot] ?? slot,
+                  })
+                }
+                onEditCredential={(row) => void openEdit(row)}
+                onDeleteCredential={setDeleting}
+              />
+            </div>
+          ) : !search && ownerFilter !== "all" && treeSelection.kind === "identity" ? (
+            <div className="flex flex-1 items-center justify-center p-4 text-sm text-muted-foreground">
+              Identity not found. It may have been deleted.
+            </div>
           ) : (
             <SecureCredentialsTable
               items={filteredDetailItems}
@@ -768,19 +992,26 @@ export function SecureCredentialsPanel() {
                   ? "Nothing matches"
                   : treeSelection.kind === "employer"
                     ? "No credentials in this folder"
-                    : treeSelection.kind === "personal"
-                      ? "No personal credentials yet"
-                      : "Vault is empty"
+                    : treeSelection.kind === "devices"
+                      ? "No devices yet"
+                      : treeSelection.kind === "apps"
+                        ? "No apps yet"
+                        : "Vault is empty"
               }
               emptyDescription={
                 treeSelection.kind === "employer"
                   ? "Add careers-portal, work email, or 2FA logins for this employer."
-                  : treeSelection.kind === "personal"
-                    ? "Store Gmail, Outlook, PC login, or personal 2FA here. Job portals belong under Jobs → employer."
-                    : "Pick a person, then open Personal or Jobs in the vault tree."
+                  : treeSelection.kind === "devices"
+                    ? "Add PC logins or AnyDesk remote access entries here."
+                    : treeSelection.kind === "apps"
+                      ? "Store WhatsApp, tools, and other app logins here."
+                      : "Pick a person, then open Accounts, Devices, or Jobs in the vault tree."
               }
               primaryActionLabel={
-                treeSelection.kind === "employer" || treeSelection.kind === "personal" || search
+                treeSelection.kind === "employer" ||
+                treeSelection.kind === "devices" ||
+                treeSelection.kind === "apps" ||
+                search
                   ? "Add credential"
                   : ownerFilter === "all"
                     ? "Add credential"
@@ -792,13 +1023,7 @@ export function SecureCredentialsPanel() {
               dangerActionLabel={
                 treeSelection.kind === "employer" && selectedEmployer ? "Delete folder" : undefined
               }
-              onPrimaryAction={() =>
-                openCreate(
-                  treeSelection.kind === "employer"
-                    ? { vaultScope: "job", employerId: treeSelection.employerId }
-                    : { vaultScope: "personal" },
-                )
-              }
+              onPrimaryAction={() => openCreateForSelection()}
               onSecondaryAction={
                 selectedEmployer
                   ? () => {
@@ -909,6 +1134,101 @@ export function SecureCredentialsPanel() {
           onConfirm={handleDeleteEmployer}
         />
       ) : null}
+
+      {showIdentityCreate ? (
+        <IdentityFormDialog
+          mode="create"
+          ownerUserId={ownerFilter === "all" ? null : ownerFilter}
+          onClose={() => setShowIdentityCreate(false)}
+          onSubmit={handleCreateIdentity}
+        />
+      ) : null}
+
+      {editingIdentity ? (
+        <IdentityFormDialog
+          mode="edit"
+          initial={editingIdentity}
+          onClose={() => setEditingIdentity(null)}
+          onSubmit={handleUpdateIdentity}
+        />
+      ) : null}
+
+      {deletingIdentity ? (
+        <IdentityDeleteConfirm
+          name={deletingIdentity.name}
+          count={deletingIdentity.count}
+          onClose={() => setDeletingIdentity(null)}
+          onConfirm={handleDeleteIdentity}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function IdentityDeleteConfirm({
+  name,
+  count,
+  onClose,
+  onConfirm,
+}: {
+  name: string;
+  count: number;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function handleConfirm() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await onConfirm();
+      onClose();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Delete failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal
+      aria-label="Delete identity confirmation"
+      title="Delete identity?"
+      description="This cannot be undone."
+      onClose={onClose}
+      maxWidth="max-w-sm"
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-foreground/90">
+          Permanently remove <strong>{name}</strong>
+          {count > 0 ? ` and unlink ${count} credential${count === 1 ? "" : "s"} from it` : ""}?
+        </p>
+        {err ? (
+          <p role="alert" className="text-sm text-rose-600">
+            {err}
+          </p>
+        ) : null}
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="inline-flex h-9 items-center rounded-lg border border-border px-4 text-sm font-medium hover:bg-muted disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleConfirm()}
+            disabled={busy}
+            className="inline-flex h-9 items-center gap-2 rounded-lg bg-rose-600 px-4 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-60"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
