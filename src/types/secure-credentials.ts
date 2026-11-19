@@ -6,6 +6,9 @@ export type CredentialType =
   | "outlook"
   | "company_email"
   | "two_fa_key"
+  | "linkedin"
+  | "anydesk"
+  | "whatsapp"
   | "other";
 
 export type VaultScope = "personal" | "job";
@@ -22,6 +25,9 @@ export type SecureCredential = {
   vault_scope: VaultScope;
   employer_id: number | null;
   employer_name: string | null;
+  identity_id: number | null;
+  identity_name: string | null;
+  identity_country_code: string | null;
   service_name: string;
   credential_type: CredentialType;
   username: string | null;
@@ -53,6 +59,7 @@ export type SecureCredentialCreateRequest = {
   credential_type?: CredentialType;
   vault_scope?: VaultScope;
   employer_id?: number | null;
+  identity_id?: number | null;
   username?: string | null;
   /** Required except for two_fa_key when a QR image will be uploaded. */
   secret?: string | null;
@@ -67,6 +74,8 @@ export type SecureCredentialUpdateRequest = {
   vault_scope?: VaultScope;
   employer_id?: number | null;
   clear_employer?: boolean;
+  identity_id?: number | null;
+  clear_identity?: boolean;
   username?: string | null;
   secret?: string;
   notes?: string | null;
@@ -116,6 +125,48 @@ export type CredentialEmployerUpdateRequest = {
   clear_notes?: boolean;
 };
 
+export type CredentialIdentity = {
+  id: number;
+  owner_user_id: number;
+  owner_name: string | null;
+  display_name: string;
+  country_code: string | null;
+  notes: string | null;
+  credential_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CredentialIdentityListResponse = {
+  items: CredentialIdentity[];
+  total: number;
+};
+
+export type CredentialIdentityCreateRequest = {
+  display_name: string;
+  country_code?: string | null;
+  notes?: string | null;
+  owner_user_id?: number;
+};
+
+export type CredentialIdentityUpdateRequest = {
+  display_name?: string;
+  country_code?: string | null;
+  notes?: string | null;
+  clear_country_code?: boolean;
+  clear_notes?: boolean;
+};
+
+export type CredentialTreeIdentityNode = {
+  id: number;
+  display_name: string;
+  country_code: string | null;
+  notes: string | null;
+  count: number;
+  items: SecureCredential[];
+  missing_slots: CredentialType[];
+};
+
 export type CredentialTreeEmployerNode = {
   id: number;
   name: string;
@@ -131,6 +182,13 @@ export type CredentialTreeResponse = {
   owner_name: string | null;
   personal: {
     count: number;
+    accounts: {
+      identity_count: number;
+      credential_count: number;
+      identities: CredentialTreeIdentityNode[];
+    };
+    devices: { count: number; items: SecureCredential[] };
+    apps: { count: number; items: SecureCredential[] };
     items: SecureCredential[];
   };
   jobs: {

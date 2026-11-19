@@ -123,6 +123,11 @@ export const API_PATHS = {
     detail: (employerId: number) => `/api/admin/credential-employers/${employerId}`,
   },
 
+  adminCredentialIdentities: {
+    base: "/api/admin/credential-identities",
+    detail: (identityId: number) => `/api/admin/credential-identities/${identityId}`,
+  },
+
   adminNotifications: {
     base: "/api/admin/notifications",
     unreadCount: "/api/admin/notifications/unread-count",

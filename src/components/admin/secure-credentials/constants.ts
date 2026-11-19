@@ -6,8 +6,27 @@ export const CREDENTIAL_TYPE_OPTIONS: { value: CredentialType; label: string }[]
   { value: "outlook", label: "Outlook" },
   { value: "company_email", label: "Other Email" },
   { value: "two_fa_key", label: "2FA Key" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "anydesk", label: "AnyDesk" },
+  { value: "whatsapp", label: "WhatsApp" },
   { value: "other", label: "Other" },
 ];
+
+export const ACCOUNT_SLOT_TYPES: readonly CredentialType[] = [
+  "gmail",
+  "two_fa_key",
+  "linkedin",
+  "outlook",
+  "company_email",
+] as const;
+
+export const ACCOUNT_SLOT_LABELS: Record<string, string> = {
+  gmail: "Gmail",
+  two_fa_key: "2FA Key",
+  linkedin: "LinkedIn",
+  outlook: "Outlook",
+  company_email: "Other Email",
+};
 
 export const CREDENTIAL_TYPE_FILTER_OPTIONS: {
   value: CredentialType | "all";
@@ -40,10 +59,32 @@ export function credentialTypeBadgeClass(type: CredentialType | string): string 
       return "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
     case "two_fa_key":
       return "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300";
+    case "linkedin":
+      return "border-sky-600/25 bg-sky-600/10 text-sky-800 dark:text-sky-300";
+    case "anydesk":
+      return "border-orange-500/25 bg-orange-500/10 text-orange-800 dark:text-orange-300";
+    case "whatsapp":
+      return "border-green-500/25 bg-green-500/10 text-green-800 dark:text-green-300";
     default:
       return "border-border bg-muted/60 text-muted-foreground";
   }
 }
+
+export function formatCredentialDateTime(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+}
+
+export const CREDENTIALS_PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 
 export function secretFieldCopy(type: CredentialType): {
   label: string;
@@ -57,6 +98,30 @@ export function secretFieldCopy(type: CredentialType): {
       placeholderCreate: "Authenticator secret or recovery codes",
       placeholderEdit: "Leave blank to keep existing, or type a new 2FA secret",
       hint: "Store the authenticator seed or recovery codes — not a one-time code from the app.",
+    };
+  }
+  if (type === "linkedin") {
+    return {
+      label: "LinkedIn password",
+      placeholderCreate: "Account password",
+      placeholderEdit: "Leave blank to keep existing password",
+      hint: "Store the LinkedIn login password. Put the profile URL in the URL/username field.",
+    };
+  }
+  if (type === "anydesk") {
+    return {
+      label: "AnyDesk password",
+      placeholderCreate: "Unattended access password",
+      placeholderEdit: "Leave blank to keep existing password",
+      hint: "ID/address goes in the identifier field; purpose can go in notes.",
+    };
+  }
+  if (type === "pc_login") {
+    return {
+      label: "Password / PIN",
+      placeholderCreate: "Password or PIN",
+      placeholderEdit: "Leave blank to keep existing",
+      hint: "PC username above; password or PIN here.",
     };
   }
   if (type === "gmail") {
@@ -81,14 +146,6 @@ export function secretFieldCopy(type: CredentialType): {
       placeholderCreate: "Mailbox password",
       placeholderEdit: "Leave blank to keep existing, or type a new password",
       hint: "Email account password for this mailbox.",
-    };
-  }
-  if (type === "pc_login") {
-    return {
-      label: "Password",
-      placeholderCreate: "PC / workstation password",
-      placeholderEdit: "Leave blank to keep existing, or type a new password",
-      hint: "Login password for this machine or account.",
     };
   }
   return {

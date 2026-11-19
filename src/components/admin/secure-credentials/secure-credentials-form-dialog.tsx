@@ -31,6 +31,9 @@ type Mode = "create" | "edit";
 export type CredentialFormDefaults = {
   vaultScope?: VaultScope;
   employerId?: number | null;
+  identityId?: number | null;
+  credentialType?: CredentialType;
+  serviceName?: string;
 };
 
 type SecureCredentialsFormDialogProps = {
@@ -125,10 +128,13 @@ export function SecureCredentialsFormDialog({
   const defaultOwnerId =
     preferredOwnerUserId && preferredOwnerUserId > 0 ? String(preferredOwnerUserId) : "";
 
-  const [serviceName, setServiceName] = useState(initial?.service_name ?? "");
-  const [credentialType, setCredentialType] = useState<CredentialType>(
-    initial?.credential_type ?? "other",
+  const [serviceName, setServiceName] = useState(
+    initial?.service_name ?? defaults?.serviceName ?? "",
   );
+  const [credentialType, setCredentialType] = useState<CredentialType>(
+    initial?.credential_type ?? defaults?.credentialType ?? "other",
+  );
+  const identityId = String(initial?.identity_id ?? defaults?.identityId ?? "");
   const [vaultScope, setVaultScope] = useState<VaultScope>(
     initial?.vault_scope ?? defaults?.vaultScope ?? "personal",
   );
@@ -159,8 +165,8 @@ export function SecureCredentialsFormDialog({
   }, [employerOptions]);
 
   useEffect(() => {
-    setServiceName(initial?.service_name ?? "");
-    setCredentialType(initial?.credential_type ?? "other");
+    setServiceName(initial?.service_name ?? defaults?.serviceName ?? "");
+    setCredentialType(initial?.credential_type ?? defaults?.credentialType ?? "other");
     setVaultScope(initial?.vault_scope ?? defaults?.vaultScope ?? "personal");
     setEmployerId(
       String(
@@ -317,6 +323,10 @@ export function SecureCredentialsFormDialog({
         if (vaultScope === "job") {
           payload.employer_id = Number(employerId);
         }
+        const resolvedIdentity = Number(identityId);
+        if (Number.isFinite(resolvedIdentity) && resolvedIdentity > 0) {
+          payload.identity_id = resolvedIdentity;
+        }
         const parsedOwner = Number(ownerUserId);
         if (Number.isFinite(parsedOwner) && parsedOwner > 0) {
           payload.owner_user_id = parsedOwner;
@@ -337,6 +347,10 @@ export function SecureCredentialsFormDialog({
           payload.employer_id = null;
         } else {
           payload.employer_id = Number(employerId);
+        }
+        const resolvedIdentity = Number(identityId);
+        if (Number.isFinite(resolvedIdentity) && resolvedIdentity > 0) {
+          payload.identity_id = resolvedIdentity;
         }
         if (clearUsername) {
           payload.clear_username = true;
